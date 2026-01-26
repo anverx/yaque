@@ -11,3 +11,4 @@ TODO:
  - main screen: 3 daily challenges, calendar, logbook, random game, settings? exit
  - Before time starts show only gray game field. 'Play' button to show the game and start the clock
  - 'pause' button hides the field and stops the clock
+ - for random game add 'share' button and do a QR code with cusom url scheme: `yaque://start?level=42&field=6`
