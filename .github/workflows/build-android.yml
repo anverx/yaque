@@ -36,15 +36,20 @@ jobs:
             libtool \
             pkg-config \
             zlib1g-dev \
-            libncurses5-dev \
+            libncurses-dev \
             libncursesw5-dev \
-            libtinfo5 \
             cmake \
             libffi-dev \
             libssl-dev \
             automake \
             gettext \
-            libltdl-dev
+            libltdl-dev \
+            lld \
+            llvm
+          # Create symlink for libtinfo if needed (for older NDK compatibility)
+          if [ ! -f /usr/lib/x86_64-linux-gnu/libtinfo.so.5 ]; then
+            sudo ln -sf /usr/lib/x86_64-linux-gnu/libtinfo.so.6 /usr/lib/x86_64-linux-gnu/libtinfo.so.5 || true
+          fi
 
       - name: Install buildozer and dependencies
         run: |
