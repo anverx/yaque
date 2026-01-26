@@ -19,7 +19,8 @@ source.include_exts = py,png,jpg,kv,atlas,json
 version = 0.1
 
 # Application requirements
-requirements = python3,kivy,pillow,qrcode
+# Note: pyjnius is added automatically, cython<3 needed for compatibility
+requirements = python3,kivy,pillow,qrcode,pyjnius
 
 # Supported orientations (portrait, landscape, all)
 orientation = portrait
@@ -37,6 +38,9 @@ android.ndk = 25b
 
 # Android architecture
 android.archs = arm64-v8a, armeabi-v7a
+
+# Use stable python-for-android
+p4a.branch = master
 
 # Android features
 android.allow_backup = True

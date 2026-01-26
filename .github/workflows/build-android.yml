@@ -54,7 +54,8 @@ jobs:
       - name: Install buildozer and dependencies
         run: |
           pip install --upgrade pip
-          pip install buildozer cython virtualenv
+          # Pin Cython<3 for pyjnius compatibility
+          pip install 'cython<3' buildozer virtualenv
 
       - name: Cache buildozer
         uses: actions/cache@v4
@@ -62,9 +63,9 @@ jobs:
           path: |
             .buildozer
             ~/.buildozer
-          key: ${{ runner.os }}-buildozer-${{ hashFiles('buildozer.spec') }}
+          key: ${{ runner.os }}-buildozer-v2-${{ hashFiles('buildozer.spec') }}
           restore-keys: |
-            ${{ runner.os }}-buildozer-
+            ${{ runner.os }}-buildozer-v2-
 
       - name: Build APK
         run: |
