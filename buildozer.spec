@@ -19,8 +19,8 @@ source.include_exts = py,png,jpg,kv,atlas,json
 version = 0.1
 
 # Application requirements
-# Note: pyjnius is added automatically, cython<3 needed for compatibility
-requirements = python3,kivy,pillow,qrcode,pyjnius
+# Note: Cython<3 is required for pyjnius compatibility
+requirements = python3,kivy,pillow,qrcode,pyjnius,cython==0.29.36
 
 # Supported orientations (portrait, landscape, all)
 orientation = portrait
