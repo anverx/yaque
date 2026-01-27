@@ -45,6 +45,7 @@ class BoardWidget(Widget):
         # Conflict tracking
         self.conflict_cells: Set[Tuple[int, int]] = set()
         self._validation_event = None
+        self.hidden = True  # Start hidden until play is pressed
         self.bind(pos=self._trigger_redraw, size=self._trigger_redraw)
 
     def _trigger_redraw(self, *args):
@@ -57,6 +58,27 @@ class BoardWidget(Widget):
         cell_h = self.height / n
 
         with self.canvas:
+            if self.hidden:
+                # Draw gray empty board when hidden
+                Color(0.85, 0.85, 0.85, 1)
+                Rectangle(pos=(self.x, self.y), size=(self.width, self.height))
+
+                # Draw thin cell borders only
+                Color(0.7, 0.7, 0.7, 1)
+                for i in range(n + 1):
+                    x = self.x + i * cell_w
+                    Line(points=[x, self.y, x, self.y + self.height], width=1)
+                    y = self.y + i * cell_h
+                    Line(points=[self.x, y, self.x + self.width, y], width=1)
+
+                # Draw outer border
+                Color(0.5, 0.5, 0.5, 1)
+                Line(points=[self.x, self.y, self.x + self.width, self.y], width=2)
+                Line(points=[self.x, self.y + self.height, self.x + self.width, self.y + self.height], width=2)
+                Line(points=[self.x, self.y, self.x, self.y + self.height], width=2)
+                Line(points=[self.x + self.width, self.y, self.x + self.width, self.y + self.height], width=2)
+                return
+
             # Draw kingdom colored cells
             for row in range(n):
                 for col in range(n):
@@ -253,6 +275,8 @@ class BoardWidget(Widget):
         self.draw_board()
 
     def on_touch_down(self, touch):
+        if self.hidden:
+            return super().on_touch_down(touch)
         if self.collide_point(*touch.pos):
             cell_w = self.width / self.size_cells
             cell_h = self.height / self.size_cells
