@@ -1,15 +1,36 @@
 import io
+import os
 
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.anchorlayout import AnchorLayout
 from kivy.uix.label import Label
-from kivy.uix.button import Button
 from kivy.uix.image import Image
 from kivy.uix.screenmanager import Screen
+from kivy.uix.behaviors import ButtonBehavior
 from kivy.clock import Clock
 from kivy.core.image import Image as CoreImage
 
 from board_widget import BoardWidget
+
+
+# Path to icons directory
+ICONS_DIR = os.path.join(os.path.dirname(__file__), '..', 'assets', 'icons')
+
+
+class IconButton(ButtonBehavior, Image):
+    """A clickable image button."""
+    def __init__(self, icon_name, **kwargs):
+        super().__init__(**kwargs)
+        self.icon_name = icon_name
+        self.source = os.path.join(ICONS_DIR, f'{icon_name}.png')
+        self.size_hint = (None, None)
+        self.size = (48, 48)
+        self.fit_mode = 'contain'  # Modern replacement for allow_stretch/keep_ratio
+
+    def set_icon(self, icon_name):
+        """Change the icon."""
+        self.icon_name = icon_name
+        self.source = os.path.join(ICONS_DIR, f'{icon_name}.png')
 
 
 class GameScreen(Screen):
@@ -38,44 +59,60 @@ class GameScreen(Screen):
         self.qr_image = Image(size_hint=(None, None), opacity=0)
         self.board_container.add_widget(self.qr_image)
 
-        # Bottom area with game buttons
-        bottom_bar = BoxLayout(size_hint_y=None, height=50, spacing=5)
-
-        # Play/Pause button
-        self.play_btn = Button(text='Play')
+        # Play/Pause button - large, centered, alone on its row
+        self.play_btn = IconButton('play')
+        self.play_btn.size = (72, 72)  # Larger size
         self.play_btn.bind(on_press=self.toggle_play_pause)
-        bottom_bar.add_widget(self.play_btn)
+        play_anchor = AnchorLayout(size_hint_y=None, height=80, anchor_x='center')
+        play_anchor.add_widget(self.play_btn)
+        layout.add_widget(play_anchor)
 
-        undo_btn = Button(text='Undo')
+        # Game control buttons (undo, redo, reset)
+        control_bar = BoxLayout(size_hint=(None, None), height=50, spacing=20)
+        control_bar.bind(minimum_width=control_bar.setter('width'))
+
+        undo_btn = IconButton('undo')
         undo_btn.bind(on_press=lambda x: self.board.undo() if self.board and not self.board.hidden else None)
-        bottom_bar.add_widget(undo_btn)
+        control_bar.add_widget(undo_btn)
 
-        redo_btn = Button(text='Redo')
+        redo_btn = IconButton('redo')
         redo_btn.bind(on_press=lambda x: self.board.redo() if self.board and not self.board.hidden else None)
-        bottom_bar.add_widget(redo_btn)
+        control_bar.add_widget(redo_btn)
 
-        reset_btn = Button(text='Reset')
+        reset_btn = IconButton('reset')
         reset_btn.bind(on_press=self.reset_game)
-        bottom_bar.add_widget(reset_btn)
+        control_bar.add_widget(reset_btn)
 
-        layout.add_widget(bottom_bar)
+        # Auto-solve button (for testing celebration effect)
+        auto_solve_btn = IconButton('queen')
+        auto_solve_btn.bind(on_press=self.auto_solve)
+        control_bar.add_widget(auto_solve_btn)
 
-        # Bottom buttons
-        nav_bar = BoxLayout(size_hint_y=None, height=50, spacing=5)
+        # Wrap in anchor layout to center
+        control_anchor = AnchorLayout(size_hint_y=None, height=50, anchor_x='center')
+        control_anchor.add_widget(control_bar)
+        layout.add_widget(control_anchor)
 
-        menu_btn = Button(text='Menu')
+        # Navigation buttons (centered icons)
+        nav_bar = BoxLayout(size_hint=(None, None), height=60, spacing=20)
+        nav_bar.bind(minimum_width=nav_bar.setter('width'))
+
+        menu_btn = IconButton('menu')
         menu_btn.bind(on_press=self.go_to_menu)
         nav_bar.add_widget(menu_btn)
 
-        self.share_btn = Button(text='Share')
+        self.share_btn = IconButton('share')
         self.share_btn.bind(on_press=self.share_game)
         nav_bar.add_widget(self.share_btn)
 
-        show_solution_btn = Button(text='Solution')
-        show_solution_btn.bind(on_press=self.toggle_solution)
-        nav_bar.add_widget(show_solution_btn)
+        solution_btn = IconButton('solution')
+        solution_btn.bind(on_press=self.toggle_solution)
+        nav_bar.add_widget(solution_btn)
 
-        layout.add_widget(nav_bar)
+        # Wrap in anchor layout to center
+        nav_anchor = AnchorLayout(size_hint_y=None, height=60, anchor_x='center')
+        nav_anchor.add_widget(nav_bar)
+        layout.add_widget(nav_anchor)
 
         self.add_widget(layout)
 
@@ -118,7 +155,7 @@ class GameScreen(Screen):
         # Start in paused state (no QR until first pause)
         self.is_playing = False
         self.board.hidden = True
-        self.play_btn.text = 'Play'
+        self.play_btn.set_icon('play')
         self.play_btn.disabled = False
         self.qr_image.opacity = 0
         self.board.draw_board()
@@ -155,7 +192,7 @@ class GameScreen(Screen):
             # Pause
             self.is_playing = False
             self.board.hidden = True
-            self.play_btn.text = 'Play'
+            self.play_btn.set_icon('play')
             self.qr_image.opacity = 1
             if self.timer_event:
                 self.timer_event.cancel()
@@ -164,7 +201,7 @@ class GameScreen(Screen):
             # Play
             self.is_playing = True
             self.board.hidden = False
-            self.play_btn.text = 'Pause'
+            self.play_btn.set_icon('pause')
             self.qr_image.opacity = 0
             if not self.board.solved:
                 self.timer_event = Clock.schedule_interval(self._tick, 1)
@@ -186,7 +223,7 @@ class GameScreen(Screen):
             self.timer_event = None
         # Keep board visible when solved
         self.is_playing = False
-        self.play_btn.text = 'Solved!'
+        self.play_btn.set_icon('queen')  # Show queen icon when solved
         self.play_btn.disabled = True
         self.qr_image.opacity = 0
 
@@ -239,10 +276,33 @@ class GameScreen(Screen):
         self.is_playing = False
         self.board.hidden = True
         self.board.solved = False
-        self.play_btn.text = 'Play'
+        self.play_btn.set_icon('play')
         self.play_btn.disabled = False
         self.qr_image.opacity = 0
         self.board.draw_board()
+
+    def auto_solve(self, instance):
+        """Auto-solve the puzzle and play celebration (for testing)."""
+        if not self.board:
+            return
+
+        # Make sure board is visible
+        if self.board.hidden:
+            self.is_playing = True
+            self.board.hidden = False
+            self.play_btn.set_icon('pause')
+            self.qr_image.opacity = 0
+            self.board.draw_board()
+
+        # Stop timer
+        if self.timer_event:
+            self.timer_event.cancel()
+            self.timer_event = None
+
+        # Auto-solve and celebrate
+        self.board.auto_solve()
+        self.play_btn.set_icon('queen')
+        self.play_btn.disabled = True
 
     def on_cell_click(self, row, col):
         pass  # Can add debug logging here if needed

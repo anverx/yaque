@@ -1,8 +1,16 @@
 import copy
+import os
 from kivy.uix.widget import Widget
-from kivy.graphics import Rectangle, Line, Color, Ellipse
+from kivy.graphics import Rectangle, Line, Color, Ellipse, PushMatrix, PopMatrix, Rotate, Scale, Translate
 from kivy.clock import Clock
+from kivy.core.image import Image as CoreImage
+from kivy.animation import Animation
 from typing import List, Tuple, Callable, Optional, Set
+
+# Load queen texture
+ICONS_DIR = os.path.join(os.path.dirname(__file__), 'assets', 'icons')
+QUEEN_TEXTURE = CoreImage(os.path.join(ICONS_DIR, 'queen.png')).texture
+QUEEN_RED_TEXTURE = None  # Will be created on demand for conflicts
 
 # Cell mark states
 MARK_EMPTY = 0
@@ -46,6 +54,10 @@ class BoardWidget(Widget):
         self.conflict_cells: Set[Tuple[int, int]] = set()
         self._validation_event = None
         self.hidden = True  # Start hidden until play is pressed
+        # Victory celebration animation
+        self.celebrating = False
+        self.celebration_progress = 0.0
+        self._celebration_event = None
         self.bind(pos=self._trigger_redraw, size=self._trigger_redraw)
 
     def _trigger_redraw(self, *args):
@@ -140,38 +152,62 @@ class BoardWidget(Widget):
                         Line(ellipse=(circ_x, circ_y, circ_size, circ_size), width=1.5)
                         Color(0, 0, 0, 1)
                     elif mark == MARK_QUEEN:
-                        # Draw queen as circle with X (red if in conflict)
+                        # Draw queen icon
                         is_conflict = (row, col) in self.conflict_cells
-                        if is_conflict:
-                            Color(0.9, 0.2, 0.2, 1)  # Red for conflict
-                        margin = min(cell_w, cell_h) * 0.15
+                        margin = min(cell_w, cell_h) * 0.2
                         size = min(cell_w, cell_h) - 2 * margin
-                        cx = x + cell_w / 2
+                        cx = x + cell_w / 2  # Center of cell
                         cy = y + cell_h / 2
-                        Ellipse(pos=(cx - size/2, cy - size/2), size=(size, size))
-                        # Draw X inside
-                        Color(1, 1, 1, 1)
-                        inner = size * 0.25
-                        Line(points=[cx - inner, cy - inner, cx + inner, cy + inner], width=2)
-                        Line(points=[cx - inner, cy + inner, cx + inner, cy - inner], width=2)
+
+                        if self.celebrating:
+                            # Celebration animation - all queens together
+                            progress = self.celebration_progress
+
+                            # Eased progress for smooth animation
+                            eased = 1 - (1 - progress) ** 2  # Ease out quad
+
+                            # Rotation: 0 to 360 degrees
+                            rotation = eased * 360
+
+                            # Scale pulse: 1.0 -> 1.5 -> 1.0
+                            if progress < 0.5:
+                                scale = 1.0 + 0.5 * (progress * 2)
+                            else:
+                                scale = 1.5 - 0.5 * ((progress - 0.5) * 2)
+
+                            # Golden color
+                            Color(1.0, 0.85, 0.2, 1)
+
+                            # Apply transforms
+                            PushMatrix()
+                            Translate(cx, cy, 0)
+                            Rotate(angle=rotation, axis=(0, 0, 1))
+                            Scale(scale, scale, 1)
+                            Translate(-size/2, -size/2, 0)
+                            Rectangle(pos=(0, 0), size=(size, size), texture=QUEEN_TEXTURE)
+                            PopMatrix()
+                        else:
+                            # Normal drawing
+                            if is_conflict:
+                                Color(0.9, 0.3, 0.3, 1)  # Red tint for conflict
+                            else:
+                                Color(1, 1, 1, 1)  # Normal
+                            qx = x + (cell_w - size) / 2
+                            qy = y + (cell_h - size) / 2
+                            Rectangle(pos=(qx, qy), size=(size, size), texture=QUEEN_TEXTURE)
                         Color(0, 0, 0, 1)
 
             # Draw solution queens if enabled
             if self.show_solution:
-                Color(0.2, 0.2, 0.8, 0.7)  # Semi-transparent blue
+                Color(0.5, 0.5, 1, 0.7)  # Semi-transparent blue tint
                 for row, col in self.queens:
                     x = self.x + col * cell_w
                     y = self.y + (n - 1 - row) * cell_h
-                    margin = min(cell_w, cell_h) * 0.15
+                    margin = min(cell_w, cell_h) * 0.2  # 20% smaller
                     size = min(cell_w, cell_h) - 2 * margin
-                    cx = x + cell_w / 2
-                    cy = y + cell_h / 2
-                    Ellipse(pos=(cx - size/2, cy - size/2), size=(size, size))
-                    Color(1, 1, 1, 1)
-                    inner = size * 0.25
-                    Line(points=[cx - inner, cy - inner, cx + inner, cy + inner], width=2)
-                    Line(points=[cx - inner, cy + inner, cx + inner, cy - inner], width=2)
-                    Color(0.2, 0.2, 0.8, 0.7)
+                    qx = x + (cell_w - size) / 2
+                    qy = y + (cell_h - size) / 2
+                    Rectangle(pos=(qx, qy), size=(size, size), texture=QUEEN_TEXTURE)
 
     def _get_marked_queens(self) -> List[Tuple[int, int]]:
         """Get all cells marked as queens."""
@@ -232,8 +268,27 @@ class BoardWidget(Widget):
         # Check if solved
         if not self.solved and self.is_solved():
             self.solved = True
+            self.start_celebration()
             if self.on_solved:
                 self.on_solved()
+
+    def start_celebration(self):
+        """Start the victory celebration animation."""
+        self.celebrating = True
+        self.celebration_progress = 0.0
+        # Run animation for ~1.5 seconds at 60fps
+        self._celebration_event = Clock.schedule_interval(self._update_celebration, 1/60)
+
+    def _update_celebration(self, dt):
+        """Update celebration animation frame."""
+        self.celebration_progress += dt / 2.5  # 2.5 second animation
+        if self.celebration_progress >= 1.0:
+            self.celebration_progress = 1.0
+            self.celebrating = False
+            if self._celebration_event:
+                self._celebration_event.cancel()
+                self._celebration_event = None
+        self.draw_board()
 
     def _schedule_validation(self):
         """Schedule validation with delay."""
@@ -272,7 +327,27 @@ class BoardWidget(Widget):
         self.conflict_cells = set()
         if self._validation_event:
             self._validation_event.cancel()
+        # Cancel any celebration
+        if self._celebration_event:
+            self._celebration_event.cancel()
+            self._celebration_event = None
+        self.celebrating = False
+        self.celebration_progress = 0.0
         self.draw_board()
+
+    def auto_solve(self):
+        """Place the correct solution and play celebration."""
+        # Clear board first
+        self.cell_marks = [[MARK_EMPTY] * self.size_cells for _ in range(self.size_cells)]
+        self.conflict_cells = set()
+
+        # Place queens at solution positions
+        for row, col in self.queens:
+            self.cell_marks[row][col] = MARK_QUEEN
+
+        # Mark as solved and start celebration
+        self.solved = True
+        self.start_celebration()
 
     def on_touch_down(self, touch):
         if self.hidden:
