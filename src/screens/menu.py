@@ -6,12 +6,13 @@ from kivy.uix.behaviors import ButtonBehavior
 from kivy.uix.image import Image
 from kivy.uix.screenmanager import Screen
 from kivy.graphics import Color, Rectangle, RoundedRectangle
+from kivy.metrics import dp
 
 
 # Salad green button color
 BUTTON_COLOR = (0.55, 0.78, 0.4, 1)
 BUTTON_COLOR_DOWN = (0.45, 0.68, 0.3, 1)  # Darker when pressed
-BUTTON_RADIUS = 15
+BUTTON_RADIUS = dp(12)
 
 
 class RoundedButton(ButtonBehavior, Label):
@@ -56,37 +57,39 @@ class MainMenuScreen(Screen):
         root.add_widget(overlay)
 
         # Main content layout
-        layout = BoxLayout(orientation='vertical', padding=20, spacing=15)
+        layout = BoxLayout(orientation='vertical', padding=dp(20), spacing=dp(12))
 
-        # Top spacer (pushes content below the splash image title + 90px)
-        layout.add_widget(BoxLayout(size_hint_y=None, height=90))
-        layout.add_widget(BoxLayout(size_hint_y=0.25))
+        # Top spacer (pushes content below the splash image title)
+        layout.add_widget(BoxLayout(size_hint_y=None, height=dp(70)))
+        layout.add_widget(BoxLayout(size_hint_y=0.2))
 
         # Daily puzzles section
         layout.add_widget(Label(
             text="Today's Puzzles",
-            font_size='24sp',
+            font_name='DMSansBlack',
+            font_size='20sp',
             color=(0.3, 0.3, 0.3, 1),
             size_hint_y=None,
-            height=50
+            height=dp(40)
         ))
 
-        daily_buttons = BoxLayout(size_hint_y=None, height=60, spacing=10)
+        daily_buttons = BoxLayout(size_hint_y=None, height=dp(48), spacing=dp(10))
         for size in [6, 7, 8]:
-            btn = RoundedButton(text=f'{size}x{size}', font_size='20sp')
+            btn = RoundedButton(text=f'{size}x{size}', font_size='18sp', font_name='DMSans')
             btn.bind(on_press=lambda x, s=size: self.app.start_daily_game(s))
             daily_buttons.add_widget(btn)
         layout.add_widget(daily_buttons)
 
         # Spacer before middle buttons
-        layout.add_widget(BoxLayout(size_hint_y=0.35))
+        layout.add_widget(BoxLayout(size_hint_y=0.25))
 
         # Calendar button
         calendar_btn = RoundedButton(
             text='Calendar',
-            font_size='20sp',
+            font_name='DMSans',
+            font_size='18sp',
             size_hint_y=None,
-            height=60
+            height=dp(48)
         )
         calendar_btn.bind(on_press=self.app.show_calendar)
         layout.add_widget(calendar_btn)
@@ -94,9 +97,10 @@ class MainMenuScreen(Screen):
         # Random game button
         random_btn = RoundedButton(
             text='Random Game',
-            font_size='20sp',
+            font_name='DMSans',
+            font_size='18sp',
             size_hint_y=None,
-            height=60
+            height=dp(48)
         )
         random_btn.bind(on_press=self.app.start_random_game)
         layout.add_widget(random_btn)
@@ -104,22 +108,24 @@ class MainMenuScreen(Screen):
         # Load shared puzzle button
         load_btn = RoundedButton(
             text='Load Shared Puzzle',
-            font_size='20sp',
+            font_name='DMSans',
+            font_size='18sp',
             size_hint_y=None,
-            height=60
+            height=dp(48)
         )
         load_btn.bind(on_press=self.app.show_load_popup)
         layout.add_widget(load_btn)
 
         # Spacer
-        layout.add_widget(BoxLayout(size_hint_y=0.3))
+        layout.add_widget(BoxLayout(size_hint_y=0.2))
 
         # Exit button
         exit_btn = RoundedButton(
             text='Exit',
-            font_size='20sp',
+            font_name='DMSans',
+            font_size='18sp',
             size_hint_y=None,
-            height=60
+            height=dp(48)
         )
         exit_btn.bind(on_press=self.app.exit_app)
         layout.add_widget(exit_btn)

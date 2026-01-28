@@ -169,11 +169,11 @@ class BoardWidget(Widget):
                             # Rotation: 0 to 360 degrees
                             rotation = eased * 360
 
-                            # Scale pulse: 1.0 -> 1.5 -> 1.0
+                            # Scale pulse: 1.0 -> 2.0 -> 1.0
                             if progress < 0.5:
-                                scale = 1.0 + 0.5 * (progress * 2)
+                                scale = 1.0 + 1.0 * (progress * 2)
                             else:
-                                scale = 1.5 - 0.5 * ((progress - 0.5) * 2)
+                                scale = 2.0 - 1.0 * ((progress - 0.5) * 2)
 
                             # Golden color
                             Color(1.0, 0.85, 0.2, 1)
@@ -186,6 +186,12 @@ class BoardWidget(Widget):
                             Translate(-size/2, -size/2, 0)
                             Rectangle(pos=(0, 0), size=(size, size), texture=QUEEN_TEXTURE)
                             PopMatrix()
+                        elif self.solved:
+                            # Keep golden after celebration
+                            Color(1.0, 0.85, 0.2, 1)
+                            qx = x + (cell_w - size) / 2
+                            qy = y + (cell_h - size) / 2
+                            Rectangle(pos=(qx, qy), size=(size, size), texture=QUEEN_TEXTURE)
                         else:
                             # Normal drawing
                             if is_conflict:

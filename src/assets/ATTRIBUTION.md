@@ -1,5 +1,15 @@
 # Asset Attribution
 
+## Fonts
+
+- DM Sans (Regular, Bold, Black)
+
+**Source:** [Google Fonts](https://fonts.google.com/specimen/DM+Sans)
+
+**Designer:** Colophon Foundry
+
+**License:** SIL Open Font License 1.1
+
 ## Material Design Icons
 
 The following icons are from [Google Material Design Icons](https://github.com/google/material-design-icons):

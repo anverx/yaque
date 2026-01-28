@@ -1,11 +1,25 @@
 import threading
+import os
 from datetime import date
 
 from kivy.app import App
 from kivy.uix.screenmanager import ScreenManager, FadeTransition
 from kivy.core.window import Window
+from kivy.core.text import LabelBase
 from kivy.clock import Clock
 from kivy.utils import platform
+
+# Register DM Sans font
+FONTS_DIR = os.path.join(os.path.dirname(__file__), 'assets', 'fonts')
+LabelBase.register(
+    name='DMSans',
+    fn_regular=os.path.join(FONTS_DIR, 'DMSans-Regular.ttf'),
+    fn_bold=os.path.join(FONTS_DIR, 'DMSans-Bold.ttf')
+)
+LabelBase.register(
+    name='DMSansBlack',
+    fn_regular=os.path.join(FONTS_DIR, 'DMSans-Black.ttf')
+)
 
 from game import Game, get_daily_game
 from screens import (
@@ -28,7 +42,8 @@ if platform == 'android':
 if platform in ('android', 'ios'):
     Window.fullscreen = 'auto'
 else:
-    Window.size = (400, 700)  # Vertical phone-like aspect ratio
+    # Simulate phone resolution for testing (e.g., 1080x1920 at ~3x density)
+    Window.size = (360, 640)  # Logical phone resolution
 
 # Light background
 Window.clearcolor = (0.95, 0.95, 0.95, 1)
