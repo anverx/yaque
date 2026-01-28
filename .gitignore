@@ -27,6 +27,7 @@ ENV/
 # Buildozer
 .buildozer/
 bin/
+*.keystore
 
 # OS
 .DS_Store
