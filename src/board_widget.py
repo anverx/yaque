@@ -35,7 +35,8 @@ KINGDOM_COLORS = [
 class BoardWidget(Widget):
     def __init__(self, kingdoms: List[List[int]], queens: List[Tuple[int, int]],
                  on_cell_click: Optional[Callable[[int, int], None]] = None,
-                 on_solved: Optional[Callable[[], None]] = None, **kwargs):
+                 on_solved: Optional[Callable[[], None]] = None,
+                 on_hidden_click: Optional[Callable[[], None]] = None, **kwargs):
         super().__init__(**kwargs)
         self.kingdoms = kingdoms
         self.queens = queens
@@ -43,6 +44,7 @@ class BoardWidget(Widget):
         self.size_cells = len(kingdoms)
         self.on_cell_click = on_cell_click
         self.on_solved = on_solved
+        self.on_hidden_click = on_hidden_click
         self.solved = False
         # Track cell marks: 0=empty, 1=circle, 2=queen
         self.cell_marks = [[MARK_EMPTY] * self.size_cells for _ in range(self.size_cells)]
@@ -357,6 +359,9 @@ class BoardWidget(Widget):
 
     def on_touch_down(self, touch):
         if self.hidden:
+            if self.collide_point(*touch.pos) and self.on_hidden_click:
+                self.on_hidden_click()
+                return True
             return super().on_touch_down(touch)
         if self.collide_point(*touch.pos):
             cell_w = self.width / self.size_cells

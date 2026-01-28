@@ -163,6 +163,7 @@ class GameScreen(Screen):
             queens=game.queens,
             on_cell_click=self.on_cell_click,
             on_solved=self.on_puzzle_solved,
+            on_hidden_click=lambda: self.toggle_play_pause(None),
             size_hint=(None, None)
         )
         # Insert board behind QR overlay
