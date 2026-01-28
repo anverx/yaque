@@ -78,6 +78,14 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-gradle-
 
+      - name: Restore debug keystore
+        if: ${{ env.DEBUG_KEYSTORE != '' }}
+        env:
+          DEBUG_KEYSTORE: ${{ secrets.DEBUG_KEYSTORE }}
+        run: |
+          echo "$DEBUG_KEYSTORE" | base64 -d > debug.keystore
+          echo "Debug keystore restored from secrets"
+
       - name: Build APK
         env:
           # Ensure Cython<3 is used throughout the build
@@ -88,6 +96,15 @@ jobs:
 
           # Also install cython in the user site-packages that p4a might use
           pip install --user 'Cython<3'
+
+          # Generate debug keystore if not provided via secrets
+          if [ ! -f debug.keystore ]; then
+            echo "Generating new debug keystore..."
+            keytool -genkey -v -keystore debug.keystore -alias androiddebugkey \
+              -keyalg RSA -keysize 2048 -validity 10000 \
+              -storepass android -keypass android \
+              -dname "CN=Debug, OU=Debug, O=Debug, L=Debug, ST=Debug, C=US"
+          fi
 
           yes | buildozer android debug 2>&1 | tee build.log || true
           # Check if APK was created

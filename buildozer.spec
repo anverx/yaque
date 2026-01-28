@@ -51,6 +51,13 @@ android.manifest.intent_filters = intent_filters.xml
 # Presplash color
 android.presplash_color = #F2F2F2
 
+# Debug keystore (for consistent signing across builds)
+# On CI, this file is restored from secrets; locally you can create your own
+android.debug_keystore = %(source.dir)s/../debug.keystore
+android.debug_keystore_alias = androiddebugkey
+android.debug_keystore_passwd = android
+android.debug_keyalias_passwd = android
+
 # App icon (place icon.png in source directory)
 # icon.filename = %(source.dir)s/assets/images/icon.png
 
