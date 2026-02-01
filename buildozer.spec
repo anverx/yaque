@@ -59,7 +59,7 @@ android.debug_keystore_passwd = android
 android.debug_keyalias_passwd = android
 
 # App icon (place icon.png in source directory)
-# icon.filename = %(source.dir)s/assets/images/icon.png
+icon.filename = %(source.dir)s/assets/images/icon.png
 
 # Presplash image
 # presplash.filename = %(source.dir)s/assets/images/splashscreen.jpg
