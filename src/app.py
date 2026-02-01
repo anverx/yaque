@@ -29,7 +29,7 @@ from screens import (
     DatePuzzlesScreen,
     GameScreen,
 )
-from popups import show_share_popup, show_load_popup, LoadingPopup
+from popups import show_share_popup, show_load_popup, show_game_size_popup, LoadingPopup
 
 # Android intent handling
 if platform == 'android':
@@ -172,10 +172,15 @@ class YaqueApp(App):
         threading.Thread(target=generate, daemon=True).start()
 
     def start_random_game(self, instance):
-        self._show_loading_popup('Finding the perfect puzzle...')
+        """Show size selection popup, then generate random game."""
+        show_game_size_popup(self._start_random_game_with_size)
+
+    def _start_random_game_with_size(self, size):
+        """Generate a random game with the selected size."""
+        self._show_loading_popup(f'Finding the perfect {size}x{size} puzzle...')
 
         def generate():
-            game = Game(7, max_solutions=1)
+            game = Game(size, max_solutions=1)
             if not self._generation_cancelled:
                 Clock.schedule_once(lambda dt: self._on_game_ready(game))
 

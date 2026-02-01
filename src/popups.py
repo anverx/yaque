@@ -10,6 +10,7 @@ from kivy.uix.textinput import TextInput
 from kivy.uix.popup import Popup
 from kivy.uix.widget import Widget
 from kivy.uix.modalview import ModalView
+from kivy.uix.behaviors import ButtonBehavior
 from kivy.core.image import Image as CoreImage
 from kivy.core.clipboard import Clipboard
 from kivy.clock import Clock
@@ -19,6 +20,50 @@ from kivy.metrics import dp
 from game import Game
 
 ICONS_DIR = os.path.join(os.path.dirname(__file__), 'assets', 'icons')
+
+# Salad green button colors (matching menu.py)
+BUTTON_COLOR = (0.55, 0.78, 0.4, 1)
+BUTTON_COLOR_DOWN = (0.45, 0.68, 0.3, 1)
+BUTTON_RADIUS = dp(12)
+
+
+class RoundedButton(ButtonBehavior, Label):
+    """A button with rounded corners - green style matching main menu."""
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.background_color = BUTTON_COLOR
+        self._update_bg()
+        self.bind(pos=self._update_bg, size=self._update_bg, state=self._update_bg)
+
+    def _update_bg(self, *args):
+        self.canvas.before.clear()
+        with self.canvas.before:
+            if self.state == 'down':
+                Color(*BUTTON_COLOR_DOWN)
+            else:
+                Color(*self.background_color)
+            from kivy.graphics import RoundedRectangle
+            RoundedRectangle(pos=self.pos, size=self.size, radius=[BUTTON_RADIUS])
+
+
+class GrayRoundedButton(ButtonBehavior, Label):
+    """A button with rounded corners - gray style for cancel buttons."""
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.background_color = (0.75, 0.75, 0.75, 1)
+        self.background_color_down = (0.6, 0.6, 0.6, 1)
+        self._update_bg()
+        self.bind(pos=self._update_bg, size=self._update_bg, state=self._update_bg)
+
+    def _update_bg(self, *args):
+        self.canvas.before.clear()
+        with self.canvas.before:
+            if self.state == 'down':
+                Color(*self.background_color_down)
+            else:
+                Color(*self.background_color)
+            from kivy.graphics import RoundedRectangle
+            RoundedRectangle(pos=self.pos, size=self.size, radius=[BUTTON_RADIUS])
 
 
 def show_share_popup(share_url, code):
@@ -300,3 +345,71 @@ class LoadingPopup(ModalView):
         if self.on_cancel_callback:
             self.on_cancel_callback()
         self.dismiss()
+
+
+def show_game_size_popup(on_size_selected):
+    """Show popup for selecting game size.
+
+    Args:
+        on_size_selected: Callback function that receives the selected size (int)
+    """
+    content = BoxLayout(orientation='vertical', padding=dp(15), spacing=dp(12))
+
+    # Title
+    content.add_widget(Label(
+        text='Select Puzzle Size',
+        font_name='DMSansBlack',
+        font_size='18sp',
+        color=(0.3, 0.3, 0.3, 1),
+        size_hint_y=None,
+        height=dp(40)
+    ))
+
+    popup = None  # Will be set after creation
+
+    def make_callback(size):
+        def callback(btn):
+            popup.dismiss()
+            on_size_selected(size)
+        return callback
+
+    # Size buttons in a grid (2x2)
+    row1 = BoxLayout(size_hint_y=None, height=dp(50), spacing=dp(10))
+    row2 = BoxLayout(size_hint_y=None, height=dp(50), spacing=dp(10))
+
+    for size, row in [(6, row1), (7, row1), (8, row2), (9, row2)]:
+        btn = RoundedButton(
+            text=f'{size}x{size}',
+            font_name='DMSans',
+            font_size='18sp',
+            color=(1, 1, 1, 1)
+        )
+        btn.bind(on_press=make_callback(size))
+        row.add_widget(btn)
+
+    content.add_widget(row1)
+    content.add_widget(row2)
+
+    # Spacer
+    content.add_widget(Widget(size_hint_y=None, height=dp(5)))
+
+    # Cancel button (gray)
+    cancel_btn = GrayRoundedButton(
+        text='Cancel',
+        font_name='DMSans',
+        font_size='16sp',
+        color=(0.3, 0.3, 0.3, 1),
+        size_hint_y=None,
+        height=dp(44)
+    )
+    content.add_widget(cancel_btn)
+
+    popup = ModalView(
+        size_hint=(0.8, None),
+        height=dp(280),
+        auto_dismiss=True,
+        background_color=(1, 1, 1, 0.95)
+    )
+    popup.add_widget(content)
+    cancel_btn.bind(on_press=popup.dismiss)
+    popup.open()
