@@ -61,6 +61,10 @@ android.debug_keyalias_passwd = android
 # App icon (place icon.png in source directory)
 icon.filename = %(source.dir)s/assets/images/icon.png
 
+# Adaptive icon for Android (foreground + background layers)
+icon.adaptive_foreground.filename = %(source.dir)s/assets/images/icon_foreground.png
+icon.adaptive_background.filename = %(source.dir)s/assets/images/icon_background.png
+
 # Presplash image
 # presplash.filename = %(source.dir)s/assets/images/splashscreen.jpg
 
