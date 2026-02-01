@@ -1,16 +1,24 @@
 import io
+import os
 
 from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.label import Label
 from kivy.uix.button import Button
 from kivy.uix.image import Image
 from kivy.uix.textinput import TextInput
 from kivy.uix.popup import Popup
+from kivy.uix.widget import Widget
+from kivy.uix.modalview import ModalView
 from kivy.core.image import Image as CoreImage
 from kivy.core.clipboard import Clipboard
 from kivy.clock import Clock
+from kivy.graphics import Color, Ellipse, Rectangle, PushMatrix, PopMatrix, Rotate, Line
+from kivy.metrics import dp
 
 from game import Game
+
+ICONS_DIR = os.path.join(os.path.dirname(__file__), 'assets', 'icons')
 
 
 def show_share_popup(share_url, code):
@@ -183,3 +191,112 @@ def show_load_popup(on_game_loaded):
     )
     cancel_btn.bind(on_press=popup.dismiss)
     popup.open()
+
+
+class LoadingPopup(ModalView):
+    """A loading popup with spinning queen animation."""
+
+    def __init__(self, on_cancel=None, **kwargs):
+        super().__init__(**kwargs)
+        self.size_hint = (0.7, 0.4)
+        self.auto_dismiss = False
+        self.background_color = (1, 1, 1, 0.95)
+        self.on_cancel_callback = on_cancel
+        self.rotation_angle = 0
+        self._animation_event = None
+
+        # Load queen texture once
+        self.queen_texture = CoreImage(os.path.join(ICONS_DIR, 'queen.png')).texture
+
+        # Main layout
+        layout = BoxLayout(orientation='vertical', padding=dp(20), spacing=dp(15))
+
+        # Spinner widget (custom drawing)
+        self.spinner_widget = Widget(size_hint=(1, 1))
+        self.spinner_widget.bind(pos=self._update_spinner, size=self._update_spinner)
+        layout.add_widget(self.spinner_widget)
+
+        # Status label
+        self.status_label = Label(
+            text='Generating puzzle...',
+            font_name='DMSans',
+            font_size='14sp',
+            color=(0.3, 0.3, 0.3, 1),
+            size_hint_y=None,
+            height=dp(30)
+        )
+        layout.add_widget(self.status_label)
+
+        # Cancel button
+        cancel_btn = Button(
+            text='Cancel',
+            font_name='DMSans',
+            size_hint=(None, None),
+            size=(dp(100), dp(40)),
+            pos_hint={'center_x': 0.5}
+        )
+        cancel_btn.bind(on_press=self._on_cancel)
+        layout.add_widget(cancel_btn)
+
+        self.add_widget(layout)
+
+    def _update_spinner(self, *args):
+        """Redraw the spinning queen."""
+        self.spinner_widget.canvas.clear()
+
+        w, h = self.spinner_widget.size
+        x, y = self.spinner_widget.pos
+        cx, cy = x + w / 2, y + h / 2
+
+        circle_radius = min(w, h) / 2 * 0.7
+        queen_size = circle_radius * 1.3
+
+        with self.spinner_widget.canvas:
+            # White circle background
+            Color(1, 1, 1, 1)
+            Ellipse(pos=(cx - circle_radius, cy - circle_radius),
+                   size=(circle_radius * 2, circle_radius * 2))
+
+            # Light gray border
+            Color(0.8, 0.8, 0.8, 1)
+            Line(ellipse=(cx - circle_radius, cy - circle_radius,
+                         circle_radius * 2, circle_radius * 2), width=dp(2))
+
+            # Spinning queen
+            PushMatrix()
+            Rotate(angle=self.rotation_angle, origin=(cx, cy))
+            Color(1, 1, 1, 1)
+            Rectangle(
+                pos=(cx - queen_size / 2, cy - queen_size / 2),
+                size=(queen_size, queen_size),
+                texture=self.queen_texture
+            )
+            PopMatrix()
+
+    def _animate(self, dt):
+        """Animation tick - rotate the queen."""
+        self.rotation_angle = (self.rotation_angle + 3) % 360
+        self._update_spinner()
+
+    def set_status(self, text):
+        """Update the status text."""
+        self.status_label.text = text
+
+    def open(self, *args, **kwargs):
+        """Start animation when popup opens."""
+        super().open(*args, **kwargs)
+        self.rotation_angle = 0
+        self._animation_event = Clock.schedule_interval(self._animate, 1/60)
+
+    def dismiss(self, *args, **kwargs):
+        """Stop animation when popup closes."""
+        if self._animation_event:
+            self._animation_event.cancel()
+            self._animation_event = None
+        super().dismiss(*args, **kwargs)
+
+    def _on_cancel(self, instance):
+        """Handle cancel button press."""
+        if self.on_cancel_callback:
+            self.on_cancel_callback()
+        self.dismiss()

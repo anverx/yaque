@@ -29,7 +29,7 @@ from screens import (
     DatePuzzlesScreen,
     GameScreen,
 )
-from popups import show_share_popup, show_load_popup
+from popups import show_share_popup, show_load_popup, LoadingPopup
 
 # Android intent handling
 if platform == 'android':
@@ -65,6 +65,10 @@ class YaqueApp(App):
         self.sm.add_widget(self.calendar_screen)
         self.sm.add_widget(self.date_puzzles_screen)
         self.sm.add_widget(self.game_screen)
+
+        # Loading popup (reusable)
+        self.loading_popup = None
+        self._generation_cancelled = False
 
         # Start with splash screen
         self.sm.current = 'splash'
@@ -142,31 +146,50 @@ class YaqueApp(App):
     # Game generation
     # -------------------------------------------------------------------------
 
+    def _show_loading_popup(self, status_text):
+        """Show the loading popup with spinning queen."""
+        self._generation_cancelled = False
+        self.loading_popup = LoadingPopup(on_cancel=self.cancel_generation)
+        self.loading_popup.set_status(status_text)
+        self.loading_popup.open()
+
+    def _dismiss_loading_popup(self):
+        """Dismiss the loading popup if open."""
+        if self.loading_popup:
+            self.loading_popup.dismiss()
+            self.loading_popup = None
+
     def start_daily_game(self, size, puzzle_date=None):
         if puzzle_date is None:
             puzzle_date = date.today()
-        self.splash_screen.set_status(f'Generating {size}x{size} puzzle...')
-        self.sm.current = 'splash'
+        self._show_loading_popup(f'Generating {size}x{size} puzzle...')
 
         def generate():
             game = get_daily_game(puzzle_date, size, max_solutions=4)
-            Clock.schedule_once(lambda dt: self._on_game_ready(game))
+            if not self._generation_cancelled:
+                Clock.schedule_once(lambda dt: self._on_game_ready(game))
 
         threading.Thread(target=generate, daemon=True).start()
 
     def start_random_game(self, instance):
-        self.splash_screen.set_status('Finding the perfect puzzle...')
-        self.sm.current = 'splash'
+        self._show_loading_popup('Finding the perfect puzzle...')
 
         def generate():
             game = Game(7, max_solutions=1)
-            Clock.schedule_once(lambda dt: self._on_game_ready(game))
+            if not self._generation_cancelled:
+                Clock.schedule_once(lambda dt: self._on_game_ready(game))
 
         threading.Thread(target=generate, daemon=True).start()
 
     def _on_game_ready(self, game):
-        self.game_screen.set_game(game)
-        self.sm.current = 'game'
+        if not self._generation_cancelled:
+            self._dismiss_loading_popup()
+            self.game_screen.set_game(game)
+            self.sm.current = 'game'
+
+    def cancel_generation(self):
+        """Cancel ongoing game generation."""
+        self._generation_cancelled = True
 
     # -------------------------------------------------------------------------
     # Popups
