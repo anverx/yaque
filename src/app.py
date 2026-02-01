@@ -3,6 +3,7 @@ import os
 from datetime import date
 
 from kivy.app import App
+import database
 from kivy.uix.screenmanager import ScreenManager, FadeTransition
 from kivy.core.window import Window
 from kivy.core.text import LabelBase
@@ -51,6 +52,9 @@ Window.clearcolor = (0.95, 0.95, 0.95, 1)
 
 class YaqueApp(App):
     def build(self):
+        # Initialize database
+        database.init_db(self.user_data_dir)
+
         self.sm = ScreenManager(transition=FadeTransition())
 
         # Create screens
@@ -167,7 +171,7 @@ class YaqueApp(App):
         def generate():
             game = get_daily_game(puzzle_date, size, max_solutions=4)
             if not self._generation_cancelled:
-                Clock.schedule_once(lambda dt: self._on_game_ready(game))
+                Clock.schedule_once(lambda dt: self._on_game_ready(game, daily_date=puzzle_date))
 
         threading.Thread(target=generate, daemon=True).start()
 
@@ -186,10 +190,10 @@ class YaqueApp(App):
 
         threading.Thread(target=generate, daemon=True).start()
 
-    def _on_game_ready(self, game):
+    def _on_game_ready(self, game, daily_date=None):
         if not self._generation_cancelled:
             self._dismiss_loading_popup()
-            self.game_screen.set_game(game)
+            self.game_screen.set_game(game, daily_date=daily_date)
             self.sm.current = 'game'
 
     def cancel_generation(self):
@@ -212,6 +216,9 @@ class YaqueApp(App):
 
     def exit_app(self, instance):
         App.get_running_app().stop()
+
+    def on_stop(self):
+        database.close_db()
 
 
 if __name__ == "__main__":

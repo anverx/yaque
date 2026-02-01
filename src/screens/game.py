@@ -13,6 +13,7 @@ from kivy.metrics import dp, sp
 from kivy.utils import platform
 
 from board_widget import BoardWidget
+import database
 
 
 # Path to icons directory
@@ -150,8 +151,23 @@ class GameScreen(Screen):
         self.timer_event = None
         self.is_playing = False
 
-    def set_game(self, game):
+        # Play tracking
+        self.puzzle_id = None
+        self.play_id = None
+
+    def set_game(self, game, daily_date=None):
         self.game = game
+
+        # Save puzzle to database
+        code = game.encode()
+        daily_date_str = daily_date.isoformat() if daily_date else None
+        self.puzzle_id = database.save_puzzle(
+            code=code,
+            size=game.size,
+            daily_date=daily_date_str,
+            seed=getattr(game, 'seed', None)
+        )
+        self.play_id = None  # Will be set when play starts
 
         # Remove old board if exists
         if self.board:
@@ -232,6 +248,9 @@ class GameScreen(Screen):
             self.play_btn.set_icon('pause', 'Pause')
             self.qr_image.opacity = 0
             if not self.board.solved:
+                # Start a new play session if not already started
+                if self.play_id is None and self.puzzle_id is not None:
+                    self.play_id = database.start_play(self.puzzle_id)
                 self.timer_event = Clock.schedule_interval(self._tick, 1)
 
         self.board.draw_board()
@@ -249,6 +268,12 @@ class GameScreen(Screen):
         if self.timer_event:
             self.timer_event.cancel()
             self.timer_event = None
+
+        # Record completion in database
+        if self.play_id is not None:
+            duration_ms = self.elapsed_time * 1000
+            database.complete_play(self.play_id, duration_ms)
+
         # Keep board visible when solved
         self.is_playing = False
         self.play_btn.set_icon('queen', 'Solved!')  # Show queen icon when solved
@@ -299,6 +324,9 @@ class GameScreen(Screen):
             self.timer_event = None
         self.elapsed_time = 0
         self._update_clock_display()
+
+        # Reset play tracking (new play will start when user presses play)
+        self.play_id = None
 
         # Return to initial paused state
         self.is_playing = False
