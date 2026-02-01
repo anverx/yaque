@@ -10,12 +10,14 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 
 from game import (
     Game,
+    get_daily_seed,
+    get_daily_game,
+)
+from encoding import (
     encode_game,
     decode_game,
     encode_game_b64,
     decode_game_b64,
-    get_daily_seed,
-    get_daily_game,
     _bits_needed,
     _pack_bits,
     _unpack_bits,
