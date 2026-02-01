@@ -13,7 +13,7 @@ package.domain = com.yaque
 source.dir = src
 
 # Source files to include
-source.include_exts = py,png,jpg,kv,atlas,json
+source.include_exts = py,png,jpg,kv,atlas,json,ttf
 
 # Application versioning
 version = 0.1
