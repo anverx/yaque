@@ -3,7 +3,7 @@ import hashlib
 from datetime import date
 from typing import List, Tuple, Optional, Dict
 
-from encoding import encode_game, encode_game_b64, decode_game_b64
+from game_encoding import encode_game, encode_game_b64, decode_game_b64
 
 class Game:
 
