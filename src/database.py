@@ -347,8 +347,18 @@ def is_daily_completed(daily_date: str, size: int) -> bool:
 
 
 def get_daily_completion_status(daily_date: str) -> Dict[int, bool]:
-    """Get completion status for all sizes on a given date."""
-    return {
-        size: is_daily_completed(daily_date, size)
-        for size in [6, 7, 8]
-    }
+    """Get completion status for all sizes on a given date (single query)."""
+    cursor = _connection.cursor()
+    cursor.execute('''
+        SELECT pz.size, MAX(p.completed) as won
+        FROM puzzles pz
+        LEFT JOIN plays p ON p.puzzle_id = pz.id AND p.completed = 1
+        WHERE pz.daily_date = ?
+        GROUP BY pz.size
+    ''', (daily_date,))
+
+    # Start with all sizes as incomplete
+    status = {6: False, 7: False, 8: False}
+    for row in cursor.fetchall():
+        status[row['size']] = row['won'] == 1
+    return status
