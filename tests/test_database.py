@@ -307,6 +307,35 @@ class TestDailyCompletion:
         assert status[7] is False
         assert status[8] is True
 
+    def test_get_daily_completion_status_started_not_finished(self, temp_db):
+        """Puzzle started but not completed should show as incomplete."""
+        p7 = database.save_puzzle(code='D7', size=7, daily_date='2025-06-15')
+        database.start_play(p7)  # Started but not completed
+
+        status = database.get_daily_completion_status('2025-06-15')
+
+        assert status[7] is False
+
+    def test_get_daily_completion_status_no_puzzles(self, temp_db):
+        """Should return all False when no puzzles exist for date."""
+        status = database.get_daily_completion_status('2025-01-01')
+
+        assert status[6] is False
+        assert status[7] is False
+        assert status[8] is False
+
+    def test_get_daily_completion_status_different_dates(self, temp_db):
+        """Completions on other dates should not affect today's status."""
+        # Complete puzzle on different date
+        p_other = database.save_puzzle(code='OTHER', size=7, daily_date='2025-06-14')
+        play_other = database.start_play(p_other)
+        database.complete_play(play_other, duration_ms=30000)
+
+        # Check today's status (no puzzles)
+        status = database.get_daily_completion_status('2025-06-15')
+
+        assert status[7] is False
+
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
