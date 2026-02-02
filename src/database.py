@@ -1,7 +1,6 @@
 """Local SQLite database for storing puzzles and play history."""
 
 import sqlite3
-import json
 import os
 from datetime import datetime
 from typing import Optional, List, Dict, Any
@@ -142,6 +141,19 @@ def close_db() -> None:
         _connection = None
 
 
+def reset_db() -> None:
+    """Wipe and rebuild the database from scratch."""
+    global _connection, _db_path
+    if _connection:
+        _connection.close()
+        _connection = None
+    if _db_path and os.path.exists(_db_path):
+        os.remove(_db_path)
+        _connection = sqlite3.connect(_db_path, check_same_thread=False)
+        _connection.row_factory = sqlite3.Row
+        _create_tables()
+
+
 # -----------------------------------------------------------------------------
 # Puzzle operations
 # -----------------------------------------------------------------------------
@@ -190,6 +202,17 @@ def get_daily_puzzles(daily_date: str) -> List[Dict[str, Any]]:
         (daily_date,)
     )
     return [dict(row) for row in cursor.fetchall()]
+
+
+def get_daily_puzzle(daily_date: str, size: int) -> Optional[Dict[str, Any]]:
+    """Get a specific daily puzzle by date and size."""
+    cursor = _connection.cursor()
+    cursor.execute(
+        'SELECT * FROM puzzles WHERE daily_date = ? AND size = ?',
+        (daily_date, size)
+    )
+    row = cursor.fetchone()
+    return dict(row) if row else None
 
 
 # -----------------------------------------------------------------------------
@@ -304,10 +327,15 @@ def get_recent_plays(limit: int = 10) -> List[Dict[str, Any]]:
 # Game state operations
 # -----------------------------------------------------------------------------
 
-def save_game_state(play_id: int, elapsed_seconds: int, cell_marks: List[List[int]]) -> None:
-    """Save the current game state for resuming later."""
+def save_game_state(play_id: int, elapsed_seconds: int, board_state: str) -> None:
+    """Save the current game state for resuming later.
+
+    Args:
+        play_id: The play session ID
+        elapsed_seconds: Time elapsed in seconds
+        board_state: Encoded board state string (from game_encoding.encode_board_state)
+    """
     cursor = _connection.cursor()
-    board_state = json.dumps(cell_marks)
     cursor.execute('''
         UPDATE plays
         SET elapsed_seconds = ?, board_state = ?
@@ -317,7 +345,10 @@ def save_game_state(play_id: int, elapsed_seconds: int, cell_marks: List[List[in
 
 
 def get_incomplete_play(puzzle_id: int) -> Optional[Dict[str, Any]]:
-    """Get the most recent incomplete play for a puzzle (for resuming)."""
+    """Get the most recent incomplete play for a puzzle (for resuming).
+
+    Returns dict with board_state as encoded string (use game_encoding.decode_board_state).
+    """
     cursor = _connection.cursor()
     cursor.execute('''
         SELECT * FROM plays
@@ -326,12 +357,23 @@ def get_incomplete_play(puzzle_id: int) -> Optional[Dict[str, Any]]:
         LIMIT 1
     ''', (puzzle_id,))
     row = cursor.fetchone()
-    if row:
-        result = dict(row)
-        if result.get('board_state'):
-            result['board_state'] = json.loads(result['board_state'])
-        return result
-    return None
+    return dict(row) if row else None
+
+
+def get_latest_play(puzzle_id: int) -> Optional[Dict[str, Any]]:
+    """Get the most recent play for a puzzle (completed or not).
+
+    Returns dict with board_state as encoded string (use game_encoding.decode_board_state).
+    """
+    cursor = _connection.cursor()
+    cursor.execute('''
+        SELECT * FROM plays
+        WHERE puzzle_id = ?
+        ORDER BY started_at DESC
+        LIMIT 1
+    ''', (puzzle_id,))
+    row = cursor.fetchone()
+    return dict(row) if row else None
 
 
 def is_daily_completed(daily_date: str, size: int) -> bool:

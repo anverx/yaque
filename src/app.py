@@ -163,15 +163,28 @@ class YaqueApp(App):
             self.loading_popup.dismiss()
             self.loading_popup = None
 
-    def start_daily_game(self, size, puzzle_date=None):
+    def start_daily_game(self, size, puzzle_date=None, from_calendar=False):
         if puzzle_date is None:
             puzzle_date = date.today()
+
+        # Check if puzzle already exists in database
+        existing = database.get_daily_puzzle(puzzle_date.isoformat(), size)
+        if existing:
+            # Load from database - no need to generate
+            game = Game.from_code(existing['code'])
+            game.seed = existing.get('seed')
+            self._on_game_ready(game, daily_date=puzzle_date, from_calendar=from_calendar)
+            return
+
+        # Generate new puzzle
         self._show_loading_popup(f'Generating {size}x{size} puzzle...')
 
         def generate():
             game = get_daily_game(puzzle_date, size, max_solutions=4)
             if not self._generation_cancelled:
-                Clock.schedule_once(lambda dt: self._on_game_ready(game, daily_date=puzzle_date))
+                Clock.schedule_once(lambda dt: self._on_game_ready(
+                    game, daily_date=puzzle_date, from_calendar=from_calendar
+                ))
 
         threading.Thread(target=generate, daemon=True).start()
 
@@ -190,10 +203,10 @@ class YaqueApp(App):
 
         threading.Thread(target=generate, daemon=True).start()
 
-    def _on_game_ready(self, game, daily_date=None):
+    def _on_game_ready(self, game, daily_date=None, from_calendar=False):
         if not self._generation_cancelled:
             self._dismiss_loading_popup()
-            self.game_screen.set_game(game, daily_date=daily_date)
+            self.game_screen.set_game(game, daily_date=daily_date, from_calendar=from_calendar)
             self.sm.current = 'game'
 
     def cancel_generation(self):

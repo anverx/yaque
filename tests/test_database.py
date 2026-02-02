@@ -10,6 +10,7 @@ import shutil
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 
 import database
+import game_encoding
 
 
 @pytest.fixture
@@ -235,10 +236,12 @@ class TestGameState:
         play_id = database.start_play(puzzle_id)
 
         cell_marks = [[0, 1, 2], [1, 0, 2], [2, 1, 0]]
-        database.save_game_state(play_id, elapsed_seconds=45, cell_marks=cell_marks)
+        encoded = game_encoding.encode_board_state(cell_marks)
+        database.save_game_state(play_id, elapsed_seconds=45, board_state=encoded)
 
         play = database.get_play(play_id)
         assert play['elapsed_seconds'] == 45
+        assert play['board_state'] == encoded
 
     def test_get_incomplete_play(self, temp_db):
         """Should get the most recent incomplete play with board state."""
@@ -251,14 +254,17 @@ class TestGameState:
         # Incomplete play with state
         play2 = database.start_play(puzzle_id)
         cell_marks = [[0, 1], [2, 0]]
-        database.save_game_state(play2, elapsed_seconds=20, cell_marks=cell_marks)
+        encoded = game_encoding.encode_board_state(cell_marks)
+        database.save_game_state(play2, elapsed_seconds=20, board_state=encoded)
 
         incomplete = database.get_incomplete_play(puzzle_id)
 
         assert incomplete is not None
         assert incomplete['id'] == play2
         assert incomplete['elapsed_seconds'] == 20
-        assert incomplete['board_state'] == cell_marks
+        # Decode and compare
+        decoded = game_encoding.decode_board_state(incomplete['board_state'])
+        assert decoded == cell_marks
 
     def test_get_incomplete_play_none_when_all_complete(self, temp_db):
         """Should return None if all plays are complete."""
@@ -268,6 +274,45 @@ class TestGameState:
 
         incomplete = database.get_incomplete_play(puzzle_id)
         assert incomplete is None
+
+    def test_get_latest_play_returns_completed(self, temp_db):
+        """Should return latest play even if completed."""
+        puzzle_id = database.save_puzzle(code='STATE4', size=7)
+
+        # First play - completed
+        play1 = database.start_play(puzzle_id)
+        cell_marks = [[0, 1], [2, 0]]
+        encoded = game_encoding.encode_board_state(cell_marks)
+        database.save_game_state(play1, elapsed_seconds=30, board_state=encoded)
+        database.complete_play(play1, duration_ms=30000)
+
+        latest = database.get_latest_play(puzzle_id)
+
+        assert latest is not None
+        assert latest['id'] == play1
+        assert latest['completed'] == 1
+        decoded = game_encoding.decode_board_state(latest['board_state'])
+        assert decoded == cell_marks
+
+    def test_get_latest_play_returns_most_recent(self, temp_db):
+        """Should return the most recent play regardless of status."""
+        puzzle_id = database.save_puzzle(code='STATE5', size=7)
+
+        # First play - completed
+        play1 = database.start_play(puzzle_id)
+        database.complete_play(play1, duration_ms=30000)
+
+        # Second play - incomplete (most recent)
+        play2 = database.start_play(puzzle_id)
+        cell_marks = [[1, 0], [0, 1]]
+        encoded = game_encoding.encode_board_state(cell_marks)
+        database.save_game_state(play2, elapsed_seconds=15, board_state=encoded)
+
+        latest = database.get_latest_play(puzzle_id)
+
+        assert latest is not None
+        assert latest['id'] == play2
+        assert latest['completed'] == 0
 
 
 class TestDailyCompletion:

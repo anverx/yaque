@@ -195,3 +195,47 @@ def decode_game_b64(code: str) -> Tuple[List[List[int]], List[Tuple[int, int]]]:
         code += '=' * padding
     data = base64.urlsafe_b64decode(code)
     return decode_game(data)
+
+
+# -----------------------------------------------------------------------------
+# Board state encoding (for saving/restoring play progress)
+# -----------------------------------------------------------------------------
+
+def encode_board_state(cell_marks: List[List[int]]) -> str:
+    """
+    Encode board state to a compact base64 string.
+
+    Each cell can be: 0 (empty), 1 (queen), 2 (X/no-queen) = 2 bits per cell.
+    Format: 1 byte size + packed 2-bit cell values.
+
+    8x8: 1 + 16 = 17 bytes -> ~24 chars base64
+    7x7: 1 + 13 = 14 bytes -> ~20 chars base64
+    6x6: 1 + 9 = 10 bytes -> ~16 chars base64
+    """
+    n = len(cell_marks)
+    # Flatten to 1D list
+    values = [cell_marks[r][c] for r in range(n) for c in range(n)]
+
+    # Pack: size byte + 2 bits per cell
+    data = bytes([n]) + _pack_bits(values, 2)
+    return base64.urlsafe_b64encode(data).decode('ascii').rstrip('=')
+
+
+def decode_board_state(encoded: str) -> List[List[int]]:
+    """
+    Decode a base64 string back to 2D cell_marks array.
+
+    Returns list of lists with cell values (0=empty, 1=queen, 2=X).
+    """
+    # Add back padding if needed
+    padding = 4 - (len(encoded) % 4)
+    if padding != 4:
+        encoded += '=' * padding
+    data = base64.urlsafe_b64decode(encoded)
+
+    n = data[0]
+    num_cells = n * n
+    values = _unpack_bits(data[1:], num_cells, 2)
+
+    # Reshape to 2D
+    return [values[r * n:(r + 1) * n] for r in range(n)]
