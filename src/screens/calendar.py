@@ -1,4 +1,5 @@
 import calendar
+import os
 from datetime import date
 
 from kivy.uix.boxlayout import BoxLayout
@@ -13,11 +14,19 @@ from kivy.graphics import Color, Rectangle, RoundedRectangle
 from kivy.metrics import dp
 from kivy.utils import platform
 
+import database
+
+# Path to icons
+ICONS_DIR = os.path.join(os.path.dirname(__file__), '..', 'assets', 'icons')
 
 # Salad green button color (same as menu)
 BUTTON_COLOR = (0.55, 0.78, 0.4, 1)
 BUTTON_COLOR_DOWN = (0.45, 0.68, 0.3, 1)
 BUTTON_RADIUS = dp(12)
+
+# Queen icon colors
+QUEEN_GRAY = (0.6, 0.6, 0.6, 1)
+QUEEN_GOLD = (1.0, 0.84, 0.0, 1)
 
 
 class RoundedButton(ButtonBehavior, Label):
@@ -36,6 +45,56 @@ class RoundedButton(ButtonBehavior, Label):
             else:
                 Color(*self.background_color)
             RoundedRectangle(pos=self.pos, size=self.size, radius=[BUTTON_RADIUS])
+
+
+class DayCell(ButtonBehavior, BoxLayout):
+    """Calendar day cell with day number and 3 queen status icons."""
+    def __init__(self, day, completion_status=None, **kwargs):
+        super().__init__(orientation='vertical', **kwargs)
+        self.day = day
+        self.background_color = BUTTON_COLOR
+        self._update_bg()
+        self.bind(pos=self._update_bg, size=self._update_bg, state=self._update_bg)
+
+        # Day number
+        self.day_label = Label(
+            text=str(day),
+            font_name='DMSans',
+            font_size='14sp',
+            color=(1, 1, 1, 1),
+            size_hint_y=0.5
+        )
+        self.add_widget(self.day_label)
+
+        # Queen icons row
+        icons_row = BoxLayout(
+            orientation='horizontal',
+            size_hint_y=0.5,
+            spacing=dp(1),
+            padding=[dp(2), 0, dp(2), dp(2)]
+        )
+
+        self.queen_icons = []
+        for size in [6, 7, 8]:
+            completed = completion_status.get(size, False) if completion_status else False
+            icon = Image(
+                source=os.path.join(ICONS_DIR, 'queen-small.png'),
+                color=QUEEN_GOLD if completed else QUEEN_GRAY,
+                fit_mode='contain'
+            )
+            self.queen_icons.append(icon)
+            icons_row.add_widget(icon)
+
+        self.add_widget(icons_row)
+
+    def _update_bg(self, *args):
+        self.canvas.before.clear()
+        with self.canvas.before:
+            if self.state == 'down':
+                Color(*BUTTON_COLOR_DOWN)
+            else:
+                Color(*self.background_color)
+            RoundedRectangle(pos=self.pos, size=self.size, radius=[dp(8)])
 
 
 class CalendarScreen(Screen):
@@ -168,32 +227,43 @@ class CalendarScreen(Screen):
         today = date.today()
         cal = calendar.Calendar(firstweekday=0)  # Monday first
 
+        # Fetch completion status for entire month in one query
+        month_status = database.get_month_completion_status(self.current_year, self.current_month)
+
         for day in cal.itermonthdays(self.current_year, self.current_month):
             if day == 0:
                 # Empty cell
-                self.calendar_grid.add_widget(Label(text='', size_hint_y=None, height=dp(44)))
+                self.calendar_grid.add_widget(Label(text='', size_hint_y=None, height=dp(52)))
             else:
                 day_date = date(self.current_year, self.current_month, day)
-                btn = RoundedButton(
-                    text=str(day),
-                    font_name='DMSans',
-                    font_size='16sp',
+                date_str = day_date.isoformat()
+                completion_status = month_status.get(date_str, {6: False, 7: False, 8: False})
+
+                cell = DayCell(
+                    day=day,
+                    completion_status=completion_status,
                     size_hint_y=None,
-                    height=dp(44)
+                    height=dp(52)
                 )
+
                 # Disable future dates
                 if day_date > today:
-                    btn.disabled = True
-                    btn.opacity = 0.4
+                    cell.disabled = True
+                    cell.opacity = 0.4
                 else:
-                    btn.bind(on_press=lambda x, d=day_date: self.select_date(d))
+                    cell.bind(on_press=lambda x, d=day_date: self.select_date(d))
                     # Highlight today with slightly different color
                     if day_date == today:
-                        btn.background_color = (0.4, 0.7, 0.9, 1)
-                self.calendar_grid.add_widget(btn)
+                        cell.background_color = (0.4, 0.7, 0.9, 1)
+
+                self.calendar_grid.add_widget(cell)
 
     def select_date(self, selected_date):
         self.app.show_date_puzzles(selected_date)
+
+    def on_enter(self):
+        """Refresh calendar when screen is shown to reflect completion changes."""
+        self.refresh_calendar()
 
     # Swipe from left edge to go back to menu
     def on_touch_down(self, touch):

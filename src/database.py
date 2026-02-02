@@ -404,3 +404,30 @@ def get_daily_completion_status(daily_date: str) -> Dict[int, bool]:
     for row in cursor.fetchall():
         status[row['size']] = row['won'] == 1
     return status
+
+
+def get_month_completion_status(year: int, month: int) -> Dict[str, Dict[int, bool]]:
+    """Get completion status for all days in a month (single query).
+
+    Returns dict mapping date strings to {size: completed} dicts.
+    """
+    cursor = _connection.cursor()
+    # Match dates like '2026-02-%' for February 2026
+    date_pattern = f'{year:04d}-{month:02d}-%'
+
+    cursor.execute('''
+        SELECT pz.daily_date, pz.size, MAX(p.completed) as won
+        FROM puzzles pz
+        LEFT JOIN plays p ON p.puzzle_id = pz.id AND p.completed = 1
+        WHERE pz.daily_date LIKE ?
+        GROUP BY pz.daily_date, pz.size
+    ''', (date_pattern,))
+
+    result = {}
+    for row in cursor.fetchall():
+        date_str = row['daily_date']
+        if date_str not in result:
+            result[date_str] = {6: False, 7: False, 8: False}
+        result[date_str][row['size']] = row['won'] == 1
+
+    return result
