@@ -74,11 +74,21 @@ def _create_tables() -> None:
 
 
 def _run_migrations() -> None:
-    """Run any necessary schema migrations."""
-    current_version = int(get_config('schema_version', '0'))
+    """Run schema migrations for existing databases, or set version for new ones."""
+    existing_version = get_config('schema_version')
 
-    if current_version < 1:
-        # Migration 1: Add elapsed_seconds and board_state to plays
+    # New database - just set current schema version
+    if existing_version is None:
+        set_config('schema_version', str(SCHEMA_VERSION))
+        return
+
+    # Existing database - run migrations if needed
+    current_version = int(existing_version)
+    if current_version >= SCHEMA_VERSION:
+        return
+
+    # Migration 1 -> 2: Add elapsed_seconds and board_state to plays
+    if current_version < 2:
         cursor = _connection.cursor()
         cursor.execute("PRAGMA table_info(plays)")
         columns = {row[1] for row in cursor.fetchall()}
@@ -88,11 +98,10 @@ def _run_migrations() -> None:
             cursor.execute('ALTER TABLE plays ADD COLUMN board_state TEXT')
         _connection.commit()
 
-    if current_version < 2:
-        # Migration 2: (placeholder for future migrations)
-        pass
+    # Future migrations go here:
+    # if current_version < 3:
+    #     ...
 
-    # Update schema version
     set_config('schema_version', str(SCHEMA_VERSION))
 
 
