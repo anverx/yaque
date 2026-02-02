@@ -194,5 +194,87 @@ class TestStatistics:
         assert plays[0]['size'] == 7
 
 
+class TestGameState:
+    """Test game state save/restore operations."""
+
+    def test_save_game_state(self, temp_db):
+        """Should save board state and elapsed time."""
+        puzzle_id = database.save_puzzle(code='STATE1', size=7)
+        play_id = database.start_play(puzzle_id)
+
+        cell_marks = [[0, 1, 2], [1, 0, 2], [2, 1, 0]]
+        database.save_game_state(play_id, elapsed_seconds=45, cell_marks=cell_marks)
+
+        play = database.get_play(play_id)
+        assert play['elapsed_seconds'] == 45
+
+    def test_get_incomplete_play(self, temp_db):
+        """Should get the most recent incomplete play with board state."""
+        puzzle_id = database.save_puzzle(code='STATE2', size=7)
+
+        # Complete play
+        play1 = database.start_play(puzzle_id)
+        database.complete_play(play1, duration_ms=30000)
+
+        # Incomplete play with state
+        play2 = database.start_play(puzzle_id)
+        cell_marks = [[0, 1], [2, 0]]
+        database.save_game_state(play2, elapsed_seconds=20, cell_marks=cell_marks)
+
+        incomplete = database.get_incomplete_play(puzzle_id)
+
+        assert incomplete is not None
+        assert incomplete['id'] == play2
+        assert incomplete['elapsed_seconds'] == 20
+        assert incomplete['board_state'] == cell_marks
+
+    def test_get_incomplete_play_none_when_all_complete(self, temp_db):
+        """Should return None if all plays are complete."""
+        puzzle_id = database.save_puzzle(code='STATE3', size=7)
+        play_id = database.start_play(puzzle_id)
+        database.complete_play(play_id, duration_ms=30000)
+
+        incomplete = database.get_incomplete_play(puzzle_id)
+        assert incomplete is None
+
+
+class TestDailyCompletion:
+    """Test daily puzzle completion tracking."""
+
+    def test_is_daily_completed_true(self, temp_db):
+        """Should return True when daily puzzle is completed."""
+        puzzle_id = database.save_puzzle(
+            code='DAILY1', size=7, daily_date='2025-06-15'
+        )
+        play_id = database.start_play(puzzle_id)
+        database.complete_play(play_id, duration_ms=30000)
+
+        assert database.is_daily_completed('2025-06-15', 7) is True
+
+    def test_is_daily_completed_false(self, temp_db):
+        """Should return False when daily puzzle is not completed."""
+        database.save_puzzle(code='DAILY2', size=7, daily_date='2025-06-15')
+
+        assert database.is_daily_completed('2025-06-15', 7) is False
+
+    def test_get_daily_completion_status(self, temp_db):
+        """Should return completion status for all sizes."""
+        # Complete 6x6 and 8x8
+        p6 = database.save_puzzle(code='D6', size=6, daily_date='2025-06-15')
+        play6 = database.start_play(p6)
+        database.complete_play(play6, duration_ms=20000)
+
+        p8 = database.save_puzzle(code='D8', size=8, daily_date='2025-06-15')
+        play8 = database.start_play(p8)
+        database.complete_play(play8, duration_ms=40000)
+
+        # 7x7 not played
+        status = database.get_daily_completion_status('2025-06-15')
+
+        assert status[6] is True
+        assert status[7] is False
+        assert status[8] is True
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

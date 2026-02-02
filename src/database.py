@@ -1,6 +1,7 @@
 """Local SQLite database for storing puzzles and play history."""
 
 import sqlite3
+import json
 import os
 from datetime import datetime
 from typing import Optional, List, Dict, Any
@@ -46,9 +47,19 @@ def _create_tables() -> None:
             duration_ms INTEGER,
             completed INTEGER NOT NULL DEFAULT 0,
             fun_rating INTEGER,
+            elapsed_seconds INTEGER DEFAULT 0,
+            board_state TEXT,
             FOREIGN KEY (puzzle_id) REFERENCES puzzles (id)
         )
     ''')
+
+    # Migration: add new columns if they don't exist (for existing databases)
+    cursor.execute("PRAGMA table_info(plays)")
+    columns = {row[1] for row in cursor.fetchall()}
+    if 'elapsed_seconds' not in columns:
+        cursor.execute('ALTER TABLE plays ADD COLUMN elapsed_seconds INTEGER DEFAULT 0')
+    if 'board_state' not in columns:
+        cursor.execute('ALTER TABLE plays ADD COLUMN board_state TEXT')
 
     # Index for faster lookups
     cursor.execute('CREATE INDEX IF NOT EXISTS idx_puzzles_code ON puzzles (code)')
@@ -222,3 +233,57 @@ def get_recent_plays(limit: int = 10) -> List[Dict[str, Any]]:
         LIMIT ?
     ''', (limit,))
     return [dict(row) for row in cursor.fetchall()]
+
+
+# -----------------------------------------------------------------------------
+# Game state operations
+# -----------------------------------------------------------------------------
+
+def save_game_state(play_id: int, elapsed_seconds: int, cell_marks: List[List[int]]) -> None:
+    """Save the current game state for resuming later."""
+    cursor = _connection.cursor()
+    board_state = json.dumps(cell_marks)
+    cursor.execute('''
+        UPDATE plays
+        SET elapsed_seconds = ?, board_state = ?
+        WHERE id = ?
+    ''', (elapsed_seconds, board_state, play_id))
+    _connection.commit()
+
+
+def get_incomplete_play(puzzle_id: int) -> Optional[Dict[str, Any]]:
+    """Get the most recent incomplete play for a puzzle (for resuming)."""
+    cursor = _connection.cursor()
+    cursor.execute('''
+        SELECT * FROM plays
+        WHERE puzzle_id = ? AND completed = 0
+        ORDER BY started_at DESC
+        LIMIT 1
+    ''', (puzzle_id,))
+    row = cursor.fetchone()
+    if row:
+        result = dict(row)
+        if result.get('board_state'):
+            result['board_state'] = json.loads(result['board_state'])
+        return result
+    return None
+
+
+def is_daily_completed(daily_date: str, size: int) -> bool:
+    """Check if a daily puzzle has been completed."""
+    cursor = _connection.cursor()
+    cursor.execute('''
+        SELECT COUNT(*) as count
+        FROM plays p
+        JOIN puzzles pz ON p.puzzle_id = pz.id
+        WHERE pz.daily_date = ? AND pz.size = ? AND p.completed = 1
+    ''', (daily_date, size))
+    return cursor.fetchone()['count'] > 0
+
+
+def get_daily_completion_status(daily_date: str) -> Dict[int, bool]:
+    """Get completion status for all sizes on a given date."""
+    return {
+        size: is_daily_completed(daily_date, size)
+        for size in [6, 7, 8]
+    }

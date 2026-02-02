@@ -154,9 +154,11 @@ class GameScreen(Screen):
         # Play tracking
         self.puzzle_id = None
         self.play_id = None
+        self.daily_date = None  # Set if this is a daily puzzle
 
     def set_game(self, game, daily_date=None):
         self.game = game
+        self.daily_date = daily_date
 
         # Save puzzle to database
         code = game.encode()
@@ -167,7 +169,18 @@ class GameScreen(Screen):
             daily_date=daily_date_str,
             seed=getattr(game, 'seed', None)
         )
-        self.play_id = None  # Will be set when play starts
+
+        # Check for incomplete play to resume (only for daily puzzles)
+        saved_play = None
+        if daily_date:
+            saved_play = database.get_incomplete_play(self.puzzle_id)
+
+        if saved_play:
+            self.play_id = saved_play['id']
+            self.elapsed_time = saved_play.get('elapsed_seconds', 0) or 0
+        else:
+            self.play_id = None
+            self.elapsed_time = 0
 
         # Remove old board if exists
         if self.board:
@@ -182,6 +195,13 @@ class GameScreen(Screen):
             on_hidden_click=lambda: self.toggle_play_pause(None),
             size_hint=(None, None)
         )
+
+        # Restore board state if resuming
+        if saved_play and saved_play.get('board_state'):
+            self.board.cell_marks = saved_play['board_state']
+            self.board.history = [saved_play['board_state']]
+            self.board.history_index = 0
+
         # Insert board behind QR overlay
         self.board_container.add_widget(self.board, index=1)
         self._resize_board(self.board_container, self.board_container.size)
@@ -189,8 +209,7 @@ class GameScreen(Screen):
         # Generate QR code for sharing
         self._generate_qr_code()
 
-        # Reset timer but don't start yet
-        self.elapsed_time = 0
+        # Update clock display
         self._update_clock_display()
         if self.timer_event:
             self.timer_event.cancel()
@@ -241,6 +260,7 @@ class GameScreen(Screen):
             if self.timer_event:
                 self.timer_event.cancel()
                 self.timer_event = None
+            self._save_game_state()
         else:
             # Play
             self.is_playing = True
@@ -296,10 +316,20 @@ class GameScreen(Screen):
         self.board.show_solution = not self.board.show_solution
         self.board.draw_board()
 
+    def _save_game_state(self):
+        """Save current game state to database (for daily puzzles)."""
+        if self.play_id is not None and self.board and not self.board.solved:
+            database.save_game_state(
+                self.play_id,
+                self.elapsed_time,
+                self.board.cell_marks
+            )
+
     def go_to_menu(self, instance):
         if self.timer_event:
             self.timer_event.cancel()
             self.timer_event = None
+        self._save_game_state()
         self.is_playing = False
         self.app.sm.current = 'menu'
 

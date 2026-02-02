@@ -1,12 +1,21 @@
+import os
+from datetime import date
+
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.floatlayout import FloatLayout
+from kivy.uix.relativelayout import RelativeLayout
 from kivy.uix.label import Label
 from kivy.uix.button import Button
 from kivy.uix.behaviors import ButtonBehavior
 from kivy.uix.image import Image
 from kivy.uix.screenmanager import Screen
-from kivy.graphics import Color, Rectangle, RoundedRectangle
+from kivy.graphics import Color, Rectangle, RoundedRectangle, PushMatrix, PopMatrix, Rotate
 from kivy.metrics import dp
+
+import database
+
+# Path to icons
+ICONS_DIR = os.path.join(os.path.dirname(__file__), '..', 'assets', 'icons')
 
 
 # Salad green button color
@@ -31,6 +40,61 @@ class RoundedButton(ButtonBehavior, Label):
             else:
                 Color(*self.background_color)
             RoundedRectangle(pos=self.pos, size=self.size, radius=[BUTTON_RADIUS])
+
+
+class DailyButton(ButtonBehavior, RelativeLayout):
+    """A daily puzzle button that can show a crown when completed."""
+    def __init__(self, text, **kwargs):
+        super().__init__(**kwargs)
+        self.completed = False
+
+        # Background label (for the button appearance)
+        self.label = Label(
+            text=text,
+            font_size='18sp',
+            font_name='DMSans',
+            size_hint=(1, 1)
+        )
+        self.add_widget(self.label)
+
+        # Crown image (positioned at top-right, tilted) - using queen icon
+        self.crown = Image(
+            source=os.path.join(ICONS_DIR, 'queen.png'),
+            size_hint=(None, None),
+            size=(dp(24), dp(24)),
+            opacity=0,
+            pos_hint={'right': 1.1, 'top': 1.15}
+        )
+        self.add_widget(self.crown)
+
+        self._update_bg()
+        self.bind(pos=self._update_bg, size=self._update_bg, state=self._update_bg)
+
+    def _update_bg(self, *args):
+        self.canvas.before.clear()
+        with self.canvas.before:
+            if self.state == 'down':
+                Color(*BUTTON_COLOR_DOWN)
+            else:
+                Color(*BUTTON_COLOR)
+            RoundedRectangle(pos=self.pos, size=self.size, radius=[BUTTON_RADIUS])
+
+        # Draw tilted crown
+        self.crown.canvas.before.clear()
+        if self.completed:
+            self.crown.opacity = 1
+            with self.crown.canvas.before:
+                PushMatrix()
+                Rotate(angle=15, origin=(self.crown.center_x, self.crown.center_y))
+            with self.crown.canvas.after:
+                PopMatrix()
+        else:
+            self.crown.opacity = 0
+
+    def set_completed(self, completed):
+        """Set whether this puzzle has been completed."""
+        self.completed = completed
+        self._update_bg()
 
 
 class MainMenuScreen(Screen):
@@ -73,12 +137,14 @@ class MainMenuScreen(Screen):
             height=dp(40)
         ))
 
-        daily_buttons = BoxLayout(size_hint_y=None, height=dp(48), spacing=dp(10))
+        self.daily_buttons_container = BoxLayout(size_hint_y=None, height=dp(48), spacing=dp(10))
+        self.daily_buttons = {}
         for size in [6, 7, 8]:
-            btn = RoundedButton(text=f'{size}x{size}', font_size='18sp', font_name='DMSans')
+            btn = DailyButton(text=f'{size}x{size}')
             btn.bind(on_press=lambda x, s=size: self.app.start_daily_game(s))
-            daily_buttons.add_widget(btn)
-        layout.add_widget(daily_buttons)
+            self.daily_buttons[size] = btn
+            self.daily_buttons_container.add_widget(btn)
+        layout.add_widget(self.daily_buttons_container)
 
         # Spacer before middle buttons
         layout.add_widget(BoxLayout(size_hint_y=0.25))
@@ -136,3 +202,14 @@ class MainMenuScreen(Screen):
     def _update_overlay(self, instance, value):
         self._overlay_rect.pos = instance.pos
         self._overlay_rect.size = instance.size
+
+    def on_enter(self):
+        """Called when screen is entered - refresh completion status."""
+        self._refresh_daily_status()
+
+    def _refresh_daily_status(self):
+        """Update the crown display on daily buttons based on completion status."""
+        today = date.today().isoformat()
+        status = database.get_daily_completion_status(today)
+        for size, btn in self.daily_buttons.items():
+            btn.set_completed(status.get(size, False))
