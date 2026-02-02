@@ -6,6 +6,9 @@ import os
 from datetime import datetime
 from typing import Optional, List, Dict, Any
 
+# Current schema version - increment when making schema changes
+SCHEMA_VERSION = 2
+
 # Database will be initialized with actual path when app starts
 _db_path: Optional[str] = None
 _connection: Optional[sqlite3.Connection] = None
@@ -22,11 +25,20 @@ def init_db(data_dir: str) -> None:
     _connection.row_factory = sqlite3.Row
 
     _create_tables()
+    _run_migrations()
 
 
 def _create_tables() -> None:
     """Create database tables if they don't exist."""
     cursor = _connection.cursor()
+
+    # Config table for key-value settings
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS config (
+            key TEXT PRIMARY KEY,
+            value TEXT
+        )
+    ''')
 
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS puzzles (
@@ -53,19 +65,63 @@ def _create_tables() -> None:
         )
     ''')
 
-    # Migration: add new columns if they don't exist (for existing databases)
-    cursor.execute("PRAGMA table_info(plays)")
-    columns = {row[1] for row in cursor.fetchall()}
-    if 'elapsed_seconds' not in columns:
-        cursor.execute('ALTER TABLE plays ADD COLUMN elapsed_seconds INTEGER DEFAULT 0')
-    if 'board_state' not in columns:
-        cursor.execute('ALTER TABLE plays ADD COLUMN board_state TEXT')
-
     # Index for faster lookups
     cursor.execute('CREATE INDEX IF NOT EXISTS idx_puzzles_code ON puzzles (code)')
     cursor.execute('CREATE INDEX IF NOT EXISTS idx_puzzles_daily_date ON puzzles (daily_date)')
     cursor.execute('CREATE INDEX IF NOT EXISTS idx_plays_puzzle_id ON plays (puzzle_id)')
 
+    _connection.commit()
+
+
+def _run_migrations() -> None:
+    """Run any necessary schema migrations."""
+    current_version = int(get_config('schema_version', '0'))
+
+    if current_version < 1:
+        # Migration 1: Add elapsed_seconds and board_state to plays
+        cursor = _connection.cursor()
+        cursor.execute("PRAGMA table_info(plays)")
+        columns = {row[1] for row in cursor.fetchall()}
+        if 'elapsed_seconds' not in columns:
+            cursor.execute('ALTER TABLE plays ADD COLUMN elapsed_seconds INTEGER DEFAULT 0')
+        if 'board_state' not in columns:
+            cursor.execute('ALTER TABLE plays ADD COLUMN board_state TEXT')
+        _connection.commit()
+
+    if current_version < 2:
+        # Migration 2: (placeholder for future migrations)
+        pass
+
+    # Update schema version
+    set_config('schema_version', str(SCHEMA_VERSION))
+
+
+# -----------------------------------------------------------------------------
+# Config operations (key-value store)
+# -----------------------------------------------------------------------------
+
+def get_config(key: str, default: str = None) -> Optional[str]:
+    """Get a config value by key."""
+    cursor = _connection.cursor()
+    cursor.execute('SELECT value FROM config WHERE key = ?', (key,))
+    row = cursor.fetchone()
+    return row['value'] if row else default
+
+
+def set_config(key: str, value: str) -> None:
+    """Set a config value."""
+    cursor = _connection.cursor()
+    cursor.execute('''
+        INSERT INTO config (key, value) VALUES (?, ?)
+        ON CONFLICT(key) DO UPDATE SET value = excluded.value
+    ''', (key, value))
+    _connection.commit()
+
+
+def delete_config(key: str) -> None:
+    """Delete a config value."""
+    cursor = _connection.cursor()
+    cursor.execute('DELETE FROM config WHERE key = ?', (key,))
     _connection.commit()
 
 

@@ -194,6 +194,38 @@ class TestStatistics:
         assert plays[0]['size'] == 7
 
 
+class TestConfig:
+    """Test config key-value store."""
+
+    def test_get_set_config(self, temp_db):
+        """Should store and retrieve config values."""
+        database.set_config('test_key', 'test_value')
+        assert database.get_config('test_key') == 'test_value'
+
+    def test_get_config_default(self, temp_db):
+        """Should return default for missing keys."""
+        assert database.get_config('missing', 'default') == 'default'
+        assert database.get_config('missing') is None
+
+    def test_set_config_overwrites(self, temp_db):
+        """Should overwrite existing values."""
+        database.set_config('key', 'value1')
+        database.set_config('key', 'value2')
+        assert database.get_config('key') == 'value2'
+
+    def test_delete_config(self, temp_db):
+        """Should delete config values."""
+        database.set_config('to_delete', 'value')
+        database.delete_config('to_delete')
+        assert database.get_config('to_delete') is None
+
+    def test_schema_version_set(self, temp_db):
+        """Schema version should be set after init."""
+        version = database.get_config('schema_version')
+        assert version is not None
+        assert int(version) >= 1
+
+
 class TestGameState:
     """Test game state save/restore operations."""
 
