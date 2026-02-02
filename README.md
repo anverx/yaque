@@ -6,6 +6,8 @@ Yet Another Queens Game - A puzzle game for Android where you place queens on a 
 
 - Daily puzzles in 3 sizes (6x6, 7x7, 8x8)
 - Random puzzle generation with selectable size
+- Calendar view with completion tracking (gold queens for completed puzzles)
+- Game state persistence - resume where you left off
 - Share puzzles via QR code or custom URL scheme (`yaque://start?game=CODE`)
 - Local database tracking play history and best times
 - Undo/redo support
@@ -74,6 +76,8 @@ tests/            - Unit tests
 - [x] Adaptive icon for Android
 - [x] Click on hidden board to start
 - [x] Game size selection for random puzzles
-- [ ] Calendar view with completion stars and streak
+- [x] Calendar view with completion tracking
+- [x] Game state persistence (resume daily puzzles)
+- [ ] Streak counter
 - [ ] Fun rating after completion
 - [ ] Pick a license
