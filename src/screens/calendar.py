@@ -21,8 +21,9 @@ from widgets import RoundedButton, DEFAULT_BUTTON_COLOR, DEFAULT_BUTTON_COLOR_DO
 ICONS_DIR = os.path.join(os.path.dirname(__file__), '..', 'assets', 'icons')
 
 # Queen icon colors
-QUEEN_GRAY = (0.6, 0.6, 0.6, 1)
-QUEEN_GOLD = (1.0, 0.84, 0.0, 1)
+QUEEN_GRAY = (0.5, 0.5, 0.5, 1)  # Not completed
+QUEEN_GOLD = (1.0, 0.84, 0.0, 1)  # Solved on the same day
+QUEEN_SILVER = (0.85, 0.88, 0.95, 1)  # Solved on a later day - bright silver/white
 
 
 class DayCell(ButtonBehavior, BoxLayout):
@@ -54,10 +55,16 @@ class DayCell(ButtonBehavior, BoxLayout):
 
         self.queen_icons = []
         for size in [6, 7, 8]:
-            completed = completion_status.get(size, False) if completion_status else False
+            status = completion_status.get(size) if completion_status else None
+            if status == 'gold':
+                color = QUEEN_GOLD
+            elif status == 'silver':
+                color = QUEEN_SILVER
+            else:
+                color = QUEEN_GRAY
             icon = Image(
                 source=os.path.join(ICONS_DIR, 'queen-small.png'),
-                color=QUEEN_GOLD if completed else QUEEN_GRAY,
+                color=color,
                 fit_mode='contain'
             )
             self.queen_icons.append(icon)
@@ -215,7 +222,7 @@ class CalendarScreen(Screen):
             else:
                 day_date = date(self.current_year, self.current_month, day)
                 date_str = day_date.isoformat()
-                completion_status = month_status.get(date_str, {6: False, 7: False, 8: False})
+                completion_status = month_status.get(date_str, {6: None, 7: None, 8: None})
 
                 cell = DayCell(
                     day=day,

@@ -6,7 +6,7 @@ from datetime import datetime
 from typing import Optional, List, Dict, Any
 
 # Current schema version - increment when making schema changes
-SCHEMA_VERSION = 2
+SCHEMA_VERSION = 3
 
 # Database will be initialized with actual path when app starts
 _db_path: Optional[str] = None
@@ -55,6 +55,7 @@ def _create_tables() -> None:
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             puzzle_id INTEGER NOT NULL,
             started_at TEXT NOT NULL,
+            completed_at TEXT,
             duration_ms INTEGER,
             completed INTEGER NOT NULL DEFAULT 0,
             fun_rating INTEGER,
@@ -97,9 +98,14 @@ def _run_migrations() -> None:
             cursor.execute('ALTER TABLE plays ADD COLUMN board_state TEXT')
         _connection.commit()
 
-    # Future migrations go here:
-    # if current_version < 3:
-    #     ...
+    # Migration 2 -> 3: Add completed_at to plays
+    if current_version < 3:
+        cursor = _connection.cursor()
+        cursor.execute("PRAGMA table_info(plays)")
+        columns = {row[1] for row in cursor.fetchall()}
+        if 'completed_at' not in columns:
+            cursor.execute('ALTER TABLE plays ADD COLUMN completed_at TEXT')
+        _connection.commit()
 
     set_config('schema_version', str(SCHEMA_VERSION))
 
@@ -236,11 +242,12 @@ def start_play(puzzle_id: int) -> int:
 def complete_play(play_id: int, duration_ms: int) -> None:
     """Mark a play as completed with the given duration."""
     cursor = _connection.cursor()
+    completed_at = datetime.now().isoformat()
     cursor.execute('''
         UPDATE plays
-        SET completed = 1, duration_ms = ?
+        SET completed = 1, duration_ms = ?, completed_at = ?
         WHERE id = ?
-    ''', (duration_ms, play_id))
+    ''', (duration_ms, completed_at, play_id))
     _connection.commit()
 
 
@@ -406,17 +413,20 @@ def get_daily_completion_status(daily_date: str) -> Dict[int, bool]:
     return status
 
 
-def get_month_completion_status(year: int, month: int) -> Dict[str, Dict[int, bool]]:
+def get_month_completion_status(year: int, month: int) -> Dict[str, Dict[int, Optional[str]]]:
     """Get completion status for all days in a month (single query).
 
-    Returns dict mapping date strings to {size: completed} dicts.
+    Returns dict mapping date strings to {size: status} dicts where status is:
+    - None: not completed
+    - 'gold': completed on the same day as daily_date
+    - 'silver': completed on a later day
     """
     cursor = _connection.cursor()
     # Match dates like '2026-02-%' for February 2026
     date_pattern = f'{year:04d}-{month:02d}-%'
 
     cursor.execute('''
-        SELECT pz.daily_date, pz.size, MAX(p.completed) as won
+        SELECT pz.daily_date, pz.size, MIN(p.completed_at) as first_completed_at
         FROM puzzles pz
         LEFT JOIN plays p ON p.puzzle_id = pz.id AND p.completed = 1
         WHERE pz.daily_date LIKE ?
@@ -427,7 +437,15 @@ def get_month_completion_status(year: int, month: int) -> Dict[str, Dict[int, bo
     for row in cursor.fetchall():
         date_str = row['daily_date']
         if date_str not in result:
-            result[date_str] = {6: False, 7: False, 8: False}
-        result[date_str][row['size']] = row['won'] == 1
+            result[date_str] = {6: None, 7: None, 8: None}
+
+        completed_at = row['first_completed_at']
+        if completed_at:
+            # Compare just the date part (first 10 chars: YYYY-MM-DD)
+            completed_date = completed_at[:10]
+            if completed_date == date_str:
+                result[date_str][row['size']] = 'gold'
+            else:
+                result[date_str][row['size']] = 'silver'
 
     return result
