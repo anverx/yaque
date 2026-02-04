@@ -54,6 +54,7 @@ class BoardWidget(Widget):
         self.history_index = -1
         # Conflict tracking
         self.conflict_cells: Set[Tuple[int, int]] = set()
+        self.blocked_cells: Set[Tuple[int, int]] = set()  # Circles in fully-blocked kingdoms
         self._validation_event = None
         self.hidden = True  # Start hidden until play is pressed
         # Victory celebration animation
@@ -146,8 +147,12 @@ class BoardWidget(Widget):
                     x = self.x + col * cell_w
                     y = self.y + (n - 1 - row) * cell_h
                     if mark == MARK_CIRCLE:
-                        # Small gray circle outline in center
-                        Color(0.4, 0.4, 0.4, 1)
+                        # Small circle outline in center - red if blocked, gray otherwise
+                        is_blocked = (row, col) in self.blocked_cells
+                        if is_blocked:
+                            Color(0.9, 0.3, 0.3, 1)  # Red for blocked kingdom
+                        else:
+                            Color(0.4, 0.4, 0.4, 1)  # Gray normal
                         circ_size = min(cell_w, cell_h) * 0.15
                         circ_x = x + (cell_w - circ_size) / 2
                         circ_y = y + (cell_h - circ_size) / 2
@@ -242,8 +247,45 @@ class BoardWidget(Widget):
                 elif abs(r1 - r2) <= 1 and abs(c1 - c2) <= 1:
                     conflicts.add((r1, c1))
                     conflicts.add((r2, c2))
+                # Same kingdom
+                elif self.kingdoms[r1][c1] == self.kingdoms[r2][c2]:
+                    conflicts.add((r1, c1))
+                    conflicts.add((r2, c2))
 
         return conflicts
+
+    def _find_blocked_kingdoms(self) -> Set[Tuple[int, int]]:
+        """Find all cells in kingdoms that are entirely marked as 'no queen' (circles)."""
+        blocked = set()
+
+        # Group cells by kingdom
+        kingdom_cells = {}
+        for row in range(self.size_cells):
+            for col in range(self.size_cells):
+                k = self.kingdoms[row][col]
+                if k not in kingdom_cells:
+                    kingdom_cells[k] = []
+                kingdom_cells[k].append((row, col))
+
+        # Check each kingdom
+        for k, cells in kingdom_cells.items():
+            has_queen = False
+            all_marked = True
+            for row, col in cells:
+                mark = self.cell_marks[row][col]
+                if mark == MARK_QUEEN:
+                    has_queen = True
+                    break
+                if mark == MARK_EMPTY:
+                    all_marked = False
+
+            # Kingdom is blocked if all cells are circles (no queen, no empty)
+            if not has_queen and all_marked:
+                for row, col in cells:
+                    if self.cell_marks[row][col] == MARK_CIRCLE:
+                        blocked.add((row, col))
+
+        return blocked
 
     def is_solved(self) -> bool:
         """Check if the puzzle is solved correctly."""
@@ -271,6 +313,7 @@ class BoardWidget(Widget):
     def _validate_after_delay(self, dt):
         """Called after delay to validate queen placements."""
         self.conflict_cells = self._find_conflicts()
+        self.blocked_cells = self._find_blocked_kingdoms()
         self.draw_board()
 
         # Check if solved
@@ -303,8 +346,9 @@ class BoardWidget(Widget):
         # Cancel any pending validation
         if self._validation_event:
             self._validation_event.cancel()
-        # Clear conflicts immediately
+        # Clear conflicts and blocked cells immediately
         self.conflict_cells = set()
+        self.blocked_cells = set()
         # Schedule new validation after delay
         self._validation_event = Clock.schedule_once(self._validate_after_delay, 0.5)
 
@@ -333,6 +377,7 @@ class BoardWidget(Widget):
         self._save_state()
         self.cell_marks = [[MARK_EMPTY] * self.size_cells for _ in range(self.size_cells)]
         self.conflict_cells = set()
+        self.blocked_cells = set()
         if self._validation_event:
             self._validation_event.cancel()
         # Cancel any celebration
@@ -348,6 +393,7 @@ class BoardWidget(Widget):
         # Clear board first
         self.cell_marks = [[MARK_EMPTY] * self.size_cells for _ in range(self.size_cells)]
         self.conflict_cells = set()
+        self.blocked_cells = set()
 
         # Place queens at solution positions
         for row, col in self.queens:
