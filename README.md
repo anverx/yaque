@@ -5,10 +5,14 @@ Yet Another Queens Game - A puzzle game for Android where you place queens on a 
 ## Features
 
 - Daily puzzles in 3 sizes (6x6, 7x7, 8x8)
-- Random puzzle generation with selectable size
-- Calendar view with completion tracking (gold queens for completed puzzles)
+- Random puzzle generation with selectable size (6x6 to 9x9)
+- Kingdom style strategies: Classic, Mixed, or Jagged shapes
+- Calendar view with gold/silver completion tracking (gold = solved same day, silver = solved later)
+- Logbook with full game history and pagination
 - Game state persistence - resume where you left off
 - Share puzzles via QR code or custom URL scheme (`yaque://start?game=CODE`)
+- Conflict indicators for invalid placements (same kingdom, blocked regions)
+- Shows number of solutions when puzzle is solved
 - Local database tracking play history and best times
 - Undo/redo support
 - Victory celebration with golden rotating queens
@@ -55,7 +59,8 @@ src/
   game_encoding.py - Compact puzzle encoding/decoding
   database.py     - Local SQLite for play history
   board_widget.py - Game board UI
-  screens/        - App screens (menu, game, calendar)
+  widgets.py      - Shared UI components
+  screens/        - App screens (menu, game, calendar, logbook)
   popups.py       - Dialogs and popups
   assets/         - Images, fonts, icons
 tests/            - Unit tests
@@ -78,6 +83,8 @@ tests/            - Unit tests
 - [x] Game size selection for random puzzles
 - [x] Calendar view with completion tracking
 - [x] Game state persistence (resume daily puzzles)
+- [x] Pick a license (CC BY-NC-SA 4.0)
+- [x] Logbook with game history
+- [x] About screen
 - [ ] Streak counter
 - [ ] Fun rating after completion
-- [ ] Pick a license
