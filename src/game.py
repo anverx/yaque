@@ -7,9 +7,23 @@ from game_encoding import encode_game, encode_game_b64, decode_game_b64
 
 class Game:
 
-    def __init__(self, size: int, max_solutions: int = 1, max_attempts: int = 50000, seed: Optional[int] = None):
+    def __init__(self, size: int, max_solutions: int = 1, max_attempts: int = 50000,
+                 seed: Optional[int] = None, kingdom_strategy: str = 'mixed'):
+        """Create a new puzzle.
+
+        Args:
+            size: Board size (6, 7, 8, or 9)
+            max_solutions: Maximum acceptable number of solutions
+            max_attempts: Maximum generation attempts before giving up
+            seed: Random seed for reproducibility
+            kingdom_strategy: How to grow kingdoms:
+                - 'classic': Original random growth
+                - 'mixed': Each kingdom randomly picks jagged/compact/random
+                - 'jagged': All kingdoms maximize perimeter (snaky shapes)
+        """
         self.size = size
         self.max_solutions = max_solutions
+        self.kingdom_strategy = kingdom_strategy
 
         # Set up seed for reproducibility
         if seed is None:
@@ -20,7 +34,7 @@ class Game:
         # Generate puzzles until we find one with acceptable number of solutions
         for attempt in range(max_attempts):
             self.queens: List[Tuple[int, int]] = self.place_queens(size)
-            self.kingdoms: List[List[int]] = self.create_kingdoms(self.queens)
+            self.kingdoms: List[List[int]] = self.create_kingdoms(self.queens, kingdom_strategy)
             solutions = self.count_solutions(max_count=max_solutions + 1)
             if 1 <= solutions <= max_solutions:
                 self.num_solutions = solutions
@@ -80,10 +94,19 @@ class Game:
                     line += f"{k} "
             print(line)
 
-    def create_kingdoms(self, queens: List[Tuple[int, int]]) -> List[List[int]]:
+    def create_kingdoms(self, queens: List[Tuple[int, int]], kingdom_strategy: str = 'mixed') -> List[List[int]]:
         no = self.size
         kingdoms = [[-1] * no for _ in range(no)]
         directions = [(-1, 0), (1, 0), (0, -1), (0, 1)]
+
+        # Assign growth strategy to each kingdom based on overall strategy:
+        # 1 = maximize perimeter (jagged), -1 = minimize (compact), 0 = random
+        if kingdom_strategy == 'classic':
+            strategies = [0] * no  # All random
+        elif kingdom_strategy == 'jagged':
+            strategies = [1] * no  # All maximize perimeter
+        else:  # 'mixed'
+            strategies = [random.choice([-1, 0, 1]) for _ in range(no)]
 
         def get_free_neighbors(r, c):
             neighbors = []
@@ -92,6 +115,39 @@ class Game:
                 if 0 <= nr < no and 0 <= nc < no and kingdoms[nr][nc] == -1:
                     neighbors.append((nr, nc))
             return neighbors
+
+        def count_same_kingdom_neighbors(r, c, k):
+            """Count how many neighbors of (r,c) belong to kingdom k."""
+            count = 0
+            for dr, dc in directions:
+                nr, nc = r + dr, c + dc
+                if 0 <= nr < no and 0 <= nc < no and kingdoms[nr][nc] == k:
+                    count += 1
+            return count
+
+        def perimeter_change(r, c, k):
+            """Calculate perimeter change if cell (r,c) is added to kingdom k.
+            +2 = extends outward (1 adjacent), 0 = neutral (2 adjacent), -2 = fills gap (3 adjacent)
+            """
+            adjacent = count_same_kingdom_neighbors(r, c, k)
+            return 4 - 2 * adjacent
+
+        def pick_neighbor(neighbors, k):
+            """Pick a neighbor based on kingdom's growth strategy."""
+            strategy = strategies[k]
+            if strategy == 0 or len(neighbors) == 1:
+                return random.choice(neighbors)
+
+            # Calculate perimeter change for each candidate
+            candidates = [(nr, nc, perimeter_change(nr, nc, k)) for nr, nc in neighbors]
+
+            if strategy == 1:  # Maximize perimeter (jagged)
+                target = max(change for _, _, change in candidates)
+            else:  # strategy == -1, minimize perimeter (compact)
+                target = min(change for _, _, change in candidates)
+
+            best = [(nr, nc) for nr, nc, change in candidates if change == target]
+            return random.choice(best)
 
         # Initialize: each queen starts a kingdom
         frontier = []
@@ -111,7 +167,7 @@ class Game:
                 frontier[k].append((nr, nc))
                 filled += 1
 
-        # Grow kingdoms randomly until board is full
+        # Grow kingdoms until board is full
         while filled < total:
             active = [k for k in range(len(queens)) if frontier[k]]
             if not active:
@@ -124,7 +180,7 @@ class Game:
             neighbors = get_free_neighbors(r, c)
 
             if neighbors:
-                nr, nc = random.choice(neighbors)
+                nr, nc = pick_neighbor(neighbors, k)
                 kingdoms[nr][nc] = k
                 frontier[k].append((nr, nc))
                 filled += 1

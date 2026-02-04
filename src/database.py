@@ -395,6 +395,84 @@ def is_daily_completed(daily_date: str, size: int) -> bool:
     return cursor.fetchone()['count'] > 0
 
 
+def get_all_plays(limit: int = 20, offset: int = 0) -> List[Dict[str, Any]]:
+    """Get plays for the logbook, most recent first, with pagination."""
+    cursor = _connection.cursor()
+    cursor.execute('''
+        SELECT p.id, p.started_at, p.completed_at, p.duration_ms, p.completed,
+               pz.code, pz.size, pz.daily_date
+        FROM plays p
+        JOIN puzzles pz ON p.puzzle_id = pz.id
+        ORDER BY p.started_at DESC
+        LIMIT ? OFFSET ?
+    ''', (limit, offset))
+    return [dict(row) for row in cursor.fetchall()]
+
+
+def get_plays_count() -> int:
+    """Get total number of plays."""
+    cursor = _connection.cursor()
+    cursor.execute('SELECT COUNT(*) as count FROM plays')
+    return cursor.fetchone()['count']
+
+
+def get_logbook_stats() -> Dict[str, Any]:
+    """Get statistics for the logbook."""
+    cursor = _connection.cursor()
+
+    # Total completed puzzles
+    cursor.execute('SELECT COUNT(*) as count FROM plays WHERE completed = 1')
+    total_completed = cursor.fetchone()['count']
+
+    # Daily puzzles completed
+    cursor.execute('''
+        SELECT COUNT(*) as count FROM plays p
+        JOIN puzzles pz ON p.puzzle_id = pz.id
+        WHERE p.completed = 1 AND pz.daily_date IS NOT NULL
+    ''')
+    daily_completed = cursor.fetchone()['count']
+
+    # Random puzzles completed
+    cursor.execute('''
+        SELECT COUNT(*) as count FROM plays p
+        JOIN puzzles pz ON p.puzzle_id = pz.id
+        WHERE p.completed = 1 AND pz.daily_date IS NULL
+    ''')
+    random_completed = cursor.fetchone()['count']
+
+    # Gold stars (same-day completions)
+    cursor.execute('''
+        SELECT COUNT(*) as count FROM plays p
+        JOIN puzzles pz ON p.puzzle_id = pz.id
+        WHERE p.completed = 1 AND pz.daily_date IS NOT NULL
+        AND date(p.completed_at) = pz.daily_date
+    ''')
+    gold_stars = cursor.fetchone()['count']
+
+    # Best times by size
+    cursor.execute('''
+        SELECT pz.size, MIN(p.duration_ms) as best_time
+        FROM plays p
+        JOIN puzzles pz ON p.puzzle_id = pz.id
+        WHERE p.completed = 1
+        GROUP BY pz.size
+    ''')
+    best_times = {row['size']: row['best_time'] for row in cursor.fetchall()}
+
+    # Total play time
+    cursor.execute('SELECT SUM(duration_ms) as total FROM plays WHERE completed = 1')
+    total_time_ms = cursor.fetchone()['total'] or 0
+
+    return {
+        'total_completed': total_completed,
+        'daily_completed': daily_completed,
+        'random_completed': random_completed,
+        'gold_stars': gold_stars,
+        'best_times': best_times,
+        'total_time_ms': total_time_ms,
+    }
+
+
 def get_daily_completion_status(daily_date: str) -> Dict[int, bool]:
     """Get completion status for all sizes on a given date (single query)."""
     cursor = _connection.cursor()

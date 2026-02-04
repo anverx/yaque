@@ -67,18 +67,29 @@ class GameScreen(Screen):
         super().__init__(**kwargs)
         self.app = app
 
-        layout = BoxLayout(orientation='vertical', padding=dp(10), spacing=dp(6))
+        layout = BoxLayout(orientation='vertical', padding=dp(10), spacing=dp(4))
 
         # Game title (Daily puzzle: date / Random)
         self.title_label = Label(
             text='',
-            font_name='DMSans',
-            font_size='14sp',
-            color=(0.4, 0.4, 0.4, 1),
+            font_name='DMSansBlack',
+            font_size='16sp',
+            color=(0.3, 0.3, 0.3, 1),
             size_hint_y=None,
-            height=dp(20)
+            height=dp(22)
         )
         layout.add_widget(self.title_label)
+
+        # Subtitle (shows solutions count when solved)
+        self.subtitle_label = Label(
+            text='',
+            font_name='DMSans',
+            font_size='12sp',
+            color=(0.5, 0.5, 0.5, 1),
+            size_hint_y=None,
+            height=dp(16)
+        )
+        layout.add_widget(self.subtitle_label)
 
         # Clock
         top_bar = BoxLayout(size_hint_y=None, height=dp(50))
@@ -168,16 +179,26 @@ class GameScreen(Screen):
         self.play_id = None
         self.daily_date = None  # Set if this is a daily puzzle
 
-    def set_game(self, game, daily_date=None, from_calendar=False):
+    def set_game(self, game, daily_date=None, from_calendar=False, from_logbook=False, strategy=None):
         self.game = game
         self.daily_date = daily_date
         self.from_calendar = from_calendar
+        self.from_logbook = from_logbook
+
+        # Clear subtitle (will be set when solved)
+        self.subtitle_label.text = ''
 
         # Set title
         if daily_date:
             self.title_label.text = f"Daily puzzle: {daily_date.strftime('%B %d, %Y')}"
         else:
-            self.title_label.text = "Random"
+            # Random game - show size and strategy
+            strategy_names = {'classic': 'Classic', 'mixed': 'Mixed', 'jagged': 'Jagged'}
+            strategy_label = strategy_names.get(strategy, '')
+            if strategy_label:
+                self.title_label.text = f"Random {game.size}x{game.size} ({strategy_label})"
+            else:
+                self.title_label.text = f"Random {game.size}x{game.size}"
 
         # Save puzzle to database
         code = game.encode()
@@ -344,6 +365,14 @@ class GameScreen(Screen):
         self.play_btn.disabled = True
         self.qr_image.opacity = 0
 
+        # Show number of solutions in subtitle
+        num_solutions = getattr(self.game, 'num_solutions', None)
+        if num_solutions is not None:
+            if num_solutions == 1:
+                self.subtitle_label.text = "Unique solution!"
+            else:
+                self.subtitle_label.text = f"{num_solutions} solutions"
+
     def _resize_board(self, container, size):
         if not self.board:
             return
@@ -367,7 +396,7 @@ class GameScreen(Screen):
             database.save_game_state(self.play_id, self.elapsed_time, encoded_state)
 
     def go_back(self, instance):
-        """Go back to the previous screen (calendar or menu)."""
+        """Go back to the previous screen (calendar, logbook, or menu)."""
         if self.timer_event:
             self.timer_event.cancel()
             self.timer_event = None
@@ -375,6 +404,8 @@ class GameScreen(Screen):
         self.is_playing = False
         if self.from_calendar:
             self.app.sm.current = 'calendar'
+        elif self.from_logbook:
+            self.app.sm.current = 'logbook'
         else:
             self.app.sm.current = 'menu'
 

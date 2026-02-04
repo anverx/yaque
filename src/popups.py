@@ -198,34 +198,51 @@ class LoadingPopup(ModalView):
 
     def __init__(self, on_cancel=None, **kwargs):
         super().__init__(**kwargs)
-        self.size_hint = (0.7, 0.4)
+        self.size_hint = (0.7, 0.45)
         self.auto_dismiss = False
         self.background_color = (1, 1, 1, 0.95)
         self.on_cancel_callback = on_cancel
         self.rotation_angle = 0
+        self.elapsed_time = 0.0
         self._animation_event = None
+        self._timer_event = None
 
         # Load queen texture once
         self.queen_texture = CoreImage(os.path.join(ICONS_DIR, 'queen.png')).texture
 
         # Main layout
-        layout = BoxLayout(orientation='vertical', padding=dp(20), spacing=dp(15))
+        layout = BoxLayout(orientation='vertical', padding=dp(20), spacing=dp(10))
+
+        # Status label (title at top)
+        self.status_label = Label(
+            text='Generating puzzle...',
+            font_name='DMSansBlack',
+            font_size='16sp',
+            color=(0.3, 0.3, 0.3, 1),
+            size_hint_y=None,
+            height=dp(45),
+            halign='center',
+            valign='middle',
+            text_size=(None, None)
+        )
+        self.status_label.bind(width=lambda *x: setattr(self.status_label, 'text_size', (self.status_label.width, None)))
+        layout.add_widget(self.status_label)
 
         # Spinner widget (custom drawing)
         self.spinner_widget = Widget(size_hint=(1, 1))
         self.spinner_widget.bind(pos=self._update_spinner, size=self._update_spinner)
         layout.add_widget(self.spinner_widget)
 
-        # Status label
-        self.status_label = Label(
-            text='Generating puzzle...',
+        # Stopwatch label (small, subtle)
+        self.timer_label = Label(
+            text='0:00',
             font_name='DMSans',
-            font_size='14sp',
-            color=(0.3, 0.3, 0.3, 1),
+            font_size='12sp',
+            color=(0.5, 0.5, 0.5, 1),
             size_hint_y=None,
-            height=dp(30)
+            height=dp(18)
         )
-        layout.add_widget(self.status_label)
+        layout.add_widget(self.timer_label)
 
         # Cancel button
         cancel_btn = Button(
@@ -278,6 +295,13 @@ class LoadingPopup(ModalView):
         self.rotation_angle = (self.rotation_angle + 3) % 360
         self._update_spinner()
 
+    def _update_timer(self, dt):
+        """Update the stopwatch display."""
+        self.elapsed_time += dt
+        minutes = int(self.elapsed_time) // 60
+        seconds = int(self.elapsed_time) % 60
+        self.timer_label.text = f'{minutes}:{seconds:02d}'
+
     def set_status(self, text):
         """Update the status text."""
         self.status_label.text = text
@@ -286,13 +310,19 @@ class LoadingPopup(ModalView):
         """Start animation when popup opens."""
         super().open(*args, **kwargs)
         self.rotation_angle = 0
+        self.elapsed_time = 0.0
+        self.timer_label.text = '0:00'
         self._animation_event = Clock.schedule_interval(self._animate, 1/60)
+        self._timer_event = Clock.schedule_interval(self._update_timer, 1)
 
     def dismiss(self, *args, **kwargs):
         """Stop animation when popup closes."""
         if self._animation_event:
             self._animation_event.cancel()
             self._animation_event = None
+        if self._timer_event:
+            self._timer_event.cancel()
+            self._timer_event = None
         super().dismiss(*args, **kwargs)
 
     def _on_cancel(self, instance):
@@ -392,15 +422,116 @@ def show_date_puzzles_popup(selected_date, on_size_selected):
     )
 
 
-def show_game_size_popup(on_size_selected):
-    """Show popup for selecting game size.
+def show_game_size_popup(on_size_and_strategy_selected):
+    """Show popup for selecting game size and kingdom strategy.
 
     Args:
-        on_size_selected: Callback function that receives the selected size (int)
+        on_size_and_strategy_selected: Callback receiving (size: int, strategy: str)
     """
-    _show_size_selection_popup(
-        title='Select Puzzle Size',
-        sizes=[[6, 7], [8, 9]],
-        on_size_selected=on_size_selected,
-        popup_height=280
+    content = BoxLayout(orientation='vertical', padding=dp(15), spacing=dp(10))
+
+    # Title
+    content.add_widget(Label(
+        text='Select Puzzle Size',
+        font_name='DMSansBlack',
+        font_size='18sp',
+        color=(0.3, 0.3, 0.3, 1),
+        size_hint_y=None,
+        height=dp(35)
+    ))
+
+    popup = None
+    selected_strategy = ['mixed']  # Use list to allow modification in nested function
+
+    def make_size_callback(size):
+        def callback(btn):
+            popup.dismiss()
+            on_size_and_strategy_selected(size, selected_strategy[0])
+        return callback
+
+    # Size buttons (2x2 grid)
+    row1 = BoxLayout(size_hint_y=None, height=dp(50), spacing=dp(10))
+    row2 = BoxLayout(size_hint_y=None, height=dp(50), spacing=dp(10))
+
+    for size, row in [(6, row1), (7, row1), (8, row2), (9, row2)]:
+        btn = RoundedButton(
+            text=f'{size}x{size}',
+            font_name='DMSans',
+            font_size='18sp',
+            color=(1, 1, 1, 1)
+        )
+        btn.bind(on_press=make_size_callback(size))
+        row.add_widget(btn)
+
+    content.add_widget(row1)
+    content.add_widget(row2)
+
+    # Strategy label
+    content.add_widget(Label(
+        text='Kingdom Style',
+        font_name='DMSans',
+        font_size='14sp',
+        color=(0.4, 0.4, 0.4, 1),
+        size_hint_y=None,
+        height=dp(25)
+    ))
+
+    # Strategy buttons (radio-style)
+    strategy_row = BoxLayout(size_hint_y=None, height=dp(40), spacing=dp(8))
+    strategy_buttons = {}
+
+    strategies = [
+        ('classic', 'Classic'),
+        ('mixed', 'Mixed'),
+        ('jagged', 'Jagged'),
+    ]
+
+    def select_strategy(strategy):
+        def callback(btn):
+            selected_strategy[0] = strategy
+            # Update button colors to show selection
+            for s, b in strategy_buttons.items():
+                if s == strategy:
+                    b.bg_color = (0.45, 0.68, 0.3, 1)  # Darker = selected
+                else:
+                    b.bg_color = (0.7, 0.7, 0.7, 1)  # Gray = unselected
+                b._update_bg()
+        return callback
+
+    for strategy, label in strategies:
+        btn = RoundedButton(
+            text=label,
+            font_name='DMSans',
+            font_size='14sp',
+            color=(1, 1, 1, 1),
+            bg_color=(0.7, 0.7, 0.7, 1) if strategy != 'mixed' else (0.45, 0.68, 0.3, 1)
+        )
+        btn.bind(on_press=select_strategy(strategy))
+        strategy_buttons[strategy] = btn
+        strategy_row.add_widget(btn)
+
+    content.add_widget(strategy_row)
+
+    # Spacer
+    content.add_widget(Widget(size_hint_y=None, height=dp(5)))
+
+    # Cancel button
+    cancel_btn = GrayRoundedButton(
+        text='Cancel',
+        font_name='DMSans',
+        font_size='16sp',
+        color=(0.3, 0.3, 0.3, 1),
+        size_hint_y=None,
+        height=dp(44)
     )
+    content.add_widget(cancel_btn)
+
+    popup = ModalView(
+        size_hint=(0.85, None),
+        height=dp(340),
+        auto_dismiss=True,
+        background_color=(1, 1, 1, 0.95)
+    )
+    popup.add_widget(content)
+    cancel_btn.bind(on_press=popup.dismiss)
+    popup.open()

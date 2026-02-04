@@ -94,8 +94,30 @@ class MainMenuScreen(Screen):
         load_btn.bind(on_press=self.app.show_load_popup)
         layout.add_widget(load_btn)
 
+        # Logbook button
+        logbook_btn = RoundedButton(
+            text='Logbook',
+            font_name='DMSans',
+            font_size='18sp',
+            size_hint_y=None,
+            height=dp(48)
+        )
+        logbook_btn.bind(on_press=self.app.show_logbook)
+        layout.add_widget(logbook_btn)
+
+        # About button
+        about_btn = RoundedButton(
+            text='About',
+            font_name='DMSans',
+            font_size='18sp',
+            size_hint_y=None,
+            height=dp(48)
+        )
+        about_btn.bind(on_press=self.app.show_about)
+        layout.add_widget(about_btn)
+
         # Spacer
-        layout.add_widget(BoxLayout(size_hint_y=0.2))
+        layout.add_widget(BoxLayout(size_hint_y=0.1))
 
         # Exit button
         exit_btn = RoundedButton(

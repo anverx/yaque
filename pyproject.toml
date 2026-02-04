@@ -1,0 +1,32 @@
+[project]
+name = "yaque"
+version = "1.0.0"
+description = "A Queens puzzle game for mobile"
+readme = "README.md"
+license = {text = "CC-BY-NC-SA-4.0"}
+authors = [
+    {name = "Yaque Contributors"}
+]
+keywords = ["puzzle", "game", "queens", "kivy", "mobile"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: End Users/Desktop",
+    "License :: Other/Proprietary License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Games/Entertainment :: Puzzle Games",
+]
+requires-python = ">=3.10"
+dependencies = [
+    "kivy>=2.3.0",
+    "qrcode>=7.0",
+    "pillow>=10.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/anverx/yaque"
+Repository = "https://github.com/anverx/yaque"
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
