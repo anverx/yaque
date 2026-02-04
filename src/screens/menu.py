@@ -1,36 +1,12 @@
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.label import Label
-from kivy.uix.button import Button
-from kivy.uix.behaviors import ButtonBehavior
 from kivy.uix.image import Image
 from kivy.uix.screenmanager import Screen
-from kivy.graphics import Color, Rectangle, RoundedRectangle
+from kivy.graphics import Color, Rectangle
 from kivy.metrics import dp
 
-
-# Salad green button color
-BUTTON_COLOR = (0.55, 0.78, 0.4, 1)
-BUTTON_COLOR_DOWN = (0.45, 0.68, 0.3, 1)  # Darker when pressed
-BUTTON_RADIUS = dp(12)
-
-
-class RoundedButton(ButtonBehavior, Label):
-    """A button with rounded corners."""
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        self.background_color = BUTTON_COLOR
-        self._update_bg()
-        self.bind(pos=self._update_bg, size=self._update_bg, state=self._update_bg)
-
-    def _update_bg(self, *args):
-        self.canvas.before.clear()
-        with self.canvas.before:
-            if self.state == 'down':
-                Color(*BUTTON_COLOR_DOWN)
-            else:
-                Color(*self.background_color)
-            RoundedRectangle(pos=self.pos, size=self.size, radius=[BUTTON_RADIUS])
+from widgets import RoundedButton
 
 
 class MainMenuScreen(Screen):

@@ -27,7 +27,6 @@ from screens import (
     SplashScreen,
     MainMenuScreen,
     CalendarScreen,
-    DatePuzzlesScreen,
     GameScreen,
 )
 from popups import show_share_popup, show_load_popup, show_game_size_popup, LoadingPopup
@@ -61,13 +60,11 @@ class YaqueApp(App):
         self.splash_screen = SplashScreen(name='splash')
         self.menu_screen = MainMenuScreen(self, name='menu')
         self.calendar_screen = CalendarScreen(self, name='calendar')
-        self.date_puzzles_screen = DatePuzzlesScreen(self, name='date_puzzles')
         self.game_screen = GameScreen(self, name='game')
 
         self.sm.add_widget(self.splash_screen)
         self.sm.add_widget(self.menu_screen)
         self.sm.add_widget(self.calendar_screen)
-        self.sm.add_widget(self.date_puzzles_screen)
         self.sm.add_widget(self.game_screen)
 
         # Loading popup (reusable)
@@ -141,10 +138,6 @@ class YaqueApp(App):
 
     def show_calendar(self, instance):
         self.sm.current = 'calendar'
-
-    def show_date_puzzles(self, selected_date):
-        self.date_puzzles_screen.set_date(selected_date)
-        self.sm.current = 'date_puzzles'
 
     # -------------------------------------------------------------------------
     # Game generation

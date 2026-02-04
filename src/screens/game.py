@@ -374,7 +374,7 @@ class GameScreen(Screen):
         self._save_game_state()
         self.is_playing = False
         if self.from_calendar:
-            self.app.sm.current = 'date_puzzles'
+            self.app.sm.current = 'calendar'
         else:
             self.app.sm.current = 'menu'
 
