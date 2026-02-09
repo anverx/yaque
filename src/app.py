@@ -204,7 +204,11 @@ class YaqueApp(App):
 
     def _start_random_game_with_size_and_strategy(self, size: int, strategy: str) -> None:
         """Generate a random game with the selected size and kingdom strategy."""
-        self._show_loading_popup(f'Finding the perfect {size}x{size} puzzle...')
+        # Expected generation times based on board size
+        expected_times = {6: '<1s', 7: '~1s', 8: '~10s', 9: '~50s'}
+        time_hint = expected_times.get(size, '')
+        time_str = f' (avg. {time_hint})' if time_hint else ''
+        self._show_loading_popup(f'Finding the perfect {size}x{size} puzzle...{time_str}')
 
         def generate() -> None:
             try:
@@ -237,7 +241,10 @@ class YaqueApp(App):
             return
 
         self._dismiss_loading_popup()
-        self._show_loading_popup(f'Retrying {size}x{size} puzzle...')
+        expected_times = {6: '<1s', 7: '~1s', 8: '~10s', 9: '~50s'}
+        time_hint = expected_times.get(size, '')
+        time_str = f' (avg. {time_hint})' if time_hint else ''
+        self._show_loading_popup(f'Retrying {size}x{size} puzzle...{time_str}')
 
         def retry() -> None:
             try:
