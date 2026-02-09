@@ -45,32 +45,37 @@ class Game:
             raise ValueError(f"Could not generate puzzle with <={max_solutions} solutions after {max_attempts} attempts")
 
     def place_queens(self, no: int) -> list[tuple[int, int]]:
-        def is_valid(queens: list[tuple[int, int]], row: int, col: int) -> bool:
-            for r, c in queens:
+        def is_valid(placed: dict[int, int], row: int, col: int) -> bool:
+            for r, c in placed.items():
                 if c == col:
                     return False
                 if abs(r - row) <= 1 and abs(c - col) <= 1:
                     return False
             return True
 
-        def backtrack(row: int, queens: list[tuple[int, int]]) -> list[tuple[int, int]] | None:
-            if row == no:
-                return queens[:]
+        def backtrack(row_idx: int, rows: list[int], placed: dict[int, int]) -> dict[int, int] | None:
+            if row_idx == no:
+                return placed.copy()
+            row = rows[row_idx]
             cols = list(range(no))
             random.shuffle(cols)
             for col in cols:
-                if is_valid(queens, row, col):
-                    queens.append((row, col))
-                    result = backtrack(row + 1, queens)
+                if is_valid(placed, row, col):
+                    placed[row] = col
+                    result = backtrack(row_idx + 1, rows, placed)
                     if result is not None:
                         return result
-                    queens.pop()
+                    del placed[row]
             return None
 
-        result = backtrack(0, [])
+        # Process rows in random order to distribute "freedom" evenly
+        rows = list(range(no))
+        random.shuffle(rows)
+
+        result = backtrack(0, rows, {})
         if result is None:
             raise ValueError(f"Cannot place {no} queens on {no}x{no} board")
-        return result
+        return [(r, result[r]) for r in range(no)]
 
     def print_queens(self) -> None:
         queen_set = set(self.queens)
