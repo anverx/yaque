@@ -225,6 +225,37 @@ class GameScreen(Screen):
         self.play_id = None
         self.daily_date = None  # Set if this is a daily puzzle
 
+        # Wake lock to prevent screen sleep during gameplay
+        self._screen_on = False
+
+    def _keep_screen_on(self, on: bool) -> None:
+        """Keep screen on (prevent sleep) while playing."""
+        if self._screen_on == on:
+            return
+        self._screen_on = on
+
+        if platform == 'android':
+            try:
+                from jnius import autoclass
+                PythonActivity = autoclass('org.kivy.android.PythonActivity')
+                LayoutParams = autoclass('android.view.WindowManager$LayoutParams')
+                activity = PythonActivity.mActivity
+
+                def set_flag() -> None:
+                    window = activity.getWindow()
+                    if on:
+                        window.addFlags(LayoutParams.FLAG_KEEP_SCREEN_ON)
+                    else:
+                        window.clearFlags(LayoutParams.FLAG_KEEP_SCREEN_ON)
+
+                # Must run on UI thread
+                activity.runOnUiThread(autoclass('java.lang.Runnable')(set_flag))
+            except Exception as e:
+                print(f"Failed to set screen wake lock: {e}")
+        else:
+            # Desktop fallback (no-op, but could use platform-specific APIs)
+            pass
+
     def set_game(self, game: Any, daily_date: date | None = None, from_calendar: bool = False, from_logbook: bool = False, strategy: str | None = None) -> None:
         self.game = game
         self.daily_date = daily_date
@@ -394,6 +425,7 @@ class GameScreen(Screen):
                 self.timer_event.cancel()
                 self.timer_event = None
             self._save_game_state()
+            self._keep_screen_on(False)
         else:
             # Play
             self.is_playing = True
@@ -405,6 +437,7 @@ class GameScreen(Screen):
                 if self.play_id is None and self.puzzle_id is not None:
                     self.play_id = database.start_play(self.puzzle_id)
                 self.timer_event = Clock.schedule_interval(self._tick, 1)
+                self._keep_screen_on(True)
 
         self.board.draw_board()
 
@@ -421,6 +454,9 @@ class GameScreen(Screen):
         if self.timer_event:
             self.timer_event.cancel()
             self.timer_event = None
+
+        # Release wake lock when solved
+        self._keep_screen_on(False)
 
         # Record completion in database
         if self.play_id is not None:
@@ -501,6 +537,7 @@ class GameScreen(Screen):
             self.timer_event.cancel()
             self.timer_event = None
         self._save_game_state()
+        self._keep_screen_on(False)
         self.is_playing = False
         if self.from_calendar:
             self.app.sm.current = 'calendar'
@@ -535,6 +572,7 @@ class GameScreen(Screen):
         self.play_id = None
 
         # Return to initial paused state
+        self._keep_screen_on(False)
         self.is_playing = False
         self.board.hidden = True
         self.board.solved = False
