@@ -464,12 +464,18 @@ class BoardWidget(Widget):
 
         # If moved to a different cell, it's a drag
         if last_cell and (row, col) != last_cell:
-            touch.ud['is_drag'] = True
-            # Mark empty cells with circle as we drag
+            # First time detecting drag - also mark the starting cell
+            if not touch.ud['is_drag']:
+                touch.ud['is_drag'] = True
+                start_row, start_col = touch.ud['start_cell']
+                if self.cell_marks[start_row][start_col] == MARK_EMPTY:
+                    self.cell_marks[start_row][start_col] = MARK_CIRCLE
+                    touch.ud['marked_cells'].add((start_row, start_col))
+            # Mark the new cell with circle as we drag
             if self.cell_marks[row][col] == MARK_EMPTY:
                 self.cell_marks[row][col] = MARK_CIRCLE
                 touch.ud['marked_cells'].add((row, col))
-                self.draw_board()
+            self.draw_board()
             touch.ud['last_cell'] = (row, col)
 
         return True
