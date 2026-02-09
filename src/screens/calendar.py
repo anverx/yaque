@@ -12,7 +12,7 @@ from kivy.metrics import dp
 from kivy.utils import platform
 
 import database
-from base_screens import BackgroundedScreen, TEXT_HEADER, TEXT_WHITE, QUEEN_GRAY, QUEEN_GOLD, QUEEN_SILVER, TODAY_HIGHLIGHT
+from base_screens import BackgroundedScreen, TEXT_WHITE, QUEEN_GRAY, QUEEN_GOLD, QUEEN_SILVER, TODAY_HIGHLIGHT
 from ui_constants import (
     DEFAULT_BUTTON_COLOR, DEFAULT_BUTTON_COLOR_DOWN,
     HEADER_HEIGHT, CELL_HEIGHT, NAV_BUTTON_WIDTH, RADIUS_SM,
@@ -20,7 +20,7 @@ from ui_constants import (
     SWIPE_EDGE_THRESHOLD, SWIPE_DISTANCE_THRESHOLD,
 )
 from popups import show_date_puzzles_popup
-from widgets import RoundedButton, StyledLabel, TitleLabel
+from widgets import RoundedButton, DayLabel, MonthLabel, TitleSmLabel
 
 # Path to icons
 ICONS_DIR = os.path.join(os.path.dirname(__file__), '..', 'assets', 'icons')
@@ -36,12 +36,7 @@ class DayCell(ButtonBehavior, BoxLayout):
         self.bind(pos=self._update_bg, size=self._update_bg, state=self._update_bg)
 
         # Day number
-        self.day_label = StyledLabel(
-            text=str(day),
-            font_size='14sp',
-            color=TEXT_WHITE,
-            size_hint_y=0.5
-        )
+        self.day_label = DayLabel(str(day), color=TEXT_WHITE, size_hint_y=0.5)
         self.add_widget(self.day_label)
 
         # Queen icons row
@@ -90,14 +85,14 @@ class CalendarScreen(BackgroundedScreen):
         # Header with month/year and navigation
         header = BoxLayout(size_hint_y=None, height=dp(HEADER_HEIGHT), spacing=dp(SPACING_LG))
 
-        prev_btn = RoundedButton(text='<', font_size='24sp', size_hint_x=None, width=dp(NAV_BUTTON_WIDTH))
+        prev_btn = RoundedButton(text='<', size_hint_x=None, width=dp(NAV_BUTTON_WIDTH))
         prev_btn.bind(on_press=self.prev_month)
         header.add_widget(prev_btn)
 
-        self.month_label = StyledLabel(text='', font_size='22sp', color=TEXT_HEADER)
+        self.month_label = MonthLabel('')
         header.add_widget(self.month_label)
 
-        next_btn = RoundedButton(text='>', font_size='24sp', size_hint_x=None, width=dp(NAV_BUTTON_WIDTH))
+        next_btn = RoundedButton(text='>', size_hint_x=None, width=dp(NAV_BUTTON_WIDTH))
         next_btn.bind(on_press=self.next_month)
         header.add_widget(next_btn)
 
@@ -106,7 +101,7 @@ class CalendarScreen(BackgroundedScreen):
         # Day labels
         days_header = GridLayout(cols=7, size_hint_y=None, height=dp(30), spacing=dp(SPACING_XS))
         for day_name in ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su']:
-            days_header.add_widget(StyledLabel(text=day_name, font_size='14sp'))
+            days_header.add_widget(DayLabel(day_name))
         layout.add_widget(days_header)
 
         # Calendar grid
@@ -115,7 +110,7 @@ class CalendarScreen(BackgroundedScreen):
         layout.add_widget(self.calendar_grid)
 
         # Streak display
-        self.streak_label = TitleLabel('', font_size='16sp', height=40)
+        self.streak_label = TitleSmLabel('')
         layout.add_widget(self.streak_label)
 
         # Spacer

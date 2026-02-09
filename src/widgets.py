@@ -93,33 +93,63 @@ def StyledLabel(**kwargs):
     return styled_label('default', **kwargs)
 
 
+def TitleLgLabel(text, **kwargs):
+    """Large title label for screen headers (24sp)."""
+    return styled_label('title_lg', text, **kwargs)
+
+
+def TitleMdLabel(text, **kwargs):
+    """Medium title label for section headers (20sp)."""
+    return styled_label('title_md', text, **kwargs)
+
+
 def TitleLabel(text, **kwargs):
-    """Title label for popups and screen headers."""
+    """Title label for popups and screen headers (18sp)."""
     return styled_label('title', text, **kwargs)
 
 
+def TitleSmLabel(text, **kwargs):
+    """Small title label for game screen headers (16sp)."""
+    return styled_label('title_sm', text, **kwargs)
+
+
 def SubtitleLabel(text, **kwargs):
-    """Subtitle label for descriptions."""
+    """Subtitle label for descriptions (14sp)."""
     return styled_label('subtitle', text, **kwargs)
 
 
 def CaptionLabel(text, **kwargs):
-    """Caption label for small text and metadata."""
+    """Caption label for small text and metadata (12sp)."""
     return styled_label('caption', text, **kwargs)
 
 
-def TitleSmLabel(text, **kwargs):
-    """Smaller title label for game screen headers."""
-    return styled_label('title_sm', text, **kwargs)
+def MonthLabel(text, **kwargs):
+    """Month/year display label for calendar (22sp)."""
+    return styled_label('month', text, **kwargs)
+
+
+def DayLabel(text, **kwargs):
+    """Day name/number label for calendar (14sp)."""
+    return styled_label('day', text, **kwargs)
+
+
+def TableHeaderLabel(text, **kwargs):
+    """Table column header label (11sp)."""
+    return styled_label('table_header', text, **kwargs)
+
+
+def TableCellLabel(text, **kwargs):
+    """Table cell data label (13sp)."""
+    return styled_label('table_cell', text, **kwargs)
 
 
 def ClockLabel(text='00:00', **kwargs):
-    """Large clock/timer display label."""
+    """Large clock/timer display label (36sp)."""
     return styled_label('clock', text, **kwargs)
 
 
 def IconLabel(text, **kwargs):
-    """Tiny label for icon button captions."""
+    """Tiny label for icon button captions (9sp)."""
     return styled_label('icon_label', text, **kwargs)
 
 

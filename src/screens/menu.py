@@ -4,7 +4,7 @@ from kivy.metrics import dp
 import database
 from base_screens import BackgroundedScreen
 from ui_constants import BUTTON_HEIGHT, BUTTON_HEIGHT_LG, SPACING_LG
-from widgets import RoundedButton, GrayRoundedButton, TitleLabel, ButtonRow
+from widgets import RoundedButton, GrayRoundedButton, TitleMdLabel, ButtonRow
 
 
 class MainMenuScreen(BackgroundedScreen):
@@ -18,7 +18,7 @@ class MainMenuScreen(BackgroundedScreen):
         layout.add_widget(BoxLayout(size_hint_y=0.2))
 
         # Daily puzzles section
-        layout.add_widget(TitleLabel("Today's Puzzles", font_size='20sp', height=40))
+        layout.add_widget(TitleMdLabel("Today's Puzzles"))
 
         daily_buttons = ButtonRow()
         self.daily_buttons = {}

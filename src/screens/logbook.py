@@ -12,7 +12,11 @@ from kivy.metrics import dp
 import database
 from base_screens import BackgroundedScreen, ROW_BACKGROUND, ROW_PRESSED, QUEEN_GRAY, QUEEN_GOLD, QUEEN_SILVER
 from game import Game
-from widgets import RoundedButton, GrayRoundedButton, TitleLabel, CaptionLabel, StyledLabel
+from widgets import (
+    RoundedButton, GrayRoundedButton,
+    TitleLgLabel, CaptionLabel, SubtitleLabel,
+    TableHeaderLabel, TableCellLabel,
+)
 from ui_constants import (
     TEXT_LIGHT, ROW_HEIGHT, BUTTON_HEIGHT_SM,
     PADDING_ROW, SPACING_XS, SPACING_MD, RADIUS_SM,
@@ -77,30 +81,13 @@ class LogbookRow(ButtonBehavior, BoxLayout):
                 crown_color = QUEEN_SILVER  # Old data without completed_at
 
         # Time column
-        self.add_widget(StyledLabel(
-            text=time_str,
-            font_size='13sp',
-            size_hint_x=0.25,
-            halign='left',
-            valign='middle'
-        ))
+        self.add_widget(TableCellLabel(time_str, size_hint_x=0.25, halign='left', valign='middle'))
 
         # Size column
-        self.add_widget(StyledLabel(
-            text=f'{size}x{size}',
-            font_size='13sp',
-            color=TEXT_LIGHT,
-            size_hint_x=0.25,
-            halign='center'
-        ))
+        self.add_widget(TableCellLabel(f'{size}x{size}', color=TEXT_LIGHT, size_hint_x=0.25, halign='center'))
 
         # Duration column
-        self.add_widget(StyledLabel(
-            text=duration_str,
-            font_size='13sp',
-            size_hint_x=0.25,
-            halign='center'
-        ))
+        self.add_widget(TableCellLabel(duration_str, size_hint_x=0.25, halign='center'))
 
         # Crown icon
         crown = Image(
@@ -147,7 +134,7 @@ class LogbookScreen(BackgroundedScreen):
         layout = self.content_layout
 
         # Title
-        layout.add_widget(TitleLabel('Logbook', font_size='24sp', height=40))
+        layout.add_widget(TitleLgLabel('Logbook'))
 
         # Header row
         header = BoxLayout(
@@ -156,9 +143,9 @@ class LogbookScreen(BackgroundedScreen):
             padding=[dp(PADDING_ROW[0]), 0],
             spacing=dp(SPACING_MD)
         )
-        header.add_widget(CaptionLabel('Time', font_size='11sp', size_hint_x=0.25, halign='left'))
-        header.add_widget(CaptionLabel('Size', font_size='11sp', size_hint_x=0.25, halign='center'))
-        header.add_widget(CaptionLabel('Duration', font_size='11sp', size_hint_x=0.25, halign='center'))
+        header.add_widget(TableHeaderLabel('Time', size_hint_x=0.25, halign='left'))
+        header.add_widget(TableHeaderLabel('Size', size_hint_x=0.25, halign='center'))
+        header.add_widget(TableHeaderLabel('Duration', size_hint_x=0.25, halign='center'))
         header.add_widget(Label(text='', size_hint_x=0.25))
         layout.add_widget(header)
 
@@ -231,9 +218,8 @@ class LogbookScreen(BackgroundedScreen):
         total = database.get_plays_count()
 
         if not plays and not append:
-            self.list_layout.add_widget(CaptionLabel(
+            self.list_layout.add_widget(SubtitleLabel(
                 'No games played yet',
-                font_size='16sp',
                 size_hint_y=None,
                 height=dp(ROW_HEIGHT)
             ))
@@ -275,7 +261,6 @@ class LogbookScreen(BackgroundedScreen):
             remaining = total - self.current_offset
             load_more_btn = GrayRoundedButton(
                 text=f'Load More ({remaining} remaining)',
-                font_size='14sp',
                 size_hint_y=None,
                 height=dp(BUTTON_HEIGHT_SM)
             )

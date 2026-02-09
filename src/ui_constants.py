@@ -142,6 +142,19 @@ LABEL_STYLES = {
     'default': {
         'color': TEXT_DARK,
     },
+    # Title variants (largest to smallest)
+    'title_lg': {
+        'font_size': '24sp',
+        'color': TEXT_DARK,
+        'size_hint_y': None,
+        'height': 40,
+    },
+    'title_md': {
+        'font_size': '20sp',
+        'color': TEXT_DARK,
+        'size_hint_y': None,
+        'height': 40,
+    },
     'title': {
         'font_size': '18sp',
         'color': TEXT_DARK,
@@ -164,9 +177,29 @@ LABEL_STYLES = {
         'font_size': '12sp',
         'color': TEXT_MEDIUM,
     },
+    # Special styles
     'clock': {
         'font_size': '36sp',
         'color': COLOR_BLACK,
+    },
+    'month': {
+        'font_size': '22sp',
+        'color': TEXT_HEADER,
+    },
+    'nav_btn': {
+        'font_size': '24sp',
+    },
+    'day': {
+        'font_size': '14sp',
+    },
+    # Table styles
+    'table_header': {
+        'font_size': '11sp',
+        'color': TEXT_MEDIUM,
+    },
+    'table_cell': {
+        'font_size': '13sp',
+        'color': TEXT_DARK,
     },
     'icon_label': {
         'font_size': '9sp',
