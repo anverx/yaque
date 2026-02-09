@@ -5,11 +5,11 @@ from kivy.uix.behaviors import ButtonBehavior
 from kivy.graphics import Color, RoundedRectangle
 from kivy.metrics import dp
 
-# Default button colors (salad green)
-DEFAULT_BUTTON_COLOR = (0.55, 0.78, 0.4, 1)
-DEFAULT_BUTTON_COLOR_DOWN = (0.45, 0.68, 0.3, 1)
-GRAY_BUTTON_COLOR = (0.75, 0.75, 0.75, 1)
-GRAY_BUTTON_COLOR_DOWN = (0.6, 0.6, 0.6, 1)
+from ui_constants import (
+    DEFAULT_BUTTON_COLOR, DEFAULT_BUTTON_COLOR_DOWN,
+    GRAY_BUTTON_COLOR, GRAY_BUTTON_COLOR_DOWN
+)
+
 BUTTON_RADIUS = dp(12)
 
 

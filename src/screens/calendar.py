@@ -12,9 +12,10 @@ from kivy.metrics import dp
 from kivy.utils import platform
 
 import database
-from base_screens import BackgroundedScreen, TEXT_DARK, TEXT_MEDIUM, TEXT_HEADER, TEXT_WHITE, QUEEN_GRAY, QUEEN_GOLD, QUEEN_SILVER, TODAY_HIGHLIGHT
+from base_screens import BackgroundedScreen, TEXT_DARK, TEXT_HEADER, TEXT_WHITE, QUEEN_GRAY, QUEEN_GOLD, QUEEN_SILVER, TODAY_HIGHLIGHT
+from ui_constants import DEFAULT_BUTTON_COLOR, DEFAULT_BUTTON_COLOR_DOWN
 from popups import show_date_puzzles_popup
-from widgets import RoundedButton, DEFAULT_BUTTON_COLOR, DEFAULT_BUTTON_COLOR_DOWN
+from widgets import RoundedButton
 
 # Path to icons
 ICONS_DIR = os.path.join(os.path.dirname(__file__), '..', 'assets', 'icons')

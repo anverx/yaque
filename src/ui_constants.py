@@ -20,6 +20,12 @@ QUEEN_SILVER = (0.85, 0.88, 0.95, 1)  # Solved on a later day
 # Calendar colors
 TODAY_HIGHLIGHT = (0.4, 0.7, 0.9, 1)
 
+# Button colors
+DEFAULT_BUTTON_COLOR = (0.55, 0.78, 0.4, 1)       # Salad green
+DEFAULT_BUTTON_COLOR_DOWN = (0.45, 0.68, 0.3, 1)  # Darker salad green
+GRAY_BUTTON_COLOR = (0.75, 0.75, 0.75, 1)
+GRAY_BUTTON_COLOR_DOWN = (0.6, 0.6, 0.6, 1)
+
 # Common dimensions (as raw values, use with dp())
 TOP_SPACER_HEIGHT = 70
 BUTTON_HEIGHT = 48
