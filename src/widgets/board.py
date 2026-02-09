@@ -1,11 +1,14 @@
+from __future__ import annotations
+
 import copy
 import os
+from typing import Any, Callable
+
 from kivy.uix.widget import Widget
 from kivy.graphics import Rectangle, Line, Color, Ellipse, PushMatrix, PopMatrix, Rotate, Scale, Translate
 from kivy.clock import Clock
 from kivy.core.image import Image as CoreImage
 from kivy.animation import Animation
-from typing import List, Tuple, Callable, Optional, Set
 
 from ui_constants import (
     COLOR_BLACK, COLOR_WHITE,
@@ -28,10 +31,15 @@ MARK_QUEEN = 2
 
 
 class BoardWidget(Widget):
-    def __init__(self, kingdoms: List[List[int]], queens: List[Tuple[int, int]],
-                 on_cell_click: Optional[Callable[[int, int], None]] = None,
-                 on_solved: Optional[Callable[[], None]] = None,
-                 on_hidden_click: Optional[Callable[[], None]] = None, **kwargs):
+    def __init__(
+        self,
+        kingdoms: list[list[int]],
+        queens: list[tuple[int, int]],
+        on_cell_click: Callable[[int, int], None] | None = None,
+        on_solved: Callable[[], None] | None = None,
+        on_hidden_click: Callable[[], None] | None = None,
+        **kwargs: Any
+    ) -> None:
         super().__init__(**kwargs)
         self.kingdoms = kingdoms
         self.queens = queens
@@ -42,29 +50,29 @@ class BoardWidget(Widget):
         self.on_hidden_click = on_hidden_click
         self.solved = False
         # Track cell marks: 0=empty, 1=circle, 2=queen
-        self.cell_marks = [[MARK_EMPTY] * self.size_cells for _ in range(self.size_cells)]
+        self.cell_marks: list[list[int]] = [[MARK_EMPTY] * self.size_cells for _ in range(self.size_cells)]
         self.show_solution = False
         # All possible solutions (populated when solved)
-        self.all_solutions: List[List[Tuple[int, int]]] = []
+        self.all_solutions: list[list[tuple[int, int]]] = []
         self.current_solution_index = 0
         # History for undo/redo
-        self.history = []
+        self.history: list[list[list[int]]] = []
         self.history_index = -1
         # Conflict tracking
-        self.conflict_cells: Set[Tuple[int, int]] = set()
-        self.blocked_cells: Set[Tuple[int, int]] = set()  # Circles in fully-blocked kingdoms
-        self._validation_event = None
+        self.conflict_cells: set[tuple[int, int]] = set()
+        self.blocked_cells: set[tuple[int, int]] = set()  # Circles in fully-blocked kingdoms
+        self._validation_event: Any = None
         self.hidden = True  # Start hidden until play is pressed
         # Victory celebration animation
         self.celebrating = False
         self.celebration_progress = 0.0
-        self._celebration_event = None
+        self._celebration_event: Any = None
         self.bind(pos=self._trigger_redraw, size=self._trigger_redraw)
 
-    def _trigger_redraw(self, *args):
+    def _trigger_redraw(self, *args: Any) -> None:
         self.draw_board()
 
-    def draw_board(self):
+    def draw_board(self) -> None:
         self.canvas.clear()
         n = self.size_cells
         cell_w = self.width / n
@@ -223,7 +231,7 @@ class BoardWidget(Widget):
                             Rectangle(pos=(qx, qy), size=(size, size), texture=QUEEN_TEXTURE)
                         Color(*COLOR_BLACK)
 
-    def _get_marked_queens(self) -> List[Tuple[int, int]]:
+    def _get_marked_queens(self) -> list[tuple[int, int]]:
         """Get all cells marked as queens."""
         marked = []
         for row in range(self.size_cells):
@@ -232,7 +240,7 @@ class BoardWidget(Widget):
                     marked.append((row, col))
         return marked
 
-    def _find_conflicts(self) -> Set[Tuple[int, int]]:
+    def _find_conflicts(self) -> set[tuple[int, int]]:
         """Find all queens that conflict with each other."""
         conflicts = set()
         marked_queens = self._get_marked_queens()
@@ -255,7 +263,7 @@ class BoardWidget(Widget):
 
         return conflicts
 
-    def _find_blocked_kingdoms(self) -> Set[Tuple[int, int]]:
+    def _find_blocked_kingdoms(self) -> set[tuple[int, int]]:
         """Find all cells in kingdoms that are entirely marked as 'no queen' (circles)."""
         blocked = set()
 
@@ -311,7 +319,7 @@ class BoardWidget(Widget):
         # Check no conflicts
         return len(self._find_conflicts()) == 0
 
-    def _validate_after_delay(self, dt):
+    def _validate_after_delay(self, dt: float) -> None:
         """Called after delay to validate queen placements."""
         self.conflict_cells = self._find_conflicts()
         self.blocked_cells = self._find_blocked_kingdoms()
@@ -324,14 +332,14 @@ class BoardWidget(Widget):
             if self.on_solved:
                 self.on_solved()
 
-    def start_celebration(self):
+    def start_celebration(self) -> None:
         """Start the victory celebration animation."""
         self.celebrating = True
         self.celebration_progress = 0.0
         # Run animation for ~1.5 seconds at 60fps
         self._celebration_event = Clock.schedule_interval(self._update_celebration, 1/60)
 
-    def _update_celebration(self, dt):
+    def _update_celebration(self, dt: float) -> None:
         """Update celebration animation frame."""
         self.celebration_progress += dt / 2.5  # 2.5 second animation
         if self.celebration_progress >= 1.0:
@@ -342,7 +350,7 @@ class BoardWidget(Widget):
                 self._celebration_event = None
         self.draw_board()
 
-    def _schedule_validation(self):
+    def _schedule_validation(self) -> None:
         """Schedule validation with delay."""
         # Cancel any pending validation
         if self._validation_event:
@@ -353,28 +361,28 @@ class BoardWidget(Widget):
         # Schedule new validation after delay
         self._validation_event = Clock.schedule_once(self._validate_after_delay, 0.5)
 
-    def _save_state(self):
+    def _save_state(self) -> None:
         # Remove any redo states
         self.history = self.history[:self.history_index + 1]
         # Save current state
         self.history.append(copy.deepcopy(self.cell_marks))
         self.history_index = len(self.history) - 1
 
-    def undo(self):
+    def undo(self) -> None:
         if self.history_index > 0:
             self.history_index -= 1
             self.cell_marks = copy.deepcopy(self.history[self.history_index])
             self._schedule_validation()
             self.draw_board()
 
-    def redo(self):
+    def redo(self) -> None:
         if self.history_index < len(self.history) - 1:
             self.history_index += 1
             self.cell_marks = copy.deepcopy(self.history[self.history_index])
             self._schedule_validation()
             self.draw_board()
 
-    def reset(self):
+    def reset(self) -> None:
         self._save_state()
         self.cell_marks = [[MARK_EMPTY] * self.size_cells for _ in range(self.size_cells)]
         self.conflict_cells = set()
@@ -389,7 +397,7 @@ class BoardWidget(Widget):
         self.celebration_progress = 0.0
         self.draw_board()
 
-    def auto_solve(self):
+    def auto_solve(self) -> None:
         """Place the correct solution and play celebration."""
         # Clear board first
         self.cell_marks = [[MARK_EMPTY] * self.size_cells for _ in range(self.size_cells)]
@@ -412,7 +420,7 @@ class BoardWidget(Widget):
         self.draw_board()
         return self.current_solution_index
 
-    def on_touch_down(self, touch):
+    def on_touch_down(self, touch: Any) -> bool:
         if self.hidden:
             if self.collide_point(*touch.pos) and self.on_hidden_click:
                 self.on_hidden_click()
