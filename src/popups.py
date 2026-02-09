@@ -3,6 +3,7 @@ import io
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.image import Image
 from kivy.uix.modalview import ModalView
+from kivy.uix.widget import Widget
 from kivy.core.image import Image as CoreImage
 from kivy.core.clipboard import Clipboard
 from kivy.clock import Clock
@@ -12,14 +13,14 @@ from game import Game
 from ui_constants import (
     POPUP_BACKGROUND,
     STATUS_SUCCESS, STATUS_ERROR,
-    DEFAULT_BUTTON_COLOR_DOWN, BUTTON_UNSELECTED,
-    POPUP_WIDTH_NARROW, SPACING_XL, SPACING_XXL,
+    POPUP_WIDTH_NARROW, SPACING_MD, SPACING_XL, SPACING_XXL,
     BUTTON_HEIGHT_SM,
     QR_IMAGE_HEIGHT, CAPTION_HEIGHT, CAPTION_HEIGHT_SM,
     SMALL_BUTTON_WIDTH, SPACER_SM,
 )
 from widgets import (
     RoundedButton, GrayRoundedButton, FixedGrayRoundedButton, SmallRoundedButton,
+    SelectableButton, SelectableButtonGroup,
     TitleLabel, SubtitleLabel, CaptionLabel, StatusLabel,
     PopupContent, ButtonRow, SizeButtonRow, Popup,
     UrlInput, CodeInput, QueenSpinner,
@@ -335,7 +336,9 @@ def show_game_size_popup(on_size_and_strategy_selected):
 
     # Strategy buttons (radio-style)
     strategy_row = ButtonRow(height=dp(BUTTON_HEIGHT_SM), spacing=dp(SPACING_MD))
-    strategy_buttons = {}
+    strategy_group = SelectableButtonGroup(
+        on_select=lambda value: selected_strategy.__setitem__(0, value)
+    )
 
     strategies = [
         ('classic', 'Classic'),
@@ -343,25 +346,13 @@ def show_game_size_popup(on_size_and_strategy_selected):
         ('jagged', 'Jagged'),
     ]
 
-    def select_strategy(strategy):
-        def callback(btn):
-            selected_strategy[0] = strategy
-            # Update button colors to show selection
-            for s, b in strategy_buttons.items():
-                if s == strategy:
-                    b.bg_color = DEFAULT_BUTTON_COLOR_DOWN  # Darker = selected
-                else:
-                    b.bg_color = BUTTON_UNSELECTED  # Gray = unselected
-                b._update_bg()
-        return callback
-
     for strategy, label in strategies:
-        btn = SmallRoundedButton(
+        btn = SelectableButton(
             text=label,
-            bg_color=BUTTON_UNSELECTED if strategy != 'mixed' else DEFAULT_BUTTON_COLOR_DOWN
+            font_size='14sp',
+            selected=(strategy == 'mixed')
         )
-        btn.bind(on_press=select_strategy(strategy))
-        strategy_buttons[strategy] = btn
+        strategy_group.add(strategy, btn)
         strategy_row.add_widget(btn)
 
     content.add_widget(strategy_row)

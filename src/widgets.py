@@ -360,6 +360,59 @@ def SmallRoundedButton(**kwargs):
     return RoundedButton(**kwargs)
 
 
+class SelectableButton(RoundedButton):
+    """A button that can be selected/deselected with visual feedback.
+
+    Use with SelectableButtonGroup for radio-style selection.
+    """
+
+    def __init__(self, selected=False, **kwargs):
+        from ui_constants import BUTTON_UNSELECTED
+        # Set initial colors based on selected state
+        if not selected:
+            kwargs.setdefault('bg_color', BUTTON_UNSELECTED)
+        super().__init__(**kwargs)
+        self._selected = selected
+
+    @property
+    def selected(self):
+        return self._selected
+
+    @selected.setter
+    def selected(self, value):
+        from ui_constants import BUTTON_UNSELECTED
+        self._selected = value
+        if value:
+            self.bg_color = DEFAULT_BUTTON_COLOR_DOWN
+        else:
+            self.bg_color = BUTTON_UNSELECTED
+        self._update_bg()
+
+
+class SelectableButtonGroup:
+    """Manages a group of SelectableButtons for radio-style selection."""
+
+    def __init__(self, on_select=None):
+        self.buttons = {}
+        self.selected_value = None
+        self.on_select = on_select
+
+    def add(self, value, button):
+        """Add a button to the group with associated value."""
+        self.buttons[value] = button
+        button.bind(on_press=lambda btn: self.select(value))
+        if button.selected:
+            self.selected_value = value
+
+    def select(self, value):
+        """Select a button by its value."""
+        self.selected_value = value
+        for v, btn in self.buttons.items():
+            btn.selected = (v == value)
+        if self.on_select:
+            self.on_select(value)
+
+
 def BackButton(**kwargs):
     """Standard back button with fixed height."""
     kwargs.setdefault('text', 'Back')
