@@ -1,6 +1,8 @@
 """Shared UI widgets for Yaque."""
 
 from kivy.uix.label import Label
+from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.modalview import ModalView
 from kivy.uix.behaviors import ButtonBehavior
 from kivy.graphics import Color, RoundedRectangle
 from kivy.metrics import dp
@@ -9,10 +11,13 @@ from ui_constants import (
     FONT_NAME, TEXT_WHITE, TEXT_DARK,
     DEFAULT_BUTTON_COLOR, DEFAULT_BUTTON_COLOR_DOWN,
     GRAY_BUTTON_COLOR, GRAY_BUTTON_COLOR_DOWN,
-    LABEL_STYLES
+    LABEL_STYLES,
+    POPUP_BACKGROUND, POPUP_WIDTH,
+    PADDING_POPUP, SPACING_LG, SPACING_MD,
+    BUTTON_HEIGHT, ROW_HEIGHT, RADIUS_MD,
 )
 
-BUTTON_RADIUS = dp(12)
+BUTTON_RADIUS = dp(RADIUS_MD)
 
 
 class RoundedButton(ButtonBehavior, Label):
@@ -101,3 +106,42 @@ def SubtitleLabel(text, **kwargs):
 def CaptionLabel(text, **kwargs):
     """Caption label for small text and metadata."""
     return styled_label('caption', text, **kwargs)
+
+
+# -----------------------------------------------------------------------------
+# Layout Factories
+# -----------------------------------------------------------------------------
+
+def PopupContent(**kwargs):
+    """Vertical BoxLayout with popup padding/spacing defaults."""
+    kwargs.setdefault('orientation', 'vertical')
+    kwargs.setdefault('padding', [dp(PADDING_POPUP[0]), dp(PADDING_POPUP[1])])
+    kwargs.setdefault('spacing', dp(SPACING_LG))
+    return BoxLayout(**kwargs)
+
+
+def ButtonRow(**kwargs):
+    """Horizontal BoxLayout for button rows with standard height/spacing."""
+    kwargs.setdefault('size_hint_y', None)
+    kwargs.setdefault('height', dp(BUTTON_HEIGHT))
+    kwargs.setdefault('spacing', dp(SPACING_LG))
+    return BoxLayout(**kwargs)
+
+
+def Popup(content, height, width_hint=POPUP_WIDTH, auto_dismiss=True):
+    """Create a styled ModalView popup.
+
+    Args:
+        content: Widget to add as popup content
+        height: Popup height in dp units (raw number)
+        width_hint: size_hint_x value (default POPUP_WIDTH)
+        auto_dismiss: Whether tapping outside closes popup
+    """
+    popup = ModalView(
+        size_hint=(width_hint, None),
+        height=dp(height),
+        auto_dismiss=auto_dismiss,
+        background_color=POPUP_BACKGROUND
+    )
+    popup.add_widget(content)
+    return popup

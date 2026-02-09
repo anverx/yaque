@@ -34,8 +34,8 @@ from screens import (
     LogbookScreen,
 )
 from popups import show_share_popup, show_load_popup, show_game_size_popup, LoadingPopup
-from widgets import GrayRoundedButton, TitleLabel, SubtitleLabel, CaptionLabel
-from ui_constants import FONT_NAME
+from widgets import GrayRoundedButton, TitleLabel, SubtitleLabel, CaptionLabel, PopupContent, Popup
+from ui_constants import FONT_NAME, LINK_COLOR, BUTTON_HEIGHT_SM, POPUP_BACKGROUND
 
 # Android intent handling
 if platform == 'android':
@@ -267,12 +267,12 @@ class YaqueApp(App):
 
     def show_about(self, instance):
         """Show the about popup."""
-        from kivy.uix.modalview import ModalView
         from kivy.uix.boxlayout import BoxLayout
         from kivy.uix.button import Button
+        from kivy.uix.modalview import ModalView
         from kivy.metrics import dp
 
-        content = BoxLayout(orientation='vertical', padding=dp(20), spacing=dp(10))
+        content = PopupContent(padding=[dp(20), dp(15)])
 
         # Title
         content.add_widget(TitleLabel('Yaque', font_size='28sp', height=40))
@@ -307,7 +307,7 @@ class YaqueApp(App):
             size_hint_y=None,
             height=dp(30),
             background_color=(0, 0, 0, 0),
-            color=(0.2, 0.5, 0.8, 1)
+            color=LINK_COLOR
         )
         github_btn.bind(on_press=lambda x: self._open_url('https://github.com/anverx/yaque'))
         content.add_widget(github_btn)
@@ -315,9 +315,8 @@ class YaqueApp(App):
         # Close button
         close_btn = GrayRoundedButton(
             text='Close',
-            font_size='15sp',
             size_hint=(None, None),
-            size=(dp(100), dp(40)),
+            size=(dp(100), dp(BUTTON_HEIGHT_SM)),
             pos_hint={'center_x': 0.5}
         )
         content.add_widget(close_btn)
@@ -325,7 +324,7 @@ class YaqueApp(App):
         popup = ModalView(
             size_hint=(0.85, 0.55),
             auto_dismiss=True,
-            background_color=(1, 1, 1, 0.95)
+            background_color=POPUP_BACKGROUND
         )
         popup.add_widget(content)
         close_btn.bind(on_press=popup.dismiss)

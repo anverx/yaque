@@ -15,12 +15,18 @@ from kivy.metrics import dp
 from game import Game
 from ui_constants import (
     FONT_NAME,
-    TEXT_DARK, TEXT_MEDIUM, TEXT_LIGHT, TEXT_HEADER, TEXT_WHITE, COLOR_WHITE,
+    TEXT_DARK, TEXT_HEADER, COLOR_WHITE,
     POPUP_BACKGROUND, INPUT_BACKGROUND, INPUT_HINT_COLOR,
     STATUS_SUCCESS, STATUS_ERROR, SPINNER_BORDER,
-    DEFAULT_BUTTON_COLOR_DOWN, BUTTON_UNSELECTED
+    DEFAULT_BUTTON_COLOR_DOWN, BUTTON_UNSELECTED,
+    POPUP_WIDTH_NARROW, SPACING_MD, SPACING_LG, SPACING_XL, SPACING_XXL,
+    BUTTON_HEIGHT, BUTTON_HEIGHT_SM, ROW_HEIGHT,
 )
-from widgets import RoundedButton, GrayRoundedButton, TitleLabel, SubtitleLabel, CaptionLabel, StyledLabel
+from widgets import (
+    RoundedButton, GrayRoundedButton,
+    TitleLabel, SubtitleLabel, CaptionLabel,
+    PopupContent, ButtonRow, Popup,
+)
 
 ICONS_DIR = os.path.join(os.path.dirname(__file__), 'assets', 'icons')
 
@@ -47,9 +53,7 @@ def show_share_popup(share_url, code):
     core_img = CoreImage(buf, ext='png')
 
     # Build popup content
-    content = BoxLayout(orientation='vertical', padding=dp(15), spacing=dp(10))
-
-    # Title
+    content = PopupContent()
     content.add_widget(TitleLabel('Share Puzzle'))
 
     # QR code image
@@ -62,8 +66,8 @@ def show_share_popup(share_url, code):
         font_name=FONT_NAME,
         font_size='11sp',
         size_hint_y=None,
-        height=dp(40),
-        padding=[dp(8), dp(10)],
+        height=dp(BUTTON_HEIGHT_SM),
+        padding=[dp(SPACING_MD), dp(SPACING_LG)],
         readonly=True,
         multiline=False,
         background_color=INPUT_BACKGROUND,
@@ -72,7 +76,7 @@ def show_share_popup(share_url, code):
     content.add_widget(url_input)
 
     # Status label for copy feedback
-    status_label = CaptionLabel('', font_size='13sp', color=STATUS_SUCCESS, size_hint_y=None, height=dp(22))
+    status_label = CaptionLabel('', color=STATUS_SUCCESS, size_hint_y=None, height=dp(22))
     content.add_widget(status_label)
 
     def copy_url(btn):
@@ -86,40 +90,21 @@ def show_share_popup(share_url, code):
         Clock.schedule_once(lambda dt: setattr(status_label, 'text', ''), 2)
 
     # Copy buttons row
-    buttons = BoxLayout(size_hint_y=None, height=dp(44), spacing=dp(10))
-
-    copy_url_btn = RoundedButton(
-        text='Copy URL',
-        font_size='15sp'
-    )
+    buttons = ButtonRow()
+    copy_url_btn = RoundedButton(text='Copy URL')
     copy_url_btn.bind(on_press=copy_url)
     buttons.add_widget(copy_url_btn)
 
-    copy_code_btn = RoundedButton(
-        text='Copy Code',
-        font_size='15sp'
-    )
+    copy_code_btn = RoundedButton(text='Copy Code')
     copy_code_btn.bind(on_press=copy_code)
     buttons.add_widget(copy_code_btn)
-
     content.add_widget(buttons)
 
     # Close button
-    close_btn = GrayRoundedButton(
-        text='Close',
-        font_size='16sp',
-        size_hint_y=None,
-        height=dp(44)
-    )
+    close_btn = GrayRoundedButton(text='Close', size_hint_y=None, height=dp(BUTTON_HEIGHT))
     content.add_widget(close_btn)
 
-    popup = ModalView(
-        size_hint=(0.85, None),
-        height=dp(450),
-        auto_dismiss=True,
-        background_color=POPUP_BACKGROUND
-    )
-    popup.add_widget(content)
+    popup = Popup(content, height=450)
     close_btn.bind(on_press=popup.dismiss)
     popup.open()
 
@@ -130,12 +115,8 @@ def show_load_popup(on_game_loaded):
     Args:
         on_game_loaded: Callback function that receives the loaded Game object
     """
-    content = BoxLayout(orientation='vertical', padding=dp(15), spacing=dp(12))
-
-    # Title
+    content = PopupContent()
     content.add_widget(TitleLabel('Load Shared Puzzle'))
-
-    # Instructions
     content.add_widget(SubtitleLabel('Paste puzzle code or URL:'))
 
     # Text input
@@ -144,8 +125,8 @@ def show_load_popup(on_game_loaded):
         font_name=FONT_NAME,
         font_size='16sp',
         size_hint_y=None,
-        height=dp(48),
-        padding=[dp(10), dp(12)],
+        height=dp(BUTTON_HEIGHT),
+        padding=[dp(SPACING_LG), dp(SPACING_XL)],
         background_color=INPUT_BACKGROUND,
         foreground_color=TEXT_HEADER,
         cursor_color=TEXT_DARK,
@@ -155,7 +136,7 @@ def show_load_popup(on_game_loaded):
     content.add_widget(text_input)
 
     # Error label
-    error_label = CaptionLabel('', font_size='13sp', color=STATUS_ERROR, size_hint_y=None, height=dp(22))
+    error_label = CaptionLabel('', color=STATUS_ERROR, size_hint_y=None, height=dp(22))
     content.add_widget(error_label)
 
     popup = None  # Will be set after popup creation
@@ -184,40 +165,21 @@ def show_load_popup(on_game_loaded):
         text_input.text = Clipboard.paste() or ''
 
     # Button row
-    buttons = BoxLayout(size_hint_y=None, height=dp(48), spacing=dp(10))
-
-    paste_btn = GrayRoundedButton(
-        text='Paste',
-        font_size='16sp'
-    )
+    buttons = ButtonRow()
+    paste_btn = GrayRoundedButton(text='Paste')
     paste_btn.bind(on_press=paste_clipboard)
     buttons.add_widget(paste_btn)
 
-    load_btn = RoundedButton(
-        text='Load',
-        font_size='16sp'
-    )
+    load_btn = RoundedButton(text='Load')
     load_btn.bind(on_press=load_puzzle)
     buttons.add_widget(load_btn)
-
     content.add_widget(buttons)
 
     # Cancel button
-    cancel_btn = GrayRoundedButton(
-        text='Cancel',
-        font_size='16sp',
-        size_hint_y=None,
-        height=dp(44)
-    )
+    cancel_btn = GrayRoundedButton(text='Cancel', size_hint_y=None, height=dp(BUTTON_HEIGHT))
     content.add_widget(cancel_btn)
 
-    popup = ModalView(
-        size_hint=(0.85, None),
-        height=dp(300),
-        auto_dismiss=False,
-        background_color=POPUP_BACKGROUND
-    )
-    popup.add_widget(content)
+    popup = Popup(content, height=300, auto_dismiss=False)
     cancel_btn.bind(on_press=popup.dismiss)
     popup.open()
 
@@ -227,7 +189,7 @@ class LoadingPopup(ModalView):
 
     def __init__(self, on_cancel=None, **kwargs):
         super().__init__(**kwargs)
-        self.size_hint = (0.7, 0.45)
+        self.size_hint = (POPUP_WIDTH_NARROW, 0.45)
         self.auto_dismiss = False
         self.background_color = POPUP_BACKGROUND
         self.on_cancel_callback = on_cancel
@@ -240,7 +202,7 @@ class LoadingPopup(ModalView):
         self.queen_texture = CoreImage(os.path.join(ICONS_DIR, 'queen.png')).texture
 
         # Main layout
-        layout = BoxLayout(orientation='vertical', padding=dp(20), spacing=dp(10))
+        layout = PopupContent(padding=[dp(SPACING_XXL), dp(SPACING_XL)])
 
         # Status label (title at top)
         self.status_label = TitleLabel(
@@ -266,9 +228,8 @@ class LoadingPopup(ModalView):
         # Cancel button
         cancel_btn = GrayRoundedButton(
             text='Cancel',
-            font_size='15sp',
             size_hint=(None, None),
-            size=(dp(100), dp(40)),
+            size=(dp(100), dp(BUTTON_HEIGHT_SM)),
             pos_hint={'center_x': 0.5}
         )
         cancel_btn.bind(on_press=self._on_cancel)
@@ -360,9 +321,7 @@ def _show_size_selection_popup(title, sizes, on_size_selected, popup_height):
         on_size_selected: Callback receiving the selected size
         popup_height: Height of the popup in dp
     """
-    content = BoxLayout(orientation='vertical', padding=dp(15), spacing=dp(12))
-
-    # Title
+    content = PopupContent()
     content.add_widget(TitleLabel(title, height=40))
 
     popup = None  # Will be set after creation
@@ -375,12 +334,9 @@ def _show_size_selection_popup(title, sizes, on_size_selected, popup_height):
 
     # Create button rows
     for row_sizes in sizes:
-        row = BoxLayout(size_hint_y=None, height=dp(50), spacing=dp(10))
+        row = ButtonRow(height=dp(ROW_HEIGHT))
         for size in row_sizes:
-            btn = RoundedButton(
-                text=f'{size}x{size}',
-                font_size='18sp'
-            )
+            btn = RoundedButton(text=f'{size}x{size}')
             btn.bind(on_press=make_callback(size))
             row.add_widget(btn)
         content.add_widget(row)
@@ -389,21 +345,10 @@ def _show_size_selection_popup(title, sizes, on_size_selected, popup_height):
     content.add_widget(Widget(size_hint_y=None, height=dp(5)))
 
     # Cancel button
-    cancel_btn = GrayRoundedButton(
-        text='Cancel',
-        font_size='16sp',
-        size_hint_y=None,
-        height=dp(44)
-    )
+    cancel_btn = GrayRoundedButton(text='Cancel', size_hint_y=None, height=dp(BUTTON_HEIGHT))
     content.add_widget(cancel_btn)
 
-    popup = ModalView(
-        size_hint=(0.8, None),
-        height=dp(popup_height),
-        auto_dismiss=True,
-        background_color=POPUP_BACKGROUND
-    )
-    popup.add_widget(content)
+    popup = Popup(content, height=popup_height, width_hint=0.8)
     cancel_btn.bind(on_press=popup.dismiss)
     popup.open()
 
@@ -436,9 +381,7 @@ def show_game_size_popup(on_size_and_strategy_selected):
     Args:
         on_size_and_strategy_selected: Callback receiving (size: int, strategy: str)
     """
-    content = BoxLayout(orientation='vertical', padding=dp(15), spacing=dp(10))
-
-    # Title
+    content = PopupContent()
     content.add_widget(TitleLabel('Select Puzzle Size'))
 
     popup = None
@@ -451,14 +394,11 @@ def show_game_size_popup(on_size_and_strategy_selected):
         return callback
 
     # Size buttons (2x2 grid)
-    row1 = BoxLayout(size_hint_y=None, height=dp(50), spacing=dp(10))
-    row2 = BoxLayout(size_hint_y=None, height=dp(50), spacing=dp(10))
+    row1 = ButtonRow(height=dp(ROW_HEIGHT))
+    row2 = ButtonRow(height=dp(ROW_HEIGHT))
 
     for size, row in [(6, row1), (7, row1), (8, row2), (9, row2)]:
-        btn = RoundedButton(
-            text=f'{size}x{size}',
-            font_size='18sp'
-        )
+        btn = RoundedButton(text=f'{size}x{size}')
         btn.bind(on_press=make_size_callback(size))
         row.add_widget(btn)
 
@@ -469,7 +409,7 @@ def show_game_size_popup(on_size_and_strategy_selected):
     content.add_widget(SubtitleLabel('Kingdom Style'))
 
     # Strategy buttons (radio-style)
-    strategy_row = BoxLayout(size_hint_y=None, height=dp(40), spacing=dp(8))
+    strategy_row = ButtonRow(height=dp(BUTTON_HEIGHT_SM), spacing=dp(SPACING_MD))
     strategy_buttons = {}
 
     strategies = [
@@ -506,20 +446,9 @@ def show_game_size_popup(on_size_and_strategy_selected):
     content.add_widget(Widget(size_hint_y=None, height=dp(5)))
 
     # Cancel button
-    cancel_btn = GrayRoundedButton(
-        text='Cancel',
-        font_size='16sp',
-        size_hint_y=None,
-        height=dp(44)
-    )
+    cancel_btn = GrayRoundedButton(text='Cancel', size_hint_y=None, height=dp(BUTTON_HEIGHT))
     content.add_widget(cancel_btn)
 
-    popup = ModalView(
-        size_hint=(0.85, None),
-        height=dp(340),
-        auto_dismiss=True,
-        background_color=POPUP_BACKGROUND
-    )
-    popup.add_widget(content)
+    popup = Popup(content, height=340)
     cancel_btn.bind(on_press=popup.dismiss)
     popup.open()

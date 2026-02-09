@@ -44,13 +44,53 @@ STATUS_ERROR = (0.8, 0.2, 0.2, 1)    # Red for error messages
 # Spinner colors
 SPINNER_BORDER = (0.8, 0.8, 0.8, 1)
 
-# Common dimensions (as raw values, use with dp())
-TOP_SPACER_HEIGHT = 70
+# =============================================================================
+# Dimensions (raw values, use with dp())
+# =============================================================================
+
+# Spacing scale
+SPACING_XS = 2
+SPACING_SM = 4
+SPACING_MD = 8
+SPACING_LG = 10
+SPACING_XL = 15
+SPACING_XXL = 20
+
+# Padding presets (horizontal, vertical)
+PADDING_POPUP = (15, 10)
+PADDING_POPUP_LARGE = (20, 15)
+PADDING_ROW = (10, 5)
+PADDING_CELL = (2, 2)
+
+# Button heights
+BUTTON_HEIGHT_SM = 40
 BUTTON_HEIGHT = 48
-BACK_BUTTON_HEIGHT = 48
+BUTTON_HEIGHT_LG = 58
+
+# Layout heights
+TOP_SPACER_HEIGHT = 70
+HEADER_HEIGHT = 50
+ROW_HEIGHT = 50
+CELL_HEIGHT = 52
+NAV_BUTTON_WIDTH = 50
+
+# Touch/gesture thresholds
+SWIPE_EDGE_THRESHOLD = 20
+SWIPE_DISTANCE_THRESHOLD = 100
+
+# Popup dimensions (size_hint_x values)
+POPUP_WIDTH = 0.85
+POPUP_WIDTH_NARROW = 0.7
+
+# Border radius
+RADIUS_SM = 8
+RADIUS_MD = 12
 
 # Background image path
 BACKGROUND_IMAGE = 'assets/images/splashscreen.jpg'
+
+# Link color (for clickable text)
+LINK_COLOR = (0.2, 0.5, 0.8, 1)
 
 # =============================================================================
 # Board Widget Colors
