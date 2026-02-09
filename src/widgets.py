@@ -6,6 +6,7 @@ from kivy.graphics import Color, RoundedRectangle
 from kivy.metrics import dp
 
 from ui_constants import (
+    FONT_NAME,
     DEFAULT_BUTTON_COLOR, DEFAULT_BUTTON_COLOR_DOWN,
     GRAY_BUTTON_COLOR, GRAY_BUTTON_COLOR_DOWN
 )
@@ -21,6 +22,7 @@ class RoundedButton(ButtonBehavior, Label):
         bg_color_down: Pressed background color. Defaults to darker shade.
     """
     def __init__(self, bg_color=None, bg_color_down=None, **kwargs):
+        kwargs.setdefault('font_name', FONT_NAME)
         super().__init__(**kwargs)
         self.bg_color = bg_color or DEFAULT_BUTTON_COLOR
         self.bg_color_down = bg_color_down or DEFAULT_BUTTON_COLOR_DOWN

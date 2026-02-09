@@ -1,4 +1,7 @@
-# UI Constants - centralized colors and dimensions
+# UI Constants - centralized colors, dimensions, and fonts
+
+# Font
+FONT_NAME = 'DMSansBlack'
 
 # Text colors
 TEXT_DARK = (0.3, 0.3, 0.3, 1)

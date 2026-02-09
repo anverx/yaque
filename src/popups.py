@@ -15,6 +15,7 @@ from kivy.metrics import dp
 
 from game import Game
 from ui_constants import (
+    FONT_NAME,
     TEXT_DARK, TEXT_MEDIUM, TEXT_LIGHT, TEXT_HEADER, TEXT_WHITE, COLOR_WHITE,
     POPUP_BACKGROUND, INPUT_BACKGROUND, INPUT_HINT_COLOR,
     STATUS_SUCCESS, STATUS_ERROR, SPINNER_BORDER,
@@ -52,7 +53,7 @@ def show_share_popup(share_url, code):
     # Title
     content.add_widget(Label(
         text='Share Puzzle',
-        font_name='DMSansBlack',
+        font_name=FONT_NAME,
         font_size='18sp',
         color=TEXT_DARK,
         size_hint_y=None,
@@ -66,7 +67,7 @@ def show_share_popup(share_url, code):
     # URL label (selectable via TextInput)
     url_input = TextInput(
         text=share_url,
-        font_name='DMSansBlack',
+        font_name=FONT_NAME,
         font_size='11sp',
         size_hint_y=None,
         height=dp(40),
@@ -81,7 +82,7 @@ def show_share_popup(share_url, code):
     # Status label for copy feedback
     status_label = Label(
         text='',
-        font_name='DMSansBlack',
+        font_name=FONT_NAME,
         font_size='13sp',
         color=STATUS_SUCCESS,
         size_hint_y=None,
@@ -104,7 +105,6 @@ def show_share_popup(share_url, code):
 
     copy_url_btn = RoundedButton(
         text='Copy URL',
-        font_name='DMSansBlack',
         font_size='15sp',
         color=TEXT_WHITE
     )
@@ -113,7 +113,6 @@ def show_share_popup(share_url, code):
 
     copy_code_btn = RoundedButton(
         text='Copy Code',
-        font_name='DMSansBlack',
         font_size='15sp',
         color=TEXT_WHITE
     )
@@ -125,7 +124,6 @@ def show_share_popup(share_url, code):
     # Close button
     close_btn = GrayRoundedButton(
         text='Close',
-        font_name='DMSansBlack',
         font_size='16sp',
         color=TEXT_DARK,
         size_hint_y=None,
@@ -155,7 +153,7 @@ def show_load_popup(on_game_loaded):
     # Title
     content.add_widget(Label(
         text='Load Shared Puzzle',
-        font_name='DMSansBlack',
+        font_name=FONT_NAME,
         font_size='18sp',
         color=TEXT_DARK,
         size_hint_y=None,
@@ -165,7 +163,7 @@ def show_load_popup(on_game_loaded):
     # Instructions
     content.add_widget(Label(
         text='Paste puzzle code or URL:',
-        font_name='DMSansBlack',
+        font_name=FONT_NAME,
         font_size='14sp',
         color=TEXT_LIGHT,
         size_hint_y=None,
@@ -175,7 +173,7 @@ def show_load_popup(on_game_loaded):
     # Text input
     text_input = TextInput(
         multiline=False,
-        font_name='DMSansBlack',
+        font_name=FONT_NAME,
         font_size='16sp',
         size_hint_y=None,
         height=dp(48),
@@ -191,7 +189,7 @@ def show_load_popup(on_game_loaded):
     # Error label
     error_label = Label(
         text='',
-        font_name='DMSansBlack',
+        font_name=FONT_NAME,
         font_size='13sp',
         color=STATUS_ERROR,
         size_hint_y=None,
@@ -229,7 +227,6 @@ def show_load_popup(on_game_loaded):
 
     paste_btn = GrayRoundedButton(
         text='Paste',
-        font_name='DMSansBlack',
         font_size='16sp',
         color=TEXT_DARK
     )
@@ -238,7 +235,6 @@ def show_load_popup(on_game_loaded):
 
     load_btn = RoundedButton(
         text='Load',
-        font_name='DMSansBlack',
         font_size='16sp',
         color=TEXT_WHITE
     )
@@ -250,7 +246,6 @@ def show_load_popup(on_game_loaded):
     # Cancel button
     cancel_btn = GrayRoundedButton(
         text='Cancel',
-        font_name='DMSansBlack',
         font_size='16sp',
         color=TEXT_DARK,
         size_hint_y=None,
@@ -292,7 +287,7 @@ class LoadingPopup(ModalView):
         # Status label (title at top)
         self.status_label = Label(
             text='Generating puzzle...',
-            font_name='DMSansBlack',
+            font_name=FONT_NAME,
             font_size='16sp',
             color=TEXT_DARK,
             size_hint_y=None,
@@ -312,7 +307,7 @@ class LoadingPopup(ModalView):
         # Stopwatch label (small, subtle)
         self.timer_label = Label(
             text='0:00',
-            font_name='DMSansBlack',
+            font_name=FONT_NAME,
             font_size='12sp',
             color=TEXT_MEDIUM,
             size_hint_y=None,
@@ -323,7 +318,6 @@ class LoadingPopup(ModalView):
         # Cancel button
         cancel_btn = GrayRoundedButton(
             text='Cancel',
-            font_name='DMSansBlack',
             font_size='15sp',
             color=TEXT_DARK,
             size_hint=(None, None),
@@ -424,7 +418,7 @@ def _show_size_selection_popup(title, sizes, on_size_selected, popup_height):
     # Title
     content.add_widget(Label(
         text=title,
-        font_name='DMSansBlack',
+        font_name=FONT_NAME,
         font_size='18sp',
         color=TEXT_DARK,
         size_hint_y=None,
@@ -445,7 +439,6 @@ def _show_size_selection_popup(title, sizes, on_size_selected, popup_height):
         for size in row_sizes:
             btn = RoundedButton(
                 text=f'{size}x{size}',
-                font_name='DMSansBlack',
                 font_size='18sp',
                 color=TEXT_WHITE
             )
@@ -459,7 +452,6 @@ def _show_size_selection_popup(title, sizes, on_size_selected, popup_height):
     # Cancel button
     cancel_btn = GrayRoundedButton(
         text='Cancel',
-        font_name='DMSansBlack',
         font_size='16sp',
         color=TEXT_DARK,
         size_hint_y=None,
@@ -511,7 +503,7 @@ def show_game_size_popup(on_size_and_strategy_selected):
     # Title
     content.add_widget(Label(
         text='Select Puzzle Size',
-        font_name='DMSansBlack',
+        font_name=FONT_NAME,
         font_size='18sp',
         color=TEXT_DARK,
         size_hint_y=None,
@@ -534,7 +526,6 @@ def show_game_size_popup(on_size_and_strategy_selected):
     for size, row in [(6, row1), (7, row1), (8, row2), (9, row2)]:
         btn = RoundedButton(
             text=f'{size}x{size}',
-            font_name='DMSansBlack',
             font_size='18sp',
             color=TEXT_WHITE
         )
@@ -547,7 +538,7 @@ def show_game_size_popup(on_size_and_strategy_selected):
     # Strategy label
     content.add_widget(Label(
         text='Kingdom Style',
-        font_name='DMSansBlack',
+        font_name=FONT_NAME,
         font_size='14sp',
         color=TEXT_LIGHT,
         size_hint_y=None,
@@ -579,7 +570,6 @@ def show_game_size_popup(on_size_and_strategy_selected):
     for strategy, label in strategies:
         btn = RoundedButton(
             text=label,
-            font_name='DMSansBlack',
             font_size='14sp',
             color=TEXT_WHITE,
             bg_color=BUTTON_UNSELECTED if strategy != 'mixed' else DEFAULT_BUTTON_COLOR_DOWN
@@ -596,7 +586,6 @@ def show_game_size_popup(on_size_and_strategy_selected):
     # Cancel button
     cancel_btn = GrayRoundedButton(
         text='Cancel',
-        font_name='DMSansBlack',
         font_size='16sp',
         color=TEXT_DARK,
         size_hint_y=None,

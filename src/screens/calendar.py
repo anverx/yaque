@@ -13,7 +13,7 @@ from kivy.utils import platform
 
 import database
 from base_screens import BackgroundedScreen, TEXT_DARK, TEXT_HEADER, TEXT_WHITE, QUEEN_GRAY, QUEEN_GOLD, QUEEN_SILVER, TODAY_HIGHLIGHT
-from ui_constants import DEFAULT_BUTTON_COLOR, DEFAULT_BUTTON_COLOR_DOWN
+from ui_constants import FONT_NAME, DEFAULT_BUTTON_COLOR, DEFAULT_BUTTON_COLOR_DOWN
 from popups import show_date_puzzles_popup
 from widgets import RoundedButton
 
@@ -33,7 +33,7 @@ class DayCell(ButtonBehavior, BoxLayout):
         # Day number
         self.day_label = Label(
             text=str(day),
-            font_name='DMSansBlack',
+            font_name=FONT_NAME,
             font_size='14sp',
             color=TEXT_WHITE,
             size_hint_y=0.5
@@ -88,7 +88,6 @@ class CalendarScreen(BackgroundedScreen):
 
         prev_btn = RoundedButton(
             text='<',
-            font_name='DMSansBlack',
             font_size='24sp',
             size_hint_x=None,
             width=dp(50)
@@ -98,7 +97,7 @@ class CalendarScreen(BackgroundedScreen):
 
         self.month_label = Label(
             text='',
-            font_name='DMSansBlack',
+            font_name=FONT_NAME,
             font_size='22sp',
             color=TEXT_HEADER
         )
@@ -106,7 +105,6 @@ class CalendarScreen(BackgroundedScreen):
 
         next_btn = RoundedButton(
             text='>',
-            font_name='DMSansBlack',
             font_size='24sp',
             size_hint_x=None,
             width=dp(50)
@@ -121,7 +119,7 @@ class CalendarScreen(BackgroundedScreen):
         for day_name in ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su']:
             days_header.add_widget(Label(
                 text=day_name,
-                font_name='DMSansBlack',
+                font_name=FONT_NAME,
                 font_size='14sp',
                 color=TEXT_DARK
             ))
@@ -135,7 +133,7 @@ class CalendarScreen(BackgroundedScreen):
         # Streak display
         self.streak_label = Label(
             text='',
-            font_name='DMSansBlack',
+            font_name=FONT_NAME,
             font_size='16sp',
             color=TEXT_DARK,
             size_hint_y=None,

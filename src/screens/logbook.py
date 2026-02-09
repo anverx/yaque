@@ -10,7 +10,7 @@ from kivy.graphics import Color, RoundedRectangle
 from kivy.metrics import dp
 
 import database
-from base_screens import BackgroundedScreen, TEXT_DARK, TEXT_MEDIUM, TEXT_LIGHT, ROW_BACKGROUND, ROW_PRESSED, QUEEN_GRAY, QUEEN_GOLD, QUEEN_SILVER
+from base_screens import BackgroundedScreen, FONT_NAME, TEXT_DARK, TEXT_MEDIUM, TEXT_LIGHT, ROW_BACKGROUND, ROW_PRESSED, QUEEN_GRAY, QUEEN_GOLD, QUEEN_SILVER
 from game import Game
 from widgets import RoundedButton, GrayRoundedButton
 
@@ -75,7 +75,7 @@ class LogbookRow(ButtonBehavior, BoxLayout):
         # Time column
         self.add_widget(Label(
             text=time_str,
-            font_name='DMSansBlack',
+            font_name=FONT_NAME,
             font_size='13sp',
             color=TEXT_DARK,
             size_hint_x=0.25,
@@ -86,7 +86,7 @@ class LogbookRow(ButtonBehavior, BoxLayout):
         # Size column
         self.add_widget(Label(
             text=f'{size}x{size}',
-            font_name='DMSansBlack',
+            font_name=FONT_NAME,
             font_size='13sp',
             color=TEXT_LIGHT,
             size_hint_x=0.25,
@@ -96,7 +96,7 @@ class LogbookRow(ButtonBehavior, BoxLayout):
         # Duration column
         self.add_widget(Label(
             text=duration_str,
-            font_name='DMSansBlack',
+            font_name=FONT_NAME,
             font_size='13sp',
             color=TEXT_DARK,
             size_hint_x=0.25,
@@ -137,7 +137,7 @@ class DateSeparator(BoxLayout):
 
         self.add_widget(Label(
             text=date_str,
-            font_name='DMSansBlack',
+            font_name=FONT_NAME,
             font_size='12sp',
             color=TEXT_MEDIUM,
             halign='left',
@@ -157,7 +157,7 @@ class LogbookScreen(BackgroundedScreen):
         # Title
         layout.add_widget(Label(
             text='Logbook',
-            font_name='DMSansBlack',
+            font_name=FONT_NAME,
             font_size='24sp',
             color=TEXT_DARK,
             size_hint_y=None,
@@ -173,7 +173,7 @@ class LogbookScreen(BackgroundedScreen):
         )
         header.add_widget(Label(
             text='Time',
-            font_name='DMSansBlack',
+            font_name=FONT_NAME,
             font_size='11sp',
             color=TEXT_MEDIUM,
             size_hint_x=0.25,
@@ -181,7 +181,7 @@ class LogbookScreen(BackgroundedScreen):
         ))
         header.add_widget(Label(
             text='Size',
-            font_name='DMSansBlack',
+            font_name=FONT_NAME,
             font_size='11sp',
             color=TEXT_MEDIUM,
             size_hint_x=0.25,
@@ -189,7 +189,7 @@ class LogbookScreen(BackgroundedScreen):
         ))
         header.add_widget(Label(
             text='Duration',
-            font_name='DMSansBlack',
+            font_name=FONT_NAME,
             font_size='11sp',
             color=TEXT_MEDIUM,
             size_hint_x=0.25,
@@ -272,7 +272,7 @@ class LogbookScreen(BackgroundedScreen):
         if not plays and not append:
             self.list_layout.add_widget(Label(
                 text='No games played yet',
-                font_name='DMSansBlack',
+                font_name=FONT_NAME,
                 font_size='16sp',
                 color=TEXT_MEDIUM,
                 size_hint_y=None,
@@ -316,7 +316,6 @@ class LogbookScreen(BackgroundedScreen):
             remaining = total - self.current_offset
             load_more_btn = GrayRoundedButton(
                 text=f'Load More ({remaining} remaining)',
-                font_name='DMSansBlack',
                 font_size='14sp',
                 color=TEXT_DARK,
                 size_hint_y=None,

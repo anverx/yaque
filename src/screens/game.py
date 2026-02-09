@@ -13,7 +13,7 @@ from kivy.metrics import dp, sp
 from kivy.utils import platform
 
 from board_widget import BoardWidget
-from ui_constants import TEXT_DARK, TEXT_MEDIUM, COLOR_BLACK, INDICATOR_CURRENT, INDICATOR_OTHER
+from ui_constants import FONT_NAME, TEXT_DARK, TEXT_MEDIUM, COLOR_BLACK, INDICATOR_CURRENT, INDICATOR_OTHER
 from widgets import GrayRoundedButton
 import database
 import game_encoding
@@ -91,7 +91,7 @@ class IconButton(ButtonBehavior, BoxLayout):
         if label:
             self.label = Label(
                 text=label,
-                font_name='DMSansBlack',
+                font_name=FONT_NAME,
                 font_size='9sp',
                 color=TEXT_DARK,
                 size_hint=(None, None),
@@ -122,7 +122,7 @@ class GameScreen(Screen):
         # Game title (Daily puzzle: date / Random)
         self.title_label = Label(
             text='',
-            font_name='DMSansBlack',
+            font_name=FONT_NAME,
             font_size='16sp',
             color=TEXT_DARK,
             size_hint_y=None,
@@ -133,7 +133,7 @@ class GameScreen(Screen):
         # Subtitle - shows "Unique solution!" as label or "X solutions" as clickable button
         self.subtitle_label = Label(
             text='',
-            font_name='DMSansBlack',
+            font_name=FONT_NAME,
             font_size='12sp',
             color=TEXT_MEDIUM,
             size_hint_y=None,
@@ -145,7 +145,6 @@ class GameScreen(Screen):
         solutions_btn_anchor = AnchorLayout(size_hint_y=None, height=dp(32), anchor_x='center')
         self.solutions_text_btn = GrayRoundedButton(
             text='',
-            font_name='DMSansBlack',
             font_size='12sp',
             color=TEXT_DARK,
             size_hint=(None, None),
@@ -166,7 +165,7 @@ class GameScreen(Screen):
         top_bar = BoxLayout(size_hint_y=None, height=dp(50))
         self.clock_label = Label(
             text='00:00',
-            font_name='DMSansBlack',
+            font_name=FONT_NAME,
             font_size='36sp',
             color=COLOR_BLACK
         )
@@ -222,7 +221,6 @@ class GameScreen(Screen):
         # Back button
         back_btn = GrayRoundedButton(
             text='Back',
-            font_name='DMSansBlack',
             font_size='18sp',
             color=TEXT_DARK,
             size_hint_y=None,

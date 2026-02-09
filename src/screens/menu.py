@@ -3,7 +3,7 @@ from kivy.uix.label import Label
 from kivy.metrics import dp
 
 import database
-from base_screens import BackgroundedScreen, TEXT_DARK
+from base_screens import BackgroundedScreen, TEXT_DARK, FONT_NAME
 from widgets import RoundedButton, GrayRoundedButton
 
 
@@ -20,7 +20,7 @@ class MainMenuScreen(BackgroundedScreen):
         # Daily puzzles section
         layout.add_widget(Label(
             text="Today's Puzzles",
-            font_name='DMSansBlack',
+            font_name=FONT_NAME,
             font_size='20sp',
             color=TEXT_DARK,
             size_hint_y=None,
@@ -30,7 +30,7 @@ class MainMenuScreen(BackgroundedScreen):
         daily_buttons = BoxLayout(size_hint_y=None, height=dp(48), spacing=dp(10))
         self.daily_buttons = {}
         for size in [6, 7, 8]:
-            btn = RoundedButton(text=f'{size}x{size}', font_size='18sp', font_name='DMSansBlack')
+            btn = RoundedButton(text=f'{size}x{size}', font_size='18sp')
             btn.bind(on_press=lambda x, s=size: self.app.start_daily_game(s))
             self.daily_buttons[size] = btn
             daily_buttons.add_widget(btn)
@@ -42,7 +42,6 @@ class MainMenuScreen(BackgroundedScreen):
         # Calendar button with streak display
         self.calendar_btn = RoundedButton(
             text='Calendar',
-            font_name='DMSansBlack',
             font_size='18sp',
             size_hint_y=None,
             height=dp(58),
@@ -54,7 +53,6 @@ class MainMenuScreen(BackgroundedScreen):
         # Random game button
         random_btn = RoundedButton(
             text='Random Game',
-            font_name='DMSansBlack',
             font_size='18sp',
             size_hint_y=None,
             height=dp(48)
@@ -65,7 +63,6 @@ class MainMenuScreen(BackgroundedScreen):
         # Load shared puzzle button
         load_btn = RoundedButton(
             text='Load Shared Puzzle',
-            font_name='DMSansBlack',
             font_size='18sp',
             size_hint_y=None,
             height=dp(48)
@@ -76,7 +73,6 @@ class MainMenuScreen(BackgroundedScreen):
         # Logbook button
         logbook_btn = RoundedButton(
             text='Logbook',
-            font_name='DMSansBlack',
             font_size='18sp',
             size_hint_y=None,
             height=dp(48)
@@ -87,7 +83,6 @@ class MainMenuScreen(BackgroundedScreen):
         # About button
         about_btn = RoundedButton(
             text='About',
-            font_name='DMSansBlack',
             font_size='18sp',
             size_hint_y=None,
             height=dp(48)
@@ -101,7 +96,6 @@ class MainMenuScreen(BackgroundedScreen):
         # Exit button
         exit_btn = GrayRoundedButton(
             text='Exit',
-            font_name='DMSansBlack',
             font_size='18sp',
             color=TEXT_DARK,
             size_hint_y=None,

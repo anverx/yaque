@@ -35,6 +35,7 @@ from screens import (
 )
 from popups import show_share_popup, show_load_popup, show_game_size_popup, LoadingPopup
 from widgets import GrayRoundedButton
+from ui_constants import FONT_NAME, TEXT_DARK, TEXT_MEDIUM, TEXT_LIGHT
 
 # Android intent handling
 if platform == 'android':
@@ -277,9 +278,9 @@ class YaqueApp(App):
         # Title
         content.add_widget(Label(
             text='Yaque',
-            font_name='DMSansBlack',
+            font_name=FONT_NAME,
             font_size='28sp',
-            color=(0.3, 0.3, 0.3, 1),
+            color=TEXT_DARK,
             size_hint_y=None,
             height=dp(40)
         ))
@@ -287,9 +288,9 @@ class YaqueApp(App):
         # Subtitle
         content.add_widget(Label(
             text='A Queens Puzzle Game',
-            font_name='DMSansBlack',
+            font_name=FONT_NAME,
             font_size='16sp',
-            color=(0.4, 0.4, 0.4, 1),
+            color=TEXT_LIGHT,
             size_hint_y=None,
             height=dp(25)
         ))
@@ -297,9 +298,9 @@ class YaqueApp(App):
         # Description
         desc = Label(
             text='Place one queen in each colored kingdom.\nQueens cannot attack each other\n(no shared rows, columns, or adjacent cells).',
-            font_name='DMSansBlack',
+            font_name=FONT_NAME,
             font_size='14sp',
-            color=(0.4, 0.4, 0.4, 1),
+            color=TEXT_LIGHT,
             size_hint_y=None,
             height=dp(70),
             halign='center',
@@ -314,9 +315,9 @@ class YaqueApp(App):
         # License
         content.add_widget(Label(
             text='License: CC BY-NC-SA 4.0',
-            font_name='DMSansBlack',
+            font_name=FONT_NAME,
             font_size='12sp',
-            color=(0.5, 0.5, 0.5, 1),
+            color=TEXT_MEDIUM,
             size_hint_y=None,
             height=dp(20)
         ))
@@ -324,9 +325,9 @@ class YaqueApp(App):
         # Version
         content.add_widget(Label(
             text=f'Version {__version__}',
-            font_name='DMSansBlack',
+            font_name=FONT_NAME,
             font_size='12sp',
-            color=(0.5, 0.5, 0.5, 1),
+            color=TEXT_MEDIUM,
             size_hint_y=None,
             height=dp(20)
         ))
@@ -334,7 +335,7 @@ class YaqueApp(App):
         # GitHub link
         github_btn = Button(
             text='github.com/anverx/yaque',
-            font_name='DMSansBlack',
+            font_name=FONT_NAME,
             font_size='12sp',
             size_hint_y=None,
             height=dp(30),
@@ -347,9 +348,8 @@ class YaqueApp(App):
         # Close button
         close_btn = GrayRoundedButton(
             text='Close',
-            font_name='DMSansBlack',
             font_size='15sp',
-            color=(0.3, 0.3, 0.3, 1),
+            color=TEXT_DARK,
             size_hint=(None, None),
             size=(dp(100), dp(40)),
             pos_hint={'center_x': 0.5}
