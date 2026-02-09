@@ -15,7 +15,8 @@ from kivy.metrics import dp
 from kivy.utils import platform
 
 import database
-from base_screens import BackgroundedScreen, TEXT_WHITE, QUEEN_GRAY, QUEEN_GOLD, QUEEN_SILVER, TODAY_HIGHLIGHT
+from screens.base import BackgroundedScreen
+from ui_constants import TEXT_WHITE, QUEEN_GRAY, QUEEN_GOLD, QUEEN_SILVER, TODAY_HIGHLIGHT
 from ui_constants import (
     DEFAULT_BUTTON_COLOR, DEFAULT_BUTTON_COLOR_DOWN,
     HEADER_HEIGHT, CELL_HEIGHT, NAV_BUTTON_WIDTH, RADIUS_SM,

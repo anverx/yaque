@@ -4,7 +4,7 @@ from kivy.uix.boxlayout import BoxLayout
 from kivy.metrics import dp
 
 import database
-from base_screens import BackgroundedScreen
+from screens.base import BackgroundedScreen
 from ui_constants import BUTTON_HEIGHT, BUTTON_HEIGHT_LG, SPACING_LG
 from widgets import RoundedButton, FixedRoundedButton, FixedGrayRoundedButton, TitleMdLabel, ButtonRow
 

@@ -1,5 +1,9 @@
 """Base screen classes with common UI patterns."""
 
+from __future__ import annotations
+
+from typing import Any
+
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.image import Image
@@ -18,7 +22,7 @@ class BackgroundedScreen(Screen):
     to self.content_layout.
     """
 
-    def __init__(self, app, **kwargs):
+    def __init__(self, app: Any, **kwargs: Any) -> None:
         super().__init__(**kwargs)
         self.app = app
 
@@ -58,37 +62,28 @@ class BackgroundedScreen(Screen):
         root.add_widget(self.content_layout)
         self.add_widget(root)
 
-    def _update_overlay(self, instance, value):
+    def _update_overlay(self, instance: Any, value: Any) -> None:
         self._overlay_rect.pos = instance.pos
         self._overlay_rect.size = instance.size
 
-    def get_padding(self):
+    def get_padding(self) -> int:
         """Override to customize padding. Default is 20."""
         return 20
 
-    def get_spacing(self):
+    def get_spacing(self) -> int:
         """Override to customize spacing. Default is 10."""
         return 10
 
-    def build_content(self):
+    def build_content(self) -> None:
         """Override this method to build the screen's content.
 
         Add widgets to self.content_layout.
         """
         pass
 
-    def add_back_button(self):
+    def add_back_button(self) -> BackButton:
         """Add a standard back button that returns to menu."""
         back_btn = BackButton()
         back_btn.bind(on_press=lambda x: setattr(self.app.sm, 'current', 'menu'))
         self.content_layout.add_widget(back_btn)
         return back_btn
-
-
-# Re-export for convenience
-from ui_constants import (
-    TEXT_DARK, TEXT_MEDIUM, TEXT_LIGHT, TEXT_HEADER, TEXT_WHITE,
-    OVERLAY_WHITE, ROW_BACKGROUND, ROW_PRESSED,
-    QUEEN_GRAY, QUEEN_GOLD, QUEEN_SILVER,
-    TODAY_HIGHLIGHT, TOP_SPACER_HEIGHT, BUTTON_HEIGHT
-)

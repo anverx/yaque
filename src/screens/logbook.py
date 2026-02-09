@@ -13,7 +13,8 @@ from kivy.graphics import Color, RoundedRectangle
 from kivy.metrics import dp
 
 import database
-from base_screens import BackgroundedScreen, ROW_BACKGROUND, ROW_PRESSED, QUEEN_GRAY, QUEEN_GOLD, QUEEN_SILVER
+from screens.base import BackgroundedScreen
+from ui_constants import ROW_BACKGROUND, ROW_PRESSED, QUEEN_GRAY, QUEEN_GOLD, QUEEN_SILVER
 from game import Game
 from widgets import (
     RoundedButton, FixedGrayRoundedButton,
