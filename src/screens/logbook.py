@@ -13,13 +13,14 @@ import database
 from base_screens import BackgroundedScreen, ROW_BACKGROUND, ROW_PRESSED, QUEEN_GRAY, QUEEN_GOLD, QUEEN_SILVER
 from game import Game
 from widgets import (
-    RoundedButton, GrayRoundedButton,
+    RoundedButton, FixedGrayRoundedButton,
     TitleLgLabel, CaptionLabel, SubtitleLabel,
     TableHeaderLabel, TableCellLabel,
 )
 from ui_constants import (
     TEXT_LIGHT, ROW_HEIGHT, BUTTON_HEIGHT_SM,
     PADDING_ROW, SPACING_XS, SPACING_MD, RADIUS_SM,
+    DATE_SEPARATOR_HEIGHT, TABLE_HEADER_HEIGHT,
 )
 
 # Path to icons
@@ -118,7 +119,7 @@ class DateSeparator(BoxLayout):
     def __init__(self, date_str, **kwargs):
         super().__init__(**kwargs)
         self.size_hint_y = None
-        self.height = dp(30)
+        self.height = dp(DATE_SEPARATOR_HEIGHT)
         self.padding = [dp(PADDING_ROW[0]), dp(PADDING_ROW[1])]
 
         self.add_widget(CaptionLabel(date_str, halign='left', valign='middle'))
@@ -139,7 +140,7 @@ class LogbookScreen(BackgroundedScreen):
         # Header row
         header = BoxLayout(
             size_hint_y=None,
-            height=dp(20),
+            height=dp(TABLE_HEADER_HEIGHT),
             padding=[dp(PADDING_ROW[0]), 0],
             spacing=dp(SPACING_MD)
         )
@@ -259,9 +260,8 @@ class LogbookScreen(BackgroundedScreen):
         # Add "Load More" button if there's more
         if self.has_more:
             remaining = total - self.current_offset
-            load_more_btn = GrayRoundedButton(
+            load_more_btn = FixedGrayRoundedButton(
                 text=f'Load More ({remaining} remaining)',
-                size_hint_y=None,
                 height=dp(BUTTON_HEIGHT_SM)
             )
             load_more_btn.bind(on_press=self._load_more)

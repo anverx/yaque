@@ -1,5 +1,9 @@
 # UI Constants - centralized colors, dimensions, and fonts
 
+# Window settings
+WINDOW_SIZE = (360, 640)  # Logical phone resolution for desktop testing
+WINDOW_CLEARCOLOR = (0.95, 0.95, 0.95, 1)  # Light background
+
 # Font
 FONT_NAME = 'DMSansBlack'
 
@@ -49,6 +53,7 @@ SPINNER_BORDER = (0.8, 0.8, 0.8, 1)
 # =============================================================================
 
 # Spacing scale
+SPACING_MIN = 1
 SPACING_XS = 2
 SPACING_SM = 4
 SPACING_MD = 8
@@ -73,6 +78,19 @@ HEADER_HEIGHT = 50
 ROW_HEIGHT = 50
 CELL_HEIGHT = 52
 NAV_BUTTON_WIDTH = 50
+DAYS_HEADER_HEIGHT = 30
+DATE_SEPARATOR_HEIGHT = 30
+TABLE_HEADER_HEIGHT = 20
+CAPTION_HEIGHT = 22
+CAPTION_HEIGHT_SM = 18
+CAPTION_HEIGHT_XS = 20
+LINK_HEIGHT = 30
+SPACER_SM = 5
+
+# Popup-specific dimensions
+QR_IMAGE_HEIGHT = 180
+SMALL_BUTTON_WIDTH = 100
+SPINNER_LINE_WIDTH = 2
 
 # Game screen dimensions
 ICON_BTN_SIZE = 40
@@ -82,6 +100,13 @@ PLAY_AREA_HEIGHT = 72
 INDICATOR_HEIGHT = 20
 INDICATOR_CIRCLE_SIZE = 8
 INDICATOR_SPACING = 14
+INDICATOR_DOT_HEIGHT = 12
+SUBTITLE_HEIGHT = 24
+SOLUTIONS_BTN_WIDTH = 120
+SOLUTIONS_BTN_HEIGHT = 28
+SOLUTIONS_BTN_AREA_HEIGHT = 32
+ICON_LABEL_HEIGHT = 12
+ICON_LABEL_TOTAL = 14  # Height + padding
 
 # Touch/gesture thresholds
 SWIPE_EDGE_THRESHOLD = 20
@@ -204,6 +229,37 @@ LABEL_STYLES = {
     'icon_label': {
         'font_size': '9sp',
         'color': TEXT_MEDIUM,
+    },
+    # About popup styles
+    'about_title': {
+        'font_size': '28sp',
+        'color': TEXT_DARK,
+        'size_hint_y': None,
+        'height': 40,
+    },
+    'about_subtitle': {
+        'font_size': '16sp',
+        'color': TEXT_LIGHT,
+        'size_hint_y': None,
+        'height': 25,
+    },
+}
+
+# =============================================================================
+# Layout Styles (CSS-like style definitions for containers)
+# =============================================================================
+# height values are raw numbers (converted to dp by factory)
+
+LAYOUT_STYLES = {
+    'button_row': {
+        'size_hint_y': None,
+        'height': BUTTON_HEIGHT,
+        'spacing': SPACING_LG,
+    },
+    'size_button_row': {
+        'size_hint_y': None,
+        'height': ROW_HEIGHT,
+        'spacing': SPACING_LG,
     },
 }
 

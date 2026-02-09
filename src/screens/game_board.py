@@ -18,9 +18,12 @@ from ui_constants import (
     HEADER_HEIGHT, BUTTON_HEIGHT, SPACING_SM, SPACING_LG, SPACING_XL,
     ICON_BTN_SIZE, ICON_BTN_SIZE_LG, CONTROL_BAR_HEIGHT, PLAY_AREA_HEIGHT,
     INDICATOR_HEIGHT, INDICATOR_CIRCLE_SIZE, INDICATOR_SPACING,
+    SUBTITLE_HEIGHT, SOLUTIONS_BTN_WIDTH, SOLUTIONS_BTN_HEIGHT,
+    SOLUTIONS_BTN_AREA_HEIGHT, SWIPE_EDGE_THRESHOLD, SWIPE_DISTANCE_THRESHOLD,
+    ICON_LABEL_HEIGHT, ICON_LABEL_TOTAL,
 )
 from widgets import (
-    GrayRoundedButton, TitleSmLabel, CaptionLabel, ClockLabel, IconLabel,
+    GrayRoundedButton, FixedGrayRoundedButton, TitleSmLabel, CaptionLabel, ClockLabel, IconLabel,
 )
 import database
 import game_encoding
@@ -97,12 +100,12 @@ class IconButton(ButtonBehavior, BoxLayout):
             self.label = IconLabel(
                 label,
                 size_hint=(None, None),
-                size=(dp(size_dp), dp(12)),
+                size=(dp(size_dp), dp(ICON_LABEL_HEIGHT)),
                 halign='center'
             )
             self.label.bind(size=self.label.setter('text_size'))
             self.add_widget(self.label)
-            self.size = (dp(size_dp), dp(size_dp + 14))
+            self.size = (dp(size_dp), dp(size_dp + ICON_LABEL_TOTAL))
         else:
             self.size = (dp(size_dp), dp(size_dp))
 
@@ -126,16 +129,15 @@ class GameScreen(Screen):
         layout.add_widget(self.title_label)
 
         # Subtitle - shows "Unique solution!" as label or "X solutions" as clickable button
-        self.subtitle_label = CaptionLabel('', size_hint_y=None, height=dp(24))
+        self.subtitle_label = CaptionLabel('', size_hint_y=None, height=dp(SUBTITLE_HEIGHT))
         layout.add_widget(self.subtitle_label)
 
         # Solutions button (replaces subtitle when multiple solutions)
-        solutions_btn_anchor = AnchorLayout(size_hint_y=None, height=dp(32), anchor_x='center')
+        solutions_btn_anchor = AnchorLayout(size_hint_y=None, height=dp(SOLUTIONS_BTN_AREA_HEIGHT), anchor_x='center')
         self.solutions_text_btn = GrayRoundedButton(
             text='',
-            font_size='12sp',
             size_hint=(None, None),
-            size=(dp(120), dp(28))
+            size=(dp(SOLUTIONS_BTN_WIDTH), dp(SOLUTIONS_BTN_HEIGHT))
         )
         self.solutions_text_btn.bind(on_press=lambda x: self.toggle_solutions(x))
         self.solutions_text_btn.opacity = 0
@@ -201,7 +203,7 @@ class GameScreen(Screen):
         layout.add_widget(control_anchor)
 
         # Back button
-        back_btn = GrayRoundedButton(text='Back', size_hint_y=None, height=dp(BUTTON_HEIGHT))
+        back_btn = FixedGrayRoundedButton(text='Back')
         back_btn.bind(on_press=self.go_back)
         layout.add_widget(back_btn)
 
@@ -552,16 +554,16 @@ class GameScreen(Screen):
     # Swipe from left edge to go back (Android)
     def on_touch_down(self, touch):
         if platform == 'android':
-            # Detect touch starting near left edge (within 20dp)
-            if touch.x < dp(20):
+            # Detect touch starting near left edge
+            if touch.x < dp(SWIPE_EDGE_THRESHOLD):
                 touch.ud['swipe_from_edge'] = True
                 touch.ud['start_x'] = touch.x
         return super().on_touch_down(touch)
 
     def on_touch_up(self, touch):
         if platform == 'android' and touch.ud.get('swipe_from_edge'):
-            # Check if swiped right at least 100dp
-            if touch.x - touch.ud.get('start_x', 0) > dp(100):
+            # Check if swiped right sufficiently
+            if touch.x - touch.ud.get('start_x', 0) > dp(SWIPE_DISTANCE_THRESHOLD):
                 self.go_back(None)
                 return True
         return super().on_touch_up(touch)

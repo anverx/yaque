@@ -34,8 +34,16 @@ from screens import (
     LogbookScreen,
 )
 from popups import show_share_popup, show_load_popup, show_game_size_popup, LoadingPopup
-from widgets import GrayRoundedButton, TitleLabel, SubtitleLabel, CaptionLabel, PopupContent, Popup
-from ui_constants import FONT_NAME, LINK_COLOR, BUTTON_HEIGHT_SM, POPUP_BACKGROUND
+from widgets import (
+    GrayRoundedButton, TitleLabel, SubtitleLabel, CaptionLabel,
+    AboutTitleLabel, AboutSubtitleLabel, LinkButton,
+    PopupContent, Popup,
+)
+from ui_constants import (
+    BUTTON_HEIGHT_SM, POPUP_BACKGROUND,
+    PADDING_POPUP_LARGE, CAPTION_HEIGHT_XS, SMALL_BUTTON_WIDTH,
+    WINDOW_SIZE, WINDOW_CLEARCOLOR,
+)
 
 # Android intent handling
 if platform == 'android':
@@ -48,11 +56,9 @@ if platform == 'android':
 if platform in ('android', 'ios'):
     Window.fullscreen = 'auto'
 else:
-    # Simulate phone resolution for testing (e.g., 1080x1920 at ~3x density)
-    Window.size = (360, 640)  # Logical phone resolution
+    Window.size = WINDOW_SIZE
 
-# Light background
-Window.clearcolor = (0.95, 0.95, 0.95, 1)
+Window.clearcolor = WINDOW_CLEARCOLOR
 
 
 class YaqueApp(App):
@@ -268,17 +274,16 @@ class YaqueApp(App):
     def show_about(self, instance):
         """Show the about popup."""
         from kivy.uix.boxlayout import BoxLayout
-        from kivy.uix.button import Button
         from kivy.uix.modalview import ModalView
         from kivy.metrics import dp
 
-        content = PopupContent(padding=[dp(20), dp(15)])
+        content = PopupContent(padding=[dp(PADDING_POPUP_LARGE[0]), dp(PADDING_POPUP_LARGE[1])])
 
         # Title
-        content.add_widget(TitleLabel('Yaque', font_size='28sp', height=40))
+        content.add_widget(AboutTitleLabel('Yaque'))
 
         # Subtitle
-        content.add_widget(SubtitleLabel('A Queens Puzzle Game', font_size='16sp'))
+        content.add_widget(AboutSubtitleLabel('A Queens Puzzle Game'))
 
         # Description
         desc = SubtitleLabel(
@@ -294,21 +299,13 @@ class YaqueApp(App):
         content.add_widget(BoxLayout(size_hint_y=0.3))
 
         # License
-        content.add_widget(CaptionLabel('License: CC BY-NC-SA 4.0', size_hint_y=None, height=dp(20)))
+        content.add_widget(CaptionLabel('License: CC BY-NC-SA 4.0', size_hint_y=None, height=dp(CAPTION_HEIGHT_XS)))
 
         # Version
-        content.add_widget(CaptionLabel(f'Version {__version__}', size_hint_y=None, height=dp(20)))
+        content.add_widget(CaptionLabel(f'Version {__version__}', size_hint_y=None, height=dp(CAPTION_HEIGHT_XS)))
 
         # GitHub link
-        github_btn = Button(
-            text='github.com/anverx/yaque',
-            font_name=FONT_NAME,
-            font_size='12sp',
-            size_hint_y=None,
-            height=dp(30),
-            background_color=(0, 0, 0, 0),
-            color=LINK_COLOR
-        )
+        github_btn = LinkButton('github.com/anverx/yaque')
         github_btn.bind(on_press=lambda x: self._open_url('https://github.com/anverx/yaque'))
         content.add_widget(github_btn)
 
@@ -316,7 +313,7 @@ class YaqueApp(App):
         close_btn = GrayRoundedButton(
             text='Close',
             size_hint=(None, None),
-            size=(dp(100), dp(BUTTON_HEIGHT_SM)),
+            size=(dp(SMALL_BUTTON_WIDTH), dp(BUTTON_HEIGHT_SM)),
             pos_hint={'center_x': 0.5}
         )
         content.add_widget(close_btn)

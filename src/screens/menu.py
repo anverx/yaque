@@ -4,7 +4,7 @@ from kivy.metrics import dp
 import database
 from base_screens import BackgroundedScreen
 from ui_constants import BUTTON_HEIGHT, BUTTON_HEIGHT_LG, SPACING_LG
-from widgets import RoundedButton, GrayRoundedButton, TitleMdLabel, ButtonRow
+from widgets import RoundedButton, FixedRoundedButton, FixedGrayRoundedButton, TitleMdLabel, ButtonRow
 
 
 class MainMenuScreen(BackgroundedScreen):
@@ -33,32 +33,27 @@ class MainMenuScreen(BackgroundedScreen):
         layout.add_widget(BoxLayout(size_hint_y=0.25))
 
         # Calendar button with streak display
-        self.calendar_btn = RoundedButton(
-            text='Calendar',
-            size_hint_y=None,
-            height=dp(BUTTON_HEIGHT_LG),
-            markup=True
-        )
+        self.calendar_btn = FixedRoundedButton(text='Calendar', height=dp(BUTTON_HEIGHT_LG))
         self.calendar_btn.bind(on_press=self.app.show_calendar)
         layout.add_widget(self.calendar_btn)
 
         # Random game button
-        random_btn = RoundedButton(text='Random Game', size_hint_y=None, height=dp(BUTTON_HEIGHT))
+        random_btn = FixedRoundedButton(text='Random Game')
         random_btn.bind(on_press=self.app.start_random_game)
         layout.add_widget(random_btn)
 
         # Load shared puzzle button
-        load_btn = RoundedButton(text='Load Shared Puzzle', size_hint_y=None, height=dp(BUTTON_HEIGHT))
+        load_btn = FixedRoundedButton(text='Load Shared Puzzle')
         load_btn.bind(on_press=self.app.show_load_popup)
         layout.add_widget(load_btn)
 
         # Logbook button
-        logbook_btn = RoundedButton(text='Logbook', size_hint_y=None, height=dp(BUTTON_HEIGHT))
+        logbook_btn = FixedRoundedButton(text='Logbook')
         logbook_btn.bind(on_press=self.app.show_logbook)
         layout.add_widget(logbook_btn)
 
         # About button
-        about_btn = RoundedButton(text='About', size_hint_y=None, height=dp(BUTTON_HEIGHT))
+        about_btn = FixedRoundedButton(text='About')
         about_btn.bind(on_press=self.app.show_about)
         layout.add_widget(about_btn)
 
@@ -66,7 +61,7 @@ class MainMenuScreen(BackgroundedScreen):
         layout.add_widget(BoxLayout(size_hint_y=0.1))
 
         # Exit button
-        exit_btn = GrayRoundedButton(text='Exit', size_hint_y=None, height=dp(BUTTON_HEIGHT))
+        exit_btn = FixedGrayRoundedButton(text='Exit')
         exit_btn.bind(on_press=self.app.exit_app)
         layout.add_widget(exit_btn)
 

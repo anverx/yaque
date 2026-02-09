@@ -1,27 +1,30 @@
 """Shared UI widgets for Yaque."""
 
 from kivy.uix.label import Label
+from kivy.uix.button import Button
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.modalview import ModalView
+from kivy.uix.textinput import TextInput
 from kivy.uix.behaviors import ButtonBehavior
 from kivy.graphics import Color, RoundedRectangle
 from kivy.metrics import dp
 
 from ui_constants import (
-    FONT_NAME, TEXT_WHITE, TEXT_DARK,
+    FONT_NAME, TEXT_WHITE, TEXT_DARK, TEXT_HEADER,
     DEFAULT_BUTTON_COLOR, DEFAULT_BUTTON_COLOR_DOWN,
     GRAY_BUTTON_COLOR, GRAY_BUTTON_COLOR_DOWN,
-    LABEL_STYLES,
+    INPUT_BACKGROUND, INPUT_HINT_COLOR, LINK_COLOR,
+    LABEL_STYLES, LAYOUT_STYLES,
     POPUP_BACKGROUND, POPUP_WIDTH,
-    PADDING_POPUP, SPACING_LG, SPACING_MD,
-    BUTTON_HEIGHT, ROW_HEIGHT, RADIUS_MD,
+    PADDING_POPUP, SPACING_LG, SPACING_MD, SPACING_XL,
+    BUTTON_HEIGHT, BUTTON_HEIGHT_SM, RADIUS_MD, LINK_HEIGHT,
 )
 
 BUTTON_RADIUS = dp(RADIUS_MD)
 
 
 class RoundedButton(ButtonBehavior, Label):
-    """A button with rounded corners.
+    """A button with rounded corners. Use in ButtonRow or containers.
 
     Args:
         bg_color: Background color tuple (r, g, b, a). Defaults to salad green.
@@ -30,11 +33,19 @@ class RoundedButton(ButtonBehavior, Label):
     def __init__(self, bg_color=None, bg_color_down=None, **kwargs):
         kwargs.setdefault('font_name', FONT_NAME)
         kwargs.setdefault('color', TEXT_WHITE)
+        kwargs.setdefault('markup', True)
+        kwargs.setdefault('halign', 'center')
+        kwargs.setdefault('valign', 'middle')
+        kwargs.setdefault('height', dp(BUTTON_HEIGHT))
         super().__init__(**kwargs)
         self.bg_color = bg_color or DEFAULT_BUTTON_COLOR
         self.bg_color_down = bg_color_down or DEFAULT_BUTTON_COLOR_DOWN
         self._update_bg()
         self.bind(pos=self._update_bg, size=self._update_bg, state=self._update_bg)
+        self.bind(size=self._update_text_size)
+
+    def _update_text_size(self, *args):
+        self.text_size = self.size
 
     def _update_bg(self, *args):
         self.canvas.before.clear()
@@ -47,13 +58,25 @@ class RoundedButton(ButtonBehavior, Label):
 
 
 def GrayRoundedButton(**kwargs):
-    """Factory for gray rounded buttons (cancel buttons)."""
+    """Factory for gray rounded buttons in containers."""
     kwargs.setdefault('color', TEXT_DARK)
     return RoundedButton(
         bg_color=GRAY_BUTTON_COLOR,
         bg_color_down=GRAY_BUTTON_COLOR_DOWN,
         **kwargs
     )
+
+
+def FixedRoundedButton(**kwargs):
+    """Factory for standalone buttons with fixed height."""
+    kwargs.setdefault('size_hint_y', None)
+    return RoundedButton(**kwargs)
+
+
+def FixedGrayRoundedButton(**kwargs):
+    """Factory for standalone gray buttons with fixed height."""
+    kwargs.setdefault('size_hint_y', None)
+    return GrayRoundedButton(**kwargs)
 
 
 # -----------------------------------------------------------------------------
@@ -153,6 +176,16 @@ def IconLabel(text, **kwargs):
     return styled_label('icon_label', text, **kwargs)
 
 
+def AboutTitleLabel(text, **kwargs):
+    """Large title for About popup (28sp)."""
+    return styled_label('about_title', text, **kwargs)
+
+
+def AboutSubtitleLabel(text, **kwargs):
+    """Subtitle for About popup (16sp)."""
+    return styled_label('about_subtitle', text, **kwargs)
+
+
 # -----------------------------------------------------------------------------
 # Layout Factories
 # -----------------------------------------------------------------------------
@@ -165,12 +198,31 @@ def PopupContent(**kwargs):
     return BoxLayout(**kwargs)
 
 
+def styled_layout(style='button_row', **overrides):
+    """Create a BoxLayout with the specified style.
+
+    Styles are defined in ui_constants.LAYOUT_STYLES.
+    """
+    props = LAYOUT_STYLES.get(style, LAYOUT_STYLES['button_row']).copy()
+
+    # Convert height and spacing to dp
+    if 'height' in props:
+        props['height'] = dp(props['height'])
+    if 'spacing' in props:
+        props['spacing'] = dp(props['spacing'])
+
+    props.update(overrides)
+    return BoxLayout(**props)
+
+
 def ButtonRow(**kwargs):
     """Horizontal BoxLayout for button rows with standard height/spacing."""
-    kwargs.setdefault('size_hint_y', None)
-    kwargs.setdefault('height', dp(BUTTON_HEIGHT))
-    kwargs.setdefault('spacing', dp(SPACING_LG))
-    return BoxLayout(**kwargs)
+    return styled_layout('button_row', **kwargs)
+
+
+def SizeButtonRow(**kwargs):
+    """Horizontal BoxLayout for size selection buttons (taller)."""
+    return styled_layout('size_button_row', **kwargs)
 
 
 def Popup(content, height, width_hint=POPUP_WIDTH, auto_dismiss=True):
@@ -190,3 +242,71 @@ def Popup(content, height, width_hint=POPUP_WIDTH, auto_dismiss=True):
     )
     popup.add_widget(content)
     return popup
+
+
+# -----------------------------------------------------------------------------
+# Input Factories
+# -----------------------------------------------------------------------------
+
+def UrlInput(text, **kwargs):
+    """Readonly text input for displaying URLs (small font, selectable)."""
+    kwargs.setdefault('font_name', FONT_NAME)
+    kwargs.setdefault('font_size', '11sp')
+    kwargs.setdefault('size_hint_y', None)
+    kwargs.setdefault('height', dp(BUTTON_HEIGHT_SM))
+    kwargs.setdefault('padding', [dp(SPACING_MD), dp(SPACING_LG)])
+    kwargs.setdefault('readonly', True)
+    kwargs.setdefault('multiline', False)
+    kwargs.setdefault('background_color', INPUT_BACKGROUND)
+    kwargs.setdefault('foreground_color', TEXT_DARK)
+    return TextInput(text=text, **kwargs)
+
+
+def CodeInput(**kwargs):
+    """Text input for entering puzzle codes."""
+    kwargs.setdefault('multiline', False)
+    kwargs.setdefault('font_name', FONT_NAME)
+    kwargs.setdefault('font_size', '16sp')
+    kwargs.setdefault('size_hint_y', None)
+    kwargs.setdefault('height', dp(BUTTON_HEIGHT))
+    kwargs.setdefault('padding', [dp(SPACING_LG), dp(SPACING_XL)])
+    kwargs.setdefault('background_color', INPUT_BACKGROUND)
+    kwargs.setdefault('foreground_color', TEXT_HEADER)
+    kwargs.setdefault('cursor_color', TEXT_DARK)
+    kwargs.setdefault('hint_text', 'Enter code here...')
+    kwargs.setdefault('hint_text_color', INPUT_HINT_COLOR)
+    return TextInput(**kwargs)
+
+
+def LinkButton(text, **kwargs):
+    """Transparent button styled as a link."""
+    kwargs.setdefault('font_name', FONT_NAME)
+    kwargs.setdefault('font_size', '12sp')
+    kwargs.setdefault('size_hint_y', None)
+    kwargs.setdefault('height', dp(LINK_HEIGHT))
+    kwargs.setdefault('background_color', (0, 0, 0, 0))
+    kwargs.setdefault('color', LINK_COLOR)
+    return Button(text=text, **kwargs)
+
+
+def SmallRoundedButton(**kwargs):
+    """Smaller rounded button for compact UI elements."""
+    kwargs.setdefault('font_size', '14sp')
+    return RoundedButton(**kwargs)
+
+
+def BackButton(**kwargs):
+    """Standard back button with fixed height."""
+    kwargs.setdefault('text', 'Back')
+    kwargs.setdefault('font_size', '18sp')
+    return FixedGrayRoundedButton(**kwargs)
+
+
+def StatusLabel(text, **kwargs):
+    """Centered status label for loading popups."""
+    kwargs.setdefault('font_size', '16sp')
+    kwargs.setdefault('halign', 'center')
+    kwargs.setdefault('valign', 'middle')
+    label = styled_label('title_sm', text, height=45, **kwargs)
+    label.bind(width=lambda inst, w: setattr(inst, 'text_size', (w, None)))
+    return label

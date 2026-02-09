@@ -16,8 +16,8 @@ from base_screens import BackgroundedScreen, TEXT_WHITE, QUEEN_GRAY, QUEEN_GOLD,
 from ui_constants import (
     DEFAULT_BUTTON_COLOR, DEFAULT_BUTTON_COLOR_DOWN,
     HEADER_HEIGHT, CELL_HEIGHT, NAV_BUTTON_WIDTH, RADIUS_SM,
-    SPACING_XS, SPACING_SM, PADDING_CELL, SPACING_LG,
-    SWIPE_EDGE_THRESHOLD, SWIPE_DISTANCE_THRESHOLD,
+    SPACING_MIN, SPACING_XS, SPACING_SM, PADDING_CELL, SPACING_LG,
+    SWIPE_EDGE_THRESHOLD, SWIPE_DISTANCE_THRESHOLD, DAYS_HEADER_HEIGHT,
 )
 from popups import show_date_puzzles_popup
 from widgets import RoundedButton, DayLabel, MonthLabel, TitleSmLabel
@@ -43,7 +43,7 @@ class DayCell(ButtonBehavior, BoxLayout):
         icons_row = BoxLayout(
             orientation='horizontal',
             size_hint_y=0.5,
-            spacing=dp(1),
+            spacing=dp(SPACING_MIN),
             padding=[dp(PADDING_CELL[0]), 0, dp(PADDING_CELL[0]), dp(PADDING_CELL[1])]
         )
 
@@ -99,7 +99,7 @@ class CalendarScreen(BackgroundedScreen):
         layout.add_widget(header)
 
         # Day labels
-        days_header = GridLayout(cols=7, size_hint_y=None, height=dp(30), spacing=dp(SPACING_XS))
+        days_header = GridLayout(cols=7, size_hint_y=None, height=dp(DAYS_HEADER_HEIGHT), spacing=dp(SPACING_XS))
         for day_name in ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su']:
             days_header.add_widget(DayLabel(day_name))
         layout.add_widget(days_header)
