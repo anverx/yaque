@@ -83,6 +83,34 @@ BOARD_CIRCLE_BLOCKED = (0.9, 0.3, 0.3, 1)
 INDICATOR_CURRENT = (1.0, 0.85, 0.2, 1)  # Golden for current solution
 INDICATOR_OTHER = (0.7, 0.7, 0.7, 1)     # Gray for other solutions
 
+# =============================================================================
+# Label Styles (CSS-like style definitions)
+# =============================================================================
+# Each style defines default properties. 'height' values are raw numbers (converted to dp by factory).
+# Styles can be overridden at call site.
+
+LABEL_STYLES = {
+    'default': {
+        'color': TEXT_DARK,
+    },
+    'title': {
+        'font_size': '18sp',
+        'color': TEXT_DARK,
+        'size_hint_y': None,
+        'height': 35,
+    },
+    'subtitle': {
+        'font_size': '14sp',
+        'color': TEXT_LIGHT,
+        'size_hint_y': None,
+        'height': 25,
+    },
+    'caption': {
+        'font_size': '12sp',
+        'color': TEXT_MEDIUM,
+    },
+}
+
 # Kingdom colors (RGB, 0-1 range)
 KINGDOM_COLORS = [
     (0.9, 0.6, 0.6),   # 0: light red

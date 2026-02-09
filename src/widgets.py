@@ -6,9 +6,10 @@ from kivy.graphics import Color, RoundedRectangle
 from kivy.metrics import dp
 
 from ui_constants import (
-    FONT_NAME, TEXT_WHITE, TEXT_DARK, TEXT_LIGHT, TEXT_MEDIUM,
+    FONT_NAME, TEXT_WHITE, TEXT_DARK,
     DEFAULT_BUTTON_COLOR, DEFAULT_BUTTON_COLOR_DOWN,
-    GRAY_BUTTON_COLOR, GRAY_BUTTON_COLOR_DOWN
+    GRAY_BUTTON_COLOR, GRAY_BUTTON_COLOR_DOWN,
+    LABEL_STYLES
 )
 
 BUTTON_RADIUS = dp(12)
@@ -51,54 +52,52 @@ def GrayRoundedButton(**kwargs):
 
 
 # -----------------------------------------------------------------------------
-# Label Factories
+# Label Factory (CSS-like: styles defined in ui_constants.LABEL_STYLES)
 # -----------------------------------------------------------------------------
 
+def styled_label(style='default', text='', **overrides):
+    """Create a label with the specified style.
+
+    Styles are defined in ui_constants.LABEL_STYLES (CSS-like separation).
+    Any kwargs override the style defaults.
+
+    Args:
+        style: Style name ('title', 'subtitle', 'caption', or 'default')
+        text: Label text
+        **overrides: Properties to override style defaults
+    """
+    # Get style properties (copy to avoid mutation)
+    props = LABEL_STYLES.get(style, LABEL_STYLES['default']).copy()
+
+    # Convert height to dp if present
+    if 'height' in props:
+        props['height'] = dp(props['height'])
+
+    # Apply font_name default
+    props.setdefault('font_name', FONT_NAME)
+
+    # Apply overrides
+    props.update(overrides)
+
+    return Label(text=text, **props)
+
+
+# Convenience wrappers (content-only calls)
 def StyledLabel(**kwargs):
-    """Base styled label with app font. All other label factories use this."""
-    kwargs.setdefault('font_name', FONT_NAME)
-    kwargs.setdefault('color', TEXT_DARK)
-    return Label(**kwargs)
+    """Base styled label with app font."""
+    return styled_label('default', **kwargs)
 
 
-def TitleLabel(text, font_size='18sp', height=35, **kwargs):
-    """Large title label for popups and screen headers.
-
-    Defaults: font_size='18sp', color=TEXT_DARK, size_hint_y=None, height=dp(35)
-    """
-    kwargs.setdefault('color', TEXT_DARK)
-    return StyledLabel(
-        text=text,
-        font_size=font_size,
-        size_hint_y=None,
-        height=dp(height),
-        **kwargs
-    )
+def TitleLabel(text, **kwargs):
+    """Title label for popups and screen headers."""
+    return styled_label('title', text, **kwargs)
 
 
-def SubtitleLabel(text, font_size='14sp', height=25, **kwargs):
-    """Secondary text label for instructions and descriptions.
-
-    Defaults: font_size='14sp', color=TEXT_LIGHT, size_hint_y=None, height=dp(25)
-    """
-    kwargs.setdefault('color', TEXT_LIGHT)
-    return StyledLabel(
-        text=text,
-        font_size=font_size,
-        size_hint_y=None,
-        height=dp(height),
-        **kwargs
-    )
+def SubtitleLabel(text, **kwargs):
+    """Subtitle label for descriptions."""
+    return styled_label('subtitle', text, **kwargs)
 
 
-def CaptionLabel(text, font_size='12sp', **kwargs):
-    """Small text label for captions, table headers, and metadata.
-
-    Defaults: font_size='12sp', color=TEXT_MEDIUM
-    """
-    kwargs.setdefault('color', TEXT_MEDIUM)
-    return StyledLabel(
-        text=text,
-        font_size=font_size,
-        **kwargs
-    )
+def CaptionLabel(text, **kwargs):
+    """Caption label for small text and metadata."""
+    return styled_label('caption', text, **kwargs)
