@@ -1,6 +1,9 @@
+from __future__ import annotations
+
 import threading
 import os
 from datetime import date
+from typing import Any
 
 __version__ = "1.0.0"
 __author__ = "Yaque Contributors"
@@ -62,7 +65,7 @@ Window.clearcolor = WINDOW_CLEARCOLOR
 
 
 class YaqueApp(App):
-    def build(self):
+    def build(self) -> ScreenManager:
         # Initialize database
         database.init_db(self.user_data_dir)
 
@@ -103,7 +106,7 @@ class YaqueApp(App):
     # Android intent handling
     # -------------------------------------------------------------------------
 
-    def _check_initial_intent(self):
+    def _check_initial_intent(self) -> None:
         """Check if app was launched via custom URL scheme."""
         if platform != 'android':
             return
@@ -114,11 +117,11 @@ class YaqueApp(App):
         except Exception as e:
             print(f"Error checking initial intent: {e}")
 
-    def _on_new_intent(self, intent):
+    def _on_new_intent(self, intent: Any) -> None:
         """Handle new intent when app is already running."""
         self._handle_intent(intent)
 
-    def _handle_intent(self, intent):
+    def _handle_intent(self, intent: Any) -> None:
         """Parse and handle yaque:// URL from intent."""
         if platform != 'android':
             return
@@ -135,7 +138,7 @@ class YaqueApp(App):
         except Exception as e:
             print(f"Error handling intent: {e}")
 
-    def _load_shared_game(self, code):
+    def _load_shared_game(self, code: str) -> None:
         """Load a game from shared code."""
         try:
             game = Game.from_code(code)
@@ -147,30 +150,30 @@ class YaqueApp(App):
     # Navigation
     # -------------------------------------------------------------------------
 
-    def _go_to_menu(self, dt):
+    def _go_to_menu(self, dt: float) -> None:
         self.sm.current = 'menu'
 
-    def show_calendar(self, instance):
+    def show_calendar(self, instance: Any) -> None:
         self.sm.current = 'calendar'
 
     # -------------------------------------------------------------------------
     # Game generation
     # -------------------------------------------------------------------------
 
-    def _show_loading_popup(self, status_text):
+    def _show_loading_popup(self, status_text: str) -> None:
         """Show the loading popup with spinning queen."""
         self._generation_cancelled = False
         self.loading_popup = LoadingPopup(on_cancel=self.cancel_generation)
         self.loading_popup.set_status(status_text)
         self.loading_popup.open()
 
-    def _dismiss_loading_popup(self):
+    def _dismiss_loading_popup(self) -> None:
         """Dismiss the loading popup if open."""
         if self.loading_popup:
             self.loading_popup.dismiss()
             self.loading_popup = None
 
-    def start_daily_game(self, size, puzzle_date=None, from_calendar=False):
+    def start_daily_game(self, size: int, puzzle_date: date | None = None, from_calendar: bool = False) -> None:
         if puzzle_date is None:
             puzzle_date = date.today()
 
@@ -186,7 +189,7 @@ class YaqueApp(App):
         # Generate new puzzle
         self._show_loading_popup(f'Generating {size}x{size} puzzle...')
 
-        def generate():
+        def generate() -> None:
             game = get_daily_game(puzzle_date, size, max_solutions=4)
             if not self._generation_cancelled:
                 Clock.schedule_once(lambda dt: self._on_game_ready(
@@ -195,15 +198,15 @@ class YaqueApp(App):
 
         threading.Thread(target=generate, daemon=True).start()
 
-    def start_random_game(self, instance):
+    def start_random_game(self, instance: Any) -> None:
         """Show size selection popup, then generate random game."""
         show_game_size_popup(self._start_random_game_with_size_and_strategy)
 
-    def _start_random_game_with_size_and_strategy(self, size, strategy):
+    def _start_random_game_with_size_and_strategy(self, size: int, strategy: str) -> None:
         """Generate a random game with the selected size and kingdom strategy."""
         self._show_loading_popup(f'Finding the perfect {size}x{size} puzzle...')
 
-        def generate():
+        def generate() -> None:
             try:
                 game = Game(size, max_solutions=1, kingdom_strategy=strategy)
                 if not self._generation_cancelled:
@@ -215,7 +218,7 @@ class YaqueApp(App):
 
         threading.Thread(target=generate, daemon=True).start()
 
-    def _on_generation_failed(self, size, strategy, max_solutions):
+    def _on_generation_failed(self, size: int, strategy: str, max_solutions: int) -> None:
         """Handle failed puzzle generation by retrying with relaxed constraints."""
         # Retry tiers: 1 -> 4 -> 10 -> give up
         next_max = {1: 4, 4: 10}.get(max_solutions)
@@ -236,7 +239,7 @@ class YaqueApp(App):
         self._dismiss_loading_popup()
         self._show_loading_popup(f'Retrying {size}x{size} puzzle...')
 
-        def retry():
+        def retry() -> None:
             try:
                 game = Game(size, max_solutions=next_max, kingdom_strategy=strategy)
                 if not self._generation_cancelled:
@@ -247,13 +250,13 @@ class YaqueApp(App):
 
         threading.Thread(target=retry, daemon=True).start()
 
-    def _on_game_ready(self, game, daily_date=None, from_calendar=False, from_logbook=False, strategy=None):
+    def _on_game_ready(self, game: Game, daily_date: date | None = None, from_calendar: bool = False, from_logbook: bool = False, strategy: str | None = None) -> None:
         if not self._generation_cancelled:
             self._dismiss_loading_popup()
             self.game_screen.set_game(game, daily_date=daily_date, from_calendar=from_calendar, from_logbook=from_logbook, strategy=strategy)
             self.sm.current = 'game'
 
-    def cancel_generation(self):
+    def cancel_generation(self) -> None:
         """Cancel ongoing game generation."""
         self._generation_cancelled = True
 
@@ -261,17 +264,17 @@ class YaqueApp(App):
     # Popups
     # -------------------------------------------------------------------------
 
-    def show_share_popup(self, share_url, code):
+    def show_share_popup(self, share_url: str, code: str) -> None:
         show_share_popup(share_url, code)
 
-    def show_load_popup(self, instance):
+    def show_load_popup(self, instance: Any) -> None:
         show_load_popup(self._on_game_ready)
 
-    def show_logbook(self, instance):
+    def show_logbook(self, instance: Any) -> None:
         """Show the logbook/statistics screen."""
         self.sm.current = 'logbook'
 
-    def show_about(self, instance):
+    def show_about(self, instance: Any) -> None:
         """Show the about popup."""
         from kivy.uix.boxlayout import BoxLayout
         from kivy.uix.modalview import ModalView
@@ -327,7 +330,7 @@ class YaqueApp(App):
         close_btn.bind(on_press=popup.dismiss)
         popup.open()
 
-    def _open_url(self, url):
+    def _open_url(self, url: str) -> None:
         """Open URL in browser."""
         import webbrowser
         webbrowser.open(url)
@@ -336,10 +339,10 @@ class YaqueApp(App):
     # App lifecycle
     # -------------------------------------------------------------------------
 
-    def exit_app(self, instance):
+    def exit_app(self, instance: Any) -> None:
         App.get_running_app().stop()
 
-    def on_stop(self):
+    def on_stop(self) -> None:
         database.close_db()
 
 

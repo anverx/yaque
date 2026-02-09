@@ -1,14 +1,15 @@
+from __future__ import annotations
+
 import random
 import hashlib
 from datetime import date
-from typing import List, Tuple, Optional, Dict
 
 from game_encoding import encode_game, encode_game_b64, decode_game_b64
 
 class Game:
 
     def __init__(self, size: int, max_solutions: int = 1, max_attempts: int = 50000,
-                 seed: Optional[int] = None, kingdom_strategy: str = 'mixed'):
+                 seed: int | None = None, kingdom_strategy: str = 'mixed') -> None:
         """Create a new puzzle.
 
         Args:
@@ -33,8 +34,8 @@ class Game:
 
         # Generate puzzles until we find one with acceptable number of solutions
         for attempt in range(max_attempts):
-            self.queens: List[Tuple[int, int]] = self.place_queens(size)
-            self.kingdoms: List[List[int]] = self.create_kingdoms(self.queens, kingdom_strategy)
+            self.queens: list[tuple[int, int]] = self.place_queens(size)
+            self.kingdoms: list[list[int]] = self.create_kingdoms(self.queens, kingdom_strategy)
             solutions = self.count_solutions(max_count=max_solutions + 1)
             if 1 <= solutions <= max_solutions:
                 self.num_solutions = solutions
@@ -43,8 +44,8 @@ class Game:
         else:
             raise ValueError(f"Could not generate puzzle with <={max_solutions} solutions after {max_attempts} attempts")
 
-    def place_queens(self, no) -> List[Tuple[int, int]]:
-        def is_valid(queens, row, col):
+    def place_queens(self, no: int) -> list[tuple[int, int]]:
+        def is_valid(queens: list[tuple[int, int]], row: int, col: int) -> bool:
             for r, c in queens:
                 if c == col:
                     return False
@@ -52,7 +53,7 @@ class Game:
                     return False
             return True
 
-        def backtrack(row, queens):
+        def backtrack(row: int, queens: list[tuple[int, int]]) -> list[tuple[int, int]] | None:
             if row == no:
                 return queens[:]
             cols = list(range(no))
@@ -71,7 +72,7 @@ class Game:
             raise ValueError(f"Cannot place {no} queens on {no}x{no} board")
         return result
 
-    def print_queens(self):
+    def print_queens(self) -> None:
         queen_set = set(self.queens)
         for row in range(self.size):
             line = ""
@@ -82,7 +83,7 @@ class Game:
                     line += ". "
             print(line)
 
-    def print_kingdoms(self):
+    def print_kingdoms(self) -> None:
         queen_set = set(self.queens)
         for row in range(self.size):
             line = ""
@@ -94,7 +95,7 @@ class Game:
                     line += f"{k} "
             print(line)
 
-    def create_kingdoms(self, queens: List[Tuple[int, int]], kingdom_strategy: str = 'mixed') -> List[List[int]]:
+    def create_kingdoms(self, queens: list[tuple[int, int]], kingdom_strategy: str = 'mixed') -> list[list[int]]:
         no = self.size
         kingdoms = [[-1] * no for _ in range(no)]
         directions = [(-1, 0), (1, 0), (0, -1), (0, 1)]
@@ -108,15 +109,15 @@ class Game:
         else:  # 'mixed'
             strategies = [random.choice([-1, 0, 1]) for _ in range(no)]
 
-        def get_free_neighbors(r, c):
-            neighbors = []
+        def get_free_neighbors(r: int, c: int) -> list[tuple[int, int]]:
+            neighbors: list[tuple[int, int]] = []
             for dr, dc in directions:
                 nr, nc = r + dr, c + dc
                 if 0 <= nr < no and 0 <= nc < no and kingdoms[nr][nc] == -1:
                     neighbors.append((nr, nc))
             return neighbors
 
-        def count_same_kingdom_neighbors(r, c, k):
+        def count_same_kingdom_neighbors(r: int, c: int, k: int) -> int:
             """Count how many neighbors of (r,c) belong to kingdom k."""
             count = 0
             for dr, dc in directions:
@@ -125,14 +126,14 @@ class Game:
                     count += 1
             return count
 
-        def perimeter_change(r, c, k):
+        def perimeter_change(r: int, c: int, k: int) -> int:
             """Calculate perimeter change if cell (r,c) is added to kingdom k.
             +2 = extends outward (1 adjacent), 0 = neutral (2 adjacent), -2 = fills gap (3 adjacent)
             """
             adjacent = count_same_kingdom_neighbors(r, c, k)
             return 4 - 2 * adjacent
 
-        def pick_neighbor(neighbors, k):
+        def pick_neighbor(neighbors: list[tuple[int, int]], k: int) -> tuple[int, int]:
             """Pick a neighbor based on kingdom's growth strategy."""
             strategy = strategies[k]
             if strategy == 0 or len(neighbors) == 1:
@@ -195,13 +196,13 @@ class Game:
         num_kingdoms = no
 
         # Build list of cells for each kingdom
-        kingdom_cells: List[List[Tuple[int, int]]] = [[] for _ in range(num_kingdoms)]
+        kingdom_cells: list[list[tuple[int, int]]] = [[] for _ in range(num_kingdoms)]
         for row in range(no):
             for col in range(no):
                 k = self.kingdoms[row][col]
                 kingdom_cells[k].append((row, col))
 
-        def is_valid_placement(placed: List[Tuple[int, int]], row: int, col: int) -> bool:
+        def is_valid_placement(placed: list[tuple[int, int]], row: int, col: int) -> bool:
             for r, c in placed:
                 # Same row or column
                 if r == row or c == col:
@@ -213,7 +214,7 @@ class Game:
 
         solutions_found = [0]  # Use list to allow modification in nested function
 
-        def backtrack(kingdom_idx: int, placed: List[Tuple[int, int]]):
+        def backtrack(kingdom_idx: int, placed: list[tuple[int, int]]) -> None:
             if solutions_found[0] >= max_count:
                 return
 
@@ -232,19 +233,19 @@ class Game:
         backtrack(0, [])
         return solutions_found[0]
 
-    def find_all_solutions(self, max_count: int = 100) -> List[List[Tuple[int, int]]]:
+    def find_all_solutions(self, max_count: int = 100) -> list[list[tuple[int, int]]]:
         """Find all solutions for the puzzle, up to max_count."""
         no = self.size
         num_kingdoms = no
 
         # Build list of cells for each kingdom
-        kingdom_cells: List[List[Tuple[int, int]]] = [[] for _ in range(num_kingdoms)]
+        kingdom_cells: list[list[tuple[int, int]]] = [[] for _ in range(num_kingdoms)]
         for row in range(no):
             for col in range(no):
                 k = self.kingdoms[row][col]
                 kingdom_cells[k].append((row, col))
 
-        def is_valid_placement(placed: List[Tuple[int, int]], row: int, col: int) -> bool:
+        def is_valid_placement(placed: list[tuple[int, int]], row: int, col: int) -> bool:
             for r, c in placed:
                 if r == row or c == col:
                     return False
@@ -252,9 +253,9 @@ class Game:
                     return False
             return True
 
-        solutions: List[List[Tuple[int, int]]] = []
+        solutions: list[list[tuple[int, int]]] = []
 
-        def backtrack(kingdom_idx: int, placed: List[Tuple[int, int]]):
+        def backtrack(kingdom_idx: int, placed: list[tuple[int, int]]) -> None:
             if len(solutions) >= max_count:
                 return
 
@@ -318,7 +319,7 @@ def get_daily_game(day: date, size: int, secret: str = SECRET,
     raise ValueError(f"Could not generate puzzle for {day} size {size} after {max_seed_attempts} seed attempts")
 
 
-def get_daily_games(day: date = None, secret: str = SECRET, max_solutions: int = 1) -> Dict[int, Game]:
+def get_daily_games(day: date | None = None, secret: str = SECRET, max_solutions: int = 1) -> dict[int, Game]:
     """Generate the 3 daily puzzles (sizes 6, 7, 8) for a given date."""
     if day is None:
         day = date.today()
@@ -330,7 +331,7 @@ def get_daily_games(day: date = None, secret: str = SECRET, max_solutions: int =
     return games
 
 
-def main():
+def main() -> None:
     for size in [6, 7, 8]:
         print(f"\n{'='*40}")
         print(f"Testing {size}x{size} board:")
