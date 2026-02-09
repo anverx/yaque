@@ -12,10 +12,10 @@ from kivy.metrics import dp
 from kivy.utils import platform
 
 import database
-from base_screens import BackgroundedScreen, TEXT_DARK, TEXT_HEADER, TEXT_WHITE, QUEEN_GRAY, QUEEN_GOLD, QUEEN_SILVER, TODAY_HIGHLIGHT
-from ui_constants import FONT_NAME, DEFAULT_BUTTON_COLOR, DEFAULT_BUTTON_COLOR_DOWN
+from base_screens import BackgroundedScreen, TEXT_HEADER, TEXT_WHITE, QUEEN_GRAY, QUEEN_GOLD, QUEEN_SILVER, TODAY_HIGHLIGHT
+from ui_constants import DEFAULT_BUTTON_COLOR, DEFAULT_BUTTON_COLOR_DOWN
 from popups import show_date_puzzles_popup
-from widgets import RoundedButton
+from widgets import RoundedButton, StyledLabel, TitleLabel
 
 # Path to icons
 ICONS_DIR = os.path.join(os.path.dirname(__file__), '..', 'assets', 'icons')
@@ -31,9 +31,8 @@ class DayCell(ButtonBehavior, BoxLayout):
         self.bind(pos=self._update_bg, size=self._update_bg, state=self._update_bg)
 
         # Day number
-        self.day_label = Label(
+        self.day_label = StyledLabel(
             text=str(day),
-            font_name=FONT_NAME,
             font_size='14sp',
             color=TEXT_WHITE,
             size_hint_y=0.5
@@ -95,9 +94,8 @@ class CalendarScreen(BackgroundedScreen):
         prev_btn.bind(on_press=self.prev_month)
         header.add_widget(prev_btn)
 
-        self.month_label = Label(
+        self.month_label = StyledLabel(
             text='',
-            font_name=FONT_NAME,
             font_size='22sp',
             color=TEXT_HEADER
         )
@@ -117,12 +115,7 @@ class CalendarScreen(BackgroundedScreen):
         # Day labels
         days_header = GridLayout(cols=7, size_hint_y=None, height=dp(30), spacing=dp(2))
         for day_name in ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su']:
-            days_header.add_widget(Label(
-                text=day_name,
-                font_name=FONT_NAME,
-                font_size='14sp',
-                color=TEXT_DARK
-            ))
+            days_header.add_widget(StyledLabel(text=day_name, font_size='14sp'))
         layout.add_widget(days_header)
 
         # Calendar grid
@@ -131,14 +124,7 @@ class CalendarScreen(BackgroundedScreen):
         layout.add_widget(self.calendar_grid)
 
         # Streak display
-        self.streak_label = Label(
-            text='',
-            font_name=FONT_NAME,
-            font_size='16sp',
-            color=TEXT_DARK,
-            size_hint_y=None,
-            height=dp(40)
-        )
+        self.streak_label = TitleLabel('', font_size='16sp', height=40)
         layout.add_widget(self.streak_label)
 
         # Spacer

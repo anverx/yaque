@@ -6,7 +6,7 @@ from kivy.graphics import Color, RoundedRectangle
 from kivy.metrics import dp
 
 from ui_constants import (
-    FONT_NAME, TEXT_WHITE, TEXT_DARK,
+    FONT_NAME, TEXT_WHITE, TEXT_DARK, TEXT_LIGHT, TEXT_MEDIUM,
     DEFAULT_BUTTON_COLOR, DEFAULT_BUTTON_COLOR_DOWN,
     GRAY_BUTTON_COLOR, GRAY_BUTTON_COLOR_DOWN
 )
@@ -46,5 +46,59 @@ def GrayRoundedButton(**kwargs):
     return RoundedButton(
         bg_color=GRAY_BUTTON_COLOR,
         bg_color_down=GRAY_BUTTON_COLOR_DOWN,
+        **kwargs
+    )
+
+
+# -----------------------------------------------------------------------------
+# Label Factories
+# -----------------------------------------------------------------------------
+
+def StyledLabel(**kwargs):
+    """Base styled label with app font. All other label factories use this."""
+    kwargs.setdefault('font_name', FONT_NAME)
+    kwargs.setdefault('color', TEXT_DARK)
+    return Label(**kwargs)
+
+
+def TitleLabel(text, font_size='18sp', height=35, **kwargs):
+    """Large title label for popups and screen headers.
+
+    Defaults: font_size='18sp', color=TEXT_DARK, size_hint_y=None, height=dp(35)
+    """
+    kwargs.setdefault('color', TEXT_DARK)
+    return StyledLabel(
+        text=text,
+        font_size=font_size,
+        size_hint_y=None,
+        height=dp(height),
+        **kwargs
+    )
+
+
+def SubtitleLabel(text, font_size='14sp', height=25, **kwargs):
+    """Secondary text label for instructions and descriptions.
+
+    Defaults: font_size='14sp', color=TEXT_LIGHT, size_hint_y=None, height=dp(25)
+    """
+    kwargs.setdefault('color', TEXT_LIGHT)
+    return StyledLabel(
+        text=text,
+        font_size=font_size,
+        size_hint_y=None,
+        height=dp(height),
+        **kwargs
+    )
+
+
+def CaptionLabel(text, font_size='12sp', **kwargs):
+    """Small text label for captions, table headers, and metadata.
+
+    Defaults: font_size='12sp', color=TEXT_MEDIUM
+    """
+    kwargs.setdefault('color', TEXT_MEDIUM)
+    return StyledLabel(
+        text=text,
+        font_size=font_size,
         **kwargs
     )

@@ -2,7 +2,6 @@ import io
 import os
 
 from kivy.uix.boxlayout import BoxLayout
-from kivy.uix.label import Label
 from kivy.uix.image import Image
 from kivy.uix.textinput import TextInput
 from kivy.uix.widget import Widget
@@ -21,7 +20,7 @@ from ui_constants import (
     STATUS_SUCCESS, STATUS_ERROR, SPINNER_BORDER,
     DEFAULT_BUTTON_COLOR_DOWN, BUTTON_UNSELECTED
 )
-from widgets import RoundedButton, GrayRoundedButton
+from widgets import RoundedButton, GrayRoundedButton, TitleLabel, SubtitleLabel, CaptionLabel, StyledLabel
 
 ICONS_DIR = os.path.join(os.path.dirname(__file__), 'assets', 'icons')
 
@@ -51,14 +50,7 @@ def show_share_popup(share_url, code):
     content = BoxLayout(orientation='vertical', padding=dp(15), spacing=dp(10))
 
     # Title
-    content.add_widget(Label(
-        text='Share Puzzle',
-        font_name=FONT_NAME,
-        font_size='18sp',
-        color=TEXT_DARK,
-        size_hint_y=None,
-        height=dp(35)
-    ))
+    content.add_widget(TitleLabel('Share Puzzle'))
 
     # QR code image
     qr_widget = Image(texture=core_img.texture, size_hint_y=None, height=dp(180))
@@ -80,14 +72,7 @@ def show_share_popup(share_url, code):
     content.add_widget(url_input)
 
     # Status label for copy feedback
-    status_label = Label(
-        text='',
-        font_name=FONT_NAME,
-        font_size='13sp',
-        color=STATUS_SUCCESS,
-        size_hint_y=None,
-        height=dp(22)
-    )
+    status_label = CaptionLabel('', font_size='13sp', color=STATUS_SUCCESS, size_hint_y=None, height=dp(22))
     content.add_widget(status_label)
 
     def copy_url(btn):
@@ -148,24 +133,10 @@ def show_load_popup(on_game_loaded):
     content = BoxLayout(orientation='vertical', padding=dp(15), spacing=dp(12))
 
     # Title
-    content.add_widget(Label(
-        text='Load Shared Puzzle',
-        font_name=FONT_NAME,
-        font_size='18sp',
-        color=TEXT_DARK,
-        size_hint_y=None,
-        height=dp(35)
-    ))
+    content.add_widget(TitleLabel('Load Shared Puzzle'))
 
     # Instructions
-    content.add_widget(Label(
-        text='Paste puzzle code or URL:',
-        font_name=FONT_NAME,
-        font_size='14sp',
-        color=TEXT_LIGHT,
-        size_hint_y=None,
-        height=dp(25)
-    ))
+    content.add_widget(SubtitleLabel('Paste puzzle code or URL:'))
 
     # Text input
     text_input = TextInput(
@@ -184,14 +155,7 @@ def show_load_popup(on_game_loaded):
     content.add_widget(text_input)
 
     # Error label
-    error_label = Label(
-        text='',
-        font_name=FONT_NAME,
-        font_size='13sp',
-        color=STATUS_ERROR,
-        size_hint_y=None,
-        height=dp(22)
-    )
+    error_label = CaptionLabel('', font_size='13sp', color=STATUS_ERROR, size_hint_y=None, height=dp(22))
     content.add_widget(error_label)
 
     popup = None  # Will be set after popup creation
@@ -279,13 +243,10 @@ class LoadingPopup(ModalView):
         layout = BoxLayout(orientation='vertical', padding=dp(20), spacing=dp(10))
 
         # Status label (title at top)
-        self.status_label = Label(
-            text='Generating puzzle...',
-            font_name=FONT_NAME,
+        self.status_label = TitleLabel(
+            'Generating puzzle...',
             font_size='16sp',
-            color=TEXT_DARK,
-            size_hint_y=None,
-            height=dp(45),
+            height=45,
             halign='center',
             valign='middle',
             text_size=(None, None)
@@ -299,14 +260,7 @@ class LoadingPopup(ModalView):
         layout.add_widget(self.spinner_widget)
 
         # Stopwatch label (small, subtle)
-        self.timer_label = Label(
-            text='0:00',
-            font_name=FONT_NAME,
-            font_size='12sp',
-            color=TEXT_MEDIUM,
-            size_hint_y=None,
-            height=dp(18)
-        )
+        self.timer_label = CaptionLabel('0:00', size_hint_y=None, height=dp(18))
         layout.add_widget(self.timer_label)
 
         # Cancel button
@@ -409,14 +363,7 @@ def _show_size_selection_popup(title, sizes, on_size_selected, popup_height):
     content = BoxLayout(orientation='vertical', padding=dp(15), spacing=dp(12))
 
     # Title
-    content.add_widget(Label(
-        text=title,
-        font_name=FONT_NAME,
-        font_size='18sp',
-        color=TEXT_DARK,
-        size_hint_y=None,
-        height=dp(40)
-    ))
+    content.add_widget(TitleLabel(title, height=40))
 
     popup = None  # Will be set after creation
 
@@ -492,14 +439,7 @@ def show_game_size_popup(on_size_and_strategy_selected):
     content = BoxLayout(orientation='vertical', padding=dp(15), spacing=dp(10))
 
     # Title
-    content.add_widget(Label(
-        text='Select Puzzle Size',
-        font_name=FONT_NAME,
-        font_size='18sp',
-        color=TEXT_DARK,
-        size_hint_y=None,
-        height=dp(35)
-    ))
+    content.add_widget(TitleLabel('Select Puzzle Size'))
 
     popup = None
     selected_strategy = ['mixed']  # Use list to allow modification in nested function
@@ -526,14 +466,7 @@ def show_game_size_popup(on_size_and_strategy_selected):
     content.add_widget(row2)
 
     # Strategy label
-    content.add_widget(Label(
-        text='Kingdom Style',
-        font_name=FONT_NAME,
-        font_size='14sp',
-        color=TEXT_LIGHT,
-        size_hint_y=None,
-        height=dp(25)
-    ))
+    content.add_widget(SubtitleLabel('Kingdom Style'))
 
     # Strategy buttons (radio-style)
     strategy_row = BoxLayout(size_hint_y=None, height=dp(40), spacing=dp(8))

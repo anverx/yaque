@@ -1,10 +1,9 @@
 from kivy.uix.boxlayout import BoxLayout
-from kivy.uix.label import Label
 from kivy.metrics import dp
 
 import database
-from base_screens import BackgroundedScreen, TEXT_DARK, FONT_NAME
-from widgets import RoundedButton, GrayRoundedButton
+from base_screens import BackgroundedScreen
+from widgets import RoundedButton, GrayRoundedButton, TitleLabel
 
 
 class MainMenuScreen(BackgroundedScreen):
@@ -18,14 +17,7 @@ class MainMenuScreen(BackgroundedScreen):
         layout.add_widget(BoxLayout(size_hint_y=0.2))
 
         # Daily puzzles section
-        layout.add_widget(Label(
-            text="Today's Puzzles",
-            font_name=FONT_NAME,
-            font_size='20sp',
-            color=TEXT_DARK,
-            size_hint_y=None,
-            height=dp(40)
-        ))
+        layout.add_widget(TitleLabel("Today's Puzzles", font_size='20sp', height=40))
 
         daily_buttons = BoxLayout(size_hint_y=None, height=dp(48), spacing=dp(10))
         self.daily_buttons = {}

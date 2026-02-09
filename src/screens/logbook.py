@@ -10,9 +10,10 @@ from kivy.graphics import Color, RoundedRectangle
 from kivy.metrics import dp
 
 import database
-from base_screens import BackgroundedScreen, FONT_NAME, TEXT_DARK, TEXT_MEDIUM, TEXT_LIGHT, ROW_BACKGROUND, ROW_PRESSED, QUEEN_GRAY, QUEEN_GOLD, QUEEN_SILVER
+from base_screens import BackgroundedScreen, ROW_BACKGROUND, ROW_PRESSED, QUEEN_GRAY, QUEEN_GOLD, QUEEN_SILVER
 from game import Game
-from widgets import RoundedButton, GrayRoundedButton
+from widgets import RoundedButton, GrayRoundedButton, TitleLabel, CaptionLabel, StyledLabel
+from ui_constants import TEXT_DARK, TEXT_LIGHT
 
 # Path to icons
 ICONS_DIR = os.path.join(os.path.dirname(__file__), '..', 'assets', 'icons')
@@ -73,20 +74,17 @@ class LogbookRow(ButtonBehavior, BoxLayout):
                 crown_color = QUEEN_SILVER  # Old data without completed_at
 
         # Time column
-        self.add_widget(Label(
+        self.add_widget(StyledLabel(
             text=time_str,
-            font_name=FONT_NAME,
             font_size='13sp',
-            color=TEXT_DARK,
             size_hint_x=0.25,
             halign='left',
             valign='middle'
         ))
 
         # Size column
-        self.add_widget(Label(
+        self.add_widget(StyledLabel(
             text=f'{size}x{size}',
-            font_name=FONT_NAME,
             font_size='13sp',
             color=TEXT_LIGHT,
             size_hint_x=0.25,
@@ -94,11 +92,9 @@ class LogbookRow(ButtonBehavior, BoxLayout):
         ))
 
         # Duration column
-        self.add_widget(Label(
+        self.add_widget(StyledLabel(
             text=duration_str,
-            font_name=FONT_NAME,
             font_size='13sp',
-            color=TEXT_DARK,
             size_hint_x=0.25,
             halign='center'
         ))
@@ -135,14 +131,7 @@ class DateSeparator(BoxLayout):
         self.height = dp(30)
         self.padding = [dp(10), dp(5)]
 
-        self.add_widget(Label(
-            text=date_str,
-            font_name=FONT_NAME,
-            font_size='12sp',
-            color=TEXT_MEDIUM,
-            halign='left',
-            valign='middle'
-        ))
+        self.add_widget(CaptionLabel(date_str, halign='left', valign='middle'))
 
 
 class LogbookScreen(BackgroundedScreen):
@@ -155,14 +144,7 @@ class LogbookScreen(BackgroundedScreen):
         layout = self.content_layout
 
         # Title
-        layout.add_widget(Label(
-            text='Logbook',
-            font_name=FONT_NAME,
-            font_size='24sp',
-            color=TEXT_DARK,
-            size_hint_y=None,
-            height=dp(40)
-        ))
+        layout.add_widget(TitleLabel('Logbook', font_size='24sp', height=40))
 
         # Header row
         header = BoxLayout(
@@ -171,34 +153,10 @@ class LogbookScreen(BackgroundedScreen):
             padding=[dp(10), 0],
             spacing=dp(8)
         )
-        header.add_widget(Label(
-            text='Time',
-            font_name=FONT_NAME,
-            font_size='11sp',
-            color=TEXT_MEDIUM,
-            size_hint_x=0.25,
-            halign='left'
-        ))
-        header.add_widget(Label(
-            text='Size',
-            font_name=FONT_NAME,
-            font_size='11sp',
-            color=TEXT_MEDIUM,
-            size_hint_x=0.25,
-            halign='center'
-        ))
-        header.add_widget(Label(
-            text='Duration',
-            font_name=FONT_NAME,
-            font_size='11sp',
-            color=TEXT_MEDIUM,
-            size_hint_x=0.25,
-            halign='center'
-        ))
-        header.add_widget(Label(
-            text='',
-            size_hint_x=0.25
-        ))
+        header.add_widget(CaptionLabel('Time', font_size='11sp', size_hint_x=0.25, halign='left'))
+        header.add_widget(CaptionLabel('Size', font_size='11sp', size_hint_x=0.25, halign='center'))
+        header.add_widget(CaptionLabel('Duration', font_size='11sp', size_hint_x=0.25, halign='center'))
+        header.add_widget(Label(text='', size_hint_x=0.25))
         layout.add_widget(header)
 
         # Scrollable list
@@ -270,11 +228,9 @@ class LogbookScreen(BackgroundedScreen):
         total = database.get_plays_count()
 
         if not plays and not append:
-            self.list_layout.add_widget(Label(
-                text='No games played yet',
-                font_name=FONT_NAME,
+            self.list_layout.add_widget(CaptionLabel(
+                'No games played yet',
                 font_size='16sp',
-                color=TEXT_MEDIUM,
                 size_hint_y=None,
                 height=dp(50)
             ))

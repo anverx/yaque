@@ -34,8 +34,8 @@ from screens import (
     LogbookScreen,
 )
 from popups import show_share_popup, show_load_popup, show_game_size_popup, LoadingPopup
-from widgets import GrayRoundedButton
-from ui_constants import FONT_NAME, TEXT_DARK, TEXT_MEDIUM, TEXT_LIGHT
+from widgets import GrayRoundedButton, TitleLabel, SubtitleLabel, CaptionLabel
+from ui_constants import FONT_NAME
 
 # Android intent handling
 if platform == 'android':
@@ -269,40 +269,21 @@ class YaqueApp(App):
         """Show the about popup."""
         from kivy.uix.modalview import ModalView
         from kivy.uix.boxlayout import BoxLayout
-        from kivy.uix.label import Label
         from kivy.uix.button import Button
         from kivy.metrics import dp
 
         content = BoxLayout(orientation='vertical', padding=dp(20), spacing=dp(10))
 
         # Title
-        content.add_widget(Label(
-            text='Yaque',
-            font_name=FONT_NAME,
-            font_size='28sp',
-            color=TEXT_DARK,
-            size_hint_y=None,
-            height=dp(40)
-        ))
+        content.add_widget(TitleLabel('Yaque', font_size='28sp', height=40))
 
         # Subtitle
-        content.add_widget(Label(
-            text='A Queens Puzzle Game',
-            font_name=FONT_NAME,
-            font_size='16sp',
-            color=TEXT_LIGHT,
-            size_hint_y=None,
-            height=dp(25)
-        ))
+        content.add_widget(SubtitleLabel('A Queens Puzzle Game', font_size='16sp'))
 
         # Description
-        desc = Label(
-            text='Place one queen in each colored kingdom.\nQueens cannot attack each other\n(no shared rows, columns, or adjacent cells).',
-            font_name=FONT_NAME,
-            font_size='14sp',
-            color=TEXT_LIGHT,
-            size_hint_y=None,
-            height=dp(70),
+        desc = SubtitleLabel(
+            'Place one queen in each colored kingdom.\nQueens cannot attack each other\n(no shared rows, columns, or adjacent cells).',
+            height=70,
             halign='center',
             valign='middle'
         )
@@ -313,24 +294,10 @@ class YaqueApp(App):
         content.add_widget(BoxLayout(size_hint_y=0.3))
 
         # License
-        content.add_widget(Label(
-            text='License: CC BY-NC-SA 4.0',
-            font_name=FONT_NAME,
-            font_size='12sp',
-            color=TEXT_MEDIUM,
-            size_hint_y=None,
-            height=dp(20)
-        ))
+        content.add_widget(CaptionLabel('License: CC BY-NC-SA 4.0', size_hint_y=None, height=dp(20)))
 
         # Version
-        content.add_widget(Label(
-            text=f'Version {__version__}',
-            font_name=FONT_NAME,
-            font_size='12sp',
-            color=TEXT_MEDIUM,
-            size_hint_y=None,
-            height=dp(20)
-        ))
+        content.add_widget(CaptionLabel(f'Version {__version__}', size_hint_y=None, height=dp(20)))
 
         # GitHub link
         github_btn = Button(

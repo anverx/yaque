@@ -13,8 +13,8 @@ from kivy.metrics import dp, sp
 from kivy.utils import platform
 
 from board_widget import BoardWidget
-from ui_constants import FONT_NAME, TEXT_DARK, TEXT_MEDIUM, COLOR_BLACK, INDICATOR_CURRENT, INDICATOR_OTHER
-from widgets import GrayRoundedButton
+from ui_constants import COLOR_BLACK, INDICATOR_CURRENT, INDICATOR_OTHER
+from widgets import GrayRoundedButton, StyledLabel, TitleLabel, CaptionLabel
 import database
 import game_encoding
 
@@ -89,11 +89,9 @@ class IconButton(ButtonBehavior, BoxLayout):
 
         # Optional label
         if label:
-            self.label = Label(
-                text=label,
-                font_name=FONT_NAME,
+            self.label = CaptionLabel(
+                label,
                 font_size='9sp',
-                color=TEXT_DARK,
                 size_hint=(None, None),
                 size=(dp(size_dp), dp(12)),
                 halign='center'
@@ -120,25 +118,11 @@ class GameScreen(Screen):
         layout = BoxLayout(orientation='vertical', padding=dp(10), spacing=dp(4))
 
         # Game title (Daily puzzle: date / Random)
-        self.title_label = Label(
-            text='',
-            font_name=FONT_NAME,
-            font_size='16sp',
-            color=TEXT_DARK,
-            size_hint_y=None,
-            height=dp(22)
-        )
+        self.title_label = TitleLabel('', font_size='16sp', height=22)
         layout.add_widget(self.title_label)
 
         # Subtitle - shows "Unique solution!" as label or "X solutions" as clickable button
-        self.subtitle_label = Label(
-            text='',
-            font_name=FONT_NAME,
-            font_size='12sp',
-            color=TEXT_MEDIUM,
-            size_hint_y=None,
-            height=dp(24)
-        )
+        self.subtitle_label = CaptionLabel('', size_hint_y=None, height=dp(24))
         layout.add_widget(self.subtitle_label)
 
         # Solutions button (replaces subtitle when multiple solutions)
@@ -162,12 +146,7 @@ class GameScreen(Screen):
 
         # Clock
         top_bar = BoxLayout(size_hint_y=None, height=dp(50))
-        self.clock_label = Label(
-            text='00:00',
-            font_name=FONT_NAME,
-            font_size='36sp',
-            color=COLOR_BLACK
-        )
+        self.clock_label = StyledLabel(text='00:00', font_size='36sp', color=COLOR_BLACK)
         top_bar.add_widget(self.clock_label)
         layout.add_widget(top_bar)
 
