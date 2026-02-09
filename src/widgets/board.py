@@ -420,6 +420,17 @@ class BoardWidget(Widget):
         self.draw_board()
         return self.current_solution_index
 
+    def _get_cell_at_pos(self, x: float, y: float) -> tuple[int, int]:
+        """Convert screen coordinates to cell (row, col)."""
+        cell_w = self.width / self.size_cells
+        cell_h = self.height / self.size_cells
+        col = int((x - self.x) / cell_w)
+        row = self.size_cells - 1 - int((y - self.y) / cell_h)
+        # Clamp to valid range
+        col = max(0, min(col, self.size_cells - 1))
+        row = max(0, min(row, self.size_cells - 1))
+        return row, col
+
     def on_touch_down(self, touch: Any) -> bool:
         if self.hidden:
             if self.collide_point(*touch.pos) and self.on_hidden_click:
@@ -427,21 +438,67 @@ class BoardWidget(Widget):
                 return True
             return super().on_touch_down(touch)
         if self.collide_point(*touch.pos):
-            cell_w = self.width / self.size_cells
-            cell_h = self.height / self.size_cells
-            col = int((touch.x - self.x) / cell_w)
-            row = self.size_cells - 1 - int((touch.y - self.y) / cell_h)
-            # Clamp to valid range
-            col = max(0, min(col, self.size_cells - 1))
-            row = max(0, min(row, self.size_cells - 1))
-            # Save state before change
+            # Grab the touch to track it for drag-to-mark
+            touch.grab(self)
+            row, col = self._get_cell_at_pos(touch.x, touch.y)
+            # Save state before any changes (for undo)
             self._save_state()
-            # Cycle mark state: empty -> circle -> queen -> empty
-            self.cell_marks[row][col] = (self.cell_marks[row][col] + 1) % 3
-            self.draw_board()
-            # Schedule delayed validation
-            self._schedule_validation()
-            if self.on_cell_click:
-                self.on_cell_click(row, col)
+            # Store drag tracking info
+            touch.ud['start_cell'] = (row, col)
+            touch.ud['last_cell'] = (row, col)
+            touch.ud['is_drag'] = False
+            touch.ud['marked_cells'] = set()
             return True
         return super().on_touch_down(touch)
+
+    def on_touch_move(self, touch: Any) -> bool:
+        if touch.grab_current is not self:
+            return super().on_touch_move(touch)
+        if self.hidden:
+            return True
+        if not self.collide_point(*touch.pos):
+            return True
+
+        row, col = self._get_cell_at_pos(touch.x, touch.y)
+        last_cell = touch.ud.get('last_cell')
+
+        # If moved to a different cell, it's a drag
+        if last_cell and (row, col) != last_cell:
+            touch.ud['is_drag'] = True
+            # Mark empty cells with circle as we drag
+            if self.cell_marks[row][col] == MARK_EMPTY:
+                self.cell_marks[row][col] = MARK_CIRCLE
+                touch.ud['marked_cells'].add((row, col))
+                self.draw_board()
+            touch.ud['last_cell'] = (row, col)
+
+        return True
+
+    def on_touch_up(self, touch: Any) -> bool:
+        if touch.grab_current is not self:
+            return super().on_touch_up(touch)
+
+        touch.ungrab(self)
+
+        if self.hidden:
+            return True
+
+        start_cell = touch.ud.get('start_cell')
+        is_drag = touch.ud.get('is_drag', False)
+        marked_cells = touch.ud.get('marked_cells', set())
+
+        if start_cell:
+            row, col = start_cell
+            if is_drag:
+                # Drag completed - state was saved at touch_down
+                if marked_cells:
+                    self._schedule_validation()
+            else:
+                # Single tap - cycle mark state (state was saved at touch_down)
+                self.cell_marks[row][col] = (self.cell_marks[row][col] + 1) % 3
+                self.draw_board()
+                self._schedule_validation()
+                if self.on_cell_click:
+                    self.on_cell_click(row, col)
+
+        return True
