@@ -2,7 +2,7 @@
 
 import sqlite3
 import os
-from datetime import datetime
+from datetime import datetime, date, timedelta
 from typing import Optional, List, Dict, Any
 
 # Current schema version - increment when making schema changes
@@ -527,3 +527,57 @@ def get_month_completion_status(year: int, month: int) -> Dict[str, Dict[int, Op
                 result[date_str][row['size']] = 'silver'
 
     return result
+
+
+def get_current_streak() -> int:
+    """Calculate the current streak of consecutive days with daily puzzles played.
+
+    A streak day is when at least one daily puzzle was started on its daily_date.
+    The streak continues as long as each consecutive day (going backwards) has
+    at least one such play. If today hasn't been played yet but yesterday was,
+    the streak is still considered active (not broken yet).
+
+    Returns:
+        Number of consecutive days in the current streak.
+    """
+    cursor = _connection.cursor()
+
+    # Get all distinct dates where a daily puzzle was played on its day
+    # (started_at date matches daily_date)
+    cursor.execute('''
+        SELECT DISTINCT pz.daily_date
+        FROM plays p
+        JOIN puzzles pz ON p.puzzle_id = pz.id
+        WHERE pz.daily_date IS NOT NULL
+        AND date(p.started_at) = pz.daily_date
+        ORDER BY pz.daily_date DESC
+    ''')
+
+    played_dates = {row['daily_date'] for row in cursor.fetchall()}
+
+    if not played_dates:
+        return 0
+
+    today = date.today()
+    today_str = today.isoformat()
+    yesterday_str = (today - timedelta(days=1)).isoformat()
+
+    # Determine the starting point for counting
+    if today_str in played_dates:
+        # Today was played, start counting from today
+        check_date = today
+    elif yesterday_str in played_dates:
+        # Today not played yet, but yesterday was - streak is still alive
+        # Start counting from yesterday
+        check_date = today - timedelta(days=1)
+    else:
+        # Neither today nor yesterday was played - streak is broken
+        return 0
+
+    # Count consecutive days backwards
+    streak = 0
+    while check_date.isoformat() in played_dates:
+        streak += 1
+        check_date = check_date - timedelta(days=1)
+
+    return streak

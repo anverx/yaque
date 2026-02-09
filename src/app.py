@@ -34,6 +34,7 @@ from screens import (
     LogbookScreen,
 )
 from popups import show_share_popup, show_load_popup, show_game_size_popup, LoadingPopup
+from widgets import GrayRoundedButton
 
 # Android intent handling
 if platform == 'android':
@@ -286,7 +287,7 @@ class YaqueApp(App):
         # Subtitle
         content.add_widget(Label(
             text='A Queens Puzzle Game',
-            font_name='DMSans',
+            font_name='DMSansBlack',
             font_size='16sp',
             color=(0.4, 0.4, 0.4, 1),
             size_hint_y=None,
@@ -296,7 +297,7 @@ class YaqueApp(App):
         # Description
         desc = Label(
             text='Place one queen in each colored kingdom.\nQueens cannot attack each other\n(no shared rows, columns, or adjacent cells).',
-            font_name='DMSans',
+            font_name='DMSansBlack',
             font_size='14sp',
             color=(0.4, 0.4, 0.4, 1),
             size_hint_y=None,
@@ -313,7 +314,7 @@ class YaqueApp(App):
         # License
         content.add_widget(Label(
             text='License: CC BY-NC-SA 4.0',
-            font_name='DMSans',
+            font_name='DMSansBlack',
             font_size='12sp',
             color=(0.5, 0.5, 0.5, 1),
             size_hint_y=None,
@@ -323,7 +324,7 @@ class YaqueApp(App):
         # Version
         content.add_widget(Label(
             text=f'Version {__version__}',
-            font_name='DMSans',
+            font_name='DMSansBlack',
             font_size='12sp',
             color=(0.5, 0.5, 0.5, 1),
             size_hint_y=None,
@@ -333,7 +334,7 @@ class YaqueApp(App):
         # GitHub link
         github_btn = Button(
             text='github.com/anverx/yaque',
-            font_name='DMSans',
+            font_name='DMSansBlack',
             font_size='12sp',
             size_hint_y=None,
             height=dp(30),
@@ -344,9 +345,11 @@ class YaqueApp(App):
         content.add_widget(github_btn)
 
         # Close button
-        close_btn = Button(
+        close_btn = GrayRoundedButton(
             text='Close',
-            font_name='DMSans',
+            font_name='DMSansBlack',
+            font_size='15sp',
+            color=(0.3, 0.3, 0.3, 1),
             size_hint=(None, None),
             size=(dp(100), dp(40)),
             pos_hint={'center_x': 0.5}

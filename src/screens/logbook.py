@@ -76,7 +76,7 @@ class LogbookRow(ButtonBehavior, BoxLayout):
         # Time column
         self.add_widget(Label(
             text=time_str,
-            font_name='DMSans',
+            font_name='DMSansBlack',
             font_size='13sp',
             color=(0.3, 0.3, 0.3, 1),
             size_hint_x=0.25,
@@ -87,7 +87,7 @@ class LogbookRow(ButtonBehavior, BoxLayout):
         # Size column
         self.add_widget(Label(
             text=f'{size}x{size}',
-            font_name='DMSans',
+            font_name='DMSansBlack',
             font_size='13sp',
             color=(0.4, 0.4, 0.4, 1),
             size_hint_x=0.25,
@@ -178,6 +178,9 @@ class LogbookScreen(Screen):
             spacing=dp(10)
         )
 
+        # Top spacer (pushes content below the splash image title)
+        main_layout.add_widget(BoxLayout(size_hint_y=None, height=dp(70)))
+
         # Title
         main_layout.add_widget(Label(
             text='Logbook',
@@ -197,7 +200,7 @@ class LogbookScreen(Screen):
         )
         header.add_widget(Label(
             text='Time',
-            font_name='DMSans',
+            font_name='DMSansBlack',
             font_size='11sp',
             color=(0.5, 0.5, 0.5, 1),
             size_hint_x=0.25,
@@ -205,7 +208,7 @@ class LogbookScreen(Screen):
         ))
         header.add_widget(Label(
             text='Size',
-            font_name='DMSans',
+            font_name='DMSansBlack',
             font_size='11sp',
             color=(0.5, 0.5, 0.5, 1),
             size_hint_x=0.25,
@@ -213,7 +216,7 @@ class LogbookScreen(Screen):
         ))
         header.add_widget(Label(
             text='Duration',
-            font_name='DMSans',
+            font_name='DMSansBlack',
             font_size='11sp',
             color=(0.5, 0.5, 0.5, 1),
             size_hint_x=0.25,
@@ -238,10 +241,11 @@ class LogbookScreen(Screen):
         main_layout.add_widget(scroll)
 
         # Back button
-        back_btn = RoundedButton(
-            text='Back to Menu',
-            font_name='DMSans',
+        back_btn = GrayRoundedButton(
+            text='Back',
+            font_name='DMSansBlack',
             font_size='18sp',
+            color=(0.3, 0.3, 0.3, 1),
             size_hint_y=None,
             height=dp(48)
         )
@@ -311,7 +315,7 @@ class LogbookScreen(Screen):
         if not plays and not append:
             self.list_layout.add_widget(Label(
                 text='No games played yet',
-                font_name='DMSans',
+                font_name='DMSansBlack',
                 font_size='16sp',
                 color=(0.5, 0.5, 0.5, 1),
                 size_hint_y=None,
@@ -355,7 +359,7 @@ class LogbookScreen(Screen):
             remaining = total - self.current_offset
             load_more_btn = GrayRoundedButton(
                 text=f'Load More ({remaining} remaining)',
-                font_name='DMSans',
+                font_name='DMSansBlack',
                 font_size='14sp',
                 color=(0.3, 0.3, 0.3, 1),
                 size_hint_y=None,

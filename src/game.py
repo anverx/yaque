@@ -232,6 +232,47 @@ class Game:
         backtrack(0, [])
         return solutions_found[0]
 
+    def find_all_solutions(self, max_count: int = 100) -> List[List[Tuple[int, int]]]:
+        """Find all solutions for the puzzle, up to max_count."""
+        no = self.size
+        num_kingdoms = no
+
+        # Build list of cells for each kingdom
+        kingdom_cells: List[List[Tuple[int, int]]] = [[] for _ in range(num_kingdoms)]
+        for row in range(no):
+            for col in range(no):
+                k = self.kingdoms[row][col]
+                kingdom_cells[k].append((row, col))
+
+        def is_valid_placement(placed: List[Tuple[int, int]], row: int, col: int) -> bool:
+            for r, c in placed:
+                if r == row or c == col:
+                    return False
+                if abs(r - row) <= 1 and abs(c - col) <= 1:
+                    return False
+            return True
+
+        solutions: List[List[Tuple[int, int]]] = []
+
+        def backtrack(kingdom_idx: int, placed: List[Tuple[int, int]]):
+            if len(solutions) >= max_count:
+                return
+
+            if kingdom_idx == num_kingdoms:
+                solutions.append(list(placed))
+                return
+
+            for row, col in kingdom_cells[kingdom_idx]:
+                if is_valid_placement(placed, row, col):
+                    placed.append((row, col))
+                    backtrack(kingdom_idx + 1, placed)
+                    placed.pop()
+                    if len(solutions) >= max_count:
+                        return
+
+        backtrack(0, [])
+        return solutions
+
     def encode(self) -> str:
         """Encode this game to a shareable base64 string."""
         return encode_game_b64(self.kingdoms, self.queens)

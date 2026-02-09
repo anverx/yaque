@@ -15,7 +15,7 @@ from kivy.utils import platform
 
 import database
 from popups import show_date_puzzles_popup
-from widgets import RoundedButton, DEFAULT_BUTTON_COLOR, DEFAULT_BUTTON_COLOR_DOWN
+from widgets import RoundedButton, GrayRoundedButton, DEFAULT_BUTTON_COLOR, DEFAULT_BUTTON_COLOR_DOWN
 
 # Path to icons
 ICONS_DIR = os.path.join(os.path.dirname(__file__), '..', 'assets', 'icons')
@@ -38,7 +38,7 @@ class DayCell(ButtonBehavior, BoxLayout):
         # Day number
         self.day_label = Label(
             text=str(day),
-            font_name='DMSans',
+            font_name='DMSansBlack',
             font_size='14sp',
             color=(1, 1, 1, 1),
             size_hint_y=0.5
@@ -114,6 +114,9 @@ class CalendarScreen(Screen):
             spacing=dp(10)
         )
 
+        # Top spacer (pushes content below the splash image title)
+        self.main_layout.add_widget(BoxLayout(size_hint_y=None, height=dp(70)))
+
         # Header with month/year and navigation
         header = BoxLayout(size_hint_y=None, height=dp(50), spacing=dp(10))
 
@@ -152,7 +155,7 @@ class CalendarScreen(Screen):
         for day_name in ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su']:
             days_header.add_widget(Label(
                 text=day_name,
-                font_name='DMSans',
+                font_name='DMSansBlack',
                 font_size='14sp',
                 color=(0.3, 0.3, 0.3, 1)
             ))
@@ -163,14 +166,26 @@ class CalendarScreen(Screen):
         self.calendar_grid.bind(minimum_height=self.calendar_grid.setter('height'))
         self.main_layout.add_widget(self.calendar_grid)
 
+        # Streak display
+        self.streak_label = Label(
+            text='',
+            font_name='DMSansBlack',
+            font_size='16sp',
+            color=(0.3, 0.3, 0.3, 1),
+            size_hint_y=None,
+            height=dp(40)
+        )
+        self.main_layout.add_widget(self.streak_label)
+
         # Spacer
         self.main_layout.add_widget(BoxLayout())
 
         # Back button
-        back_btn = RoundedButton(
-            text='Back to Menu',
-            font_name='DMSans',
+        back_btn = GrayRoundedButton(
+            text='Back',
+            font_name='DMSansBlack',
             font_size='18sp',
+            color=(0.3, 0.3, 0.3, 1),
             size_hint_y=None,
             height=dp(48)
         )
@@ -208,6 +223,13 @@ class CalendarScreen(Screen):
     def refresh_calendar(self):
         self.month_label.text = f'{calendar.month_name[self.current_month]} {self.current_year}'
         self.calendar_grid.clear_widgets()
+
+        # Update streak display
+        streak = database.get_current_streak()
+        if streak > 0:
+            self.streak_label.text = f'Current streak: {streak} day{"s" if streak != 1 else ""}'
+        else:
+            self.streak_label.text = 'Start a streak by playing today!'
 
         today = date.today()
         cal = calendar.Calendar(firstweekday=0)  # Monday first

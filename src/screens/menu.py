@@ -6,7 +6,8 @@ from kivy.uix.screenmanager import Screen
 from kivy.graphics import Color, Rectangle
 from kivy.metrics import dp
 
-from widgets import RoundedButton
+import database
+from widgets import RoundedButton, GrayRoundedButton
 
 
 class MainMenuScreen(Screen):
@@ -52,7 +53,7 @@ class MainMenuScreen(Screen):
         daily_buttons = BoxLayout(size_hint_y=None, height=dp(48), spacing=dp(10))
         self.daily_buttons = {}
         for size in [6, 7, 8]:
-            btn = RoundedButton(text=f'{size}x{size}', font_size='18sp', font_name='DMSans')
+            btn = RoundedButton(text=f'{size}x{size}', font_size='18sp', font_name='DMSansBlack')
             btn.bind(on_press=lambda x, s=size: self.app.start_daily_game(s))
             self.daily_buttons[size] = btn
             daily_buttons.add_widget(btn)
@@ -61,21 +62,22 @@ class MainMenuScreen(Screen):
         # Spacer before middle buttons
         layout.add_widget(BoxLayout(size_hint_y=0.25))
 
-        # Calendar button
-        calendar_btn = RoundedButton(
+        # Calendar button with streak display
+        self.calendar_btn = RoundedButton(
             text='Calendar',
-            font_name='DMSans',
+            font_name='DMSansBlack',
             font_size='18sp',
             size_hint_y=None,
-            height=dp(48)
+            height=dp(58),
+            markup=True
         )
-        calendar_btn.bind(on_press=self.app.show_calendar)
-        layout.add_widget(calendar_btn)
+        self.calendar_btn.bind(on_press=self.app.show_calendar)
+        layout.add_widget(self.calendar_btn)
 
         # Random game button
         random_btn = RoundedButton(
             text='Random Game',
-            font_name='DMSans',
+            font_name='DMSansBlack',
             font_size='18sp',
             size_hint_y=None,
             height=dp(48)
@@ -86,7 +88,7 @@ class MainMenuScreen(Screen):
         # Load shared puzzle button
         load_btn = RoundedButton(
             text='Load Shared Puzzle',
-            font_name='DMSans',
+            font_name='DMSansBlack',
             font_size='18sp',
             size_hint_y=None,
             height=dp(48)
@@ -97,7 +99,7 @@ class MainMenuScreen(Screen):
         # Logbook button
         logbook_btn = RoundedButton(
             text='Logbook',
-            font_name='DMSans',
+            font_name='DMSansBlack',
             font_size='18sp',
             size_hint_y=None,
             height=dp(48)
@@ -108,7 +110,7 @@ class MainMenuScreen(Screen):
         # About button
         about_btn = RoundedButton(
             text='About',
-            font_name='DMSans',
+            font_name='DMSansBlack',
             font_size='18sp',
             size_hint_y=None,
             height=dp(48)
@@ -120,10 +122,11 @@ class MainMenuScreen(Screen):
         layout.add_widget(BoxLayout(size_hint_y=0.1))
 
         # Exit button
-        exit_btn = RoundedButton(
+        exit_btn = GrayRoundedButton(
             text='Exit',
-            font_name='DMSans',
+            font_name='DMSansBlack',
             font_size='18sp',
+            color=(0.3, 0.3, 0.3, 1),
             size_hint_y=None,
             height=dp(48)
         )
@@ -138,5 +141,10 @@ class MainMenuScreen(Screen):
         self._overlay_rect.size = instance.size
 
     def on_enter(self):
-        """Called when screen is entered - refresh completion status."""
-        pass  # TODO: Add crown display later
+        """Called when screen is entered - refresh streak display."""
+        streak = database.get_current_streak()
+        if streak > 0:
+            streak_text = f"Streak: {streak} day{'s' if streak != 1 else ''}"
+        else:
+            streak_text = "Start a streak!"
+        self.calendar_btn.text = f"Calendar\n[size=12sp]{streak_text}[/size]"

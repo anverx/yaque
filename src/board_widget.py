@@ -49,6 +49,9 @@ class BoardWidget(Widget):
         # Track cell marks: 0=empty, 1=circle, 2=queen
         self.cell_marks = [[MARK_EMPTY] * self.size_cells for _ in range(self.size_cells)]
         self.show_solution = False
+        # All possible solutions (populated when solved)
+        self.all_solutions: List[List[Tuple[int, int]]] = []
+        self.current_solution_index = 0
         # History for undo/redo
         self.history = []
         self.history_index = -1
@@ -137,7 +140,22 @@ class BoardWidget(Widget):
             Line(points=[self.x, self.y, self.x, self.y + self.height], width=3)
             Line(points=[self.x + self.width, self.y, self.x + self.width, self.y + self.height], width=3)
 
-            # Draw cell marks
+            # When solved and showing solutions, draw the current solution queens (blue, 30% bigger)
+            if self.solved and not self.celebrating and self.show_solution and self.all_solutions:
+                solution = self.all_solutions[self.current_solution_index]
+                Color(0.5, 0.5, 1, 0.8)  # Blue tint
+                for row, col in solution:
+                    x = self.x + col * cell_w
+                    y = self.y + (n - 1 - row) * cell_h
+                    # 30% bigger than normal queen size
+                    margin = min(cell_w, cell_h) * 0.2
+                    base_size = min(cell_w, cell_h) - 2 * margin
+                    size = base_size * 1.3
+                    qx = x + (cell_w - size) / 2
+                    qy = y + (cell_h - size) / 2
+                    Rectangle(pos=(qx, qy), size=(size, size), texture=QUEEN_TEXTURE)
+
+            # Draw cell marks (user's placements)
             Color(0, 0, 0, 1)
             for row in range(n):
                 for col in range(n):
@@ -194,7 +212,7 @@ class BoardWidget(Widget):
                             Rectangle(pos=(0, 0), size=(size, size), texture=QUEEN_TEXTURE)
                             PopMatrix()
                         elif self.solved:
-                            # Keep golden after celebration
+                            # Golden queens on top of blue solution queens
                             Color(1.0, 0.85, 0.2, 1)
                             qx = x + (cell_w - size) / 2
                             qy = y + (cell_h - size) / 2
@@ -209,18 +227,6 @@ class BoardWidget(Widget):
                             qy = y + (cell_h - size) / 2
                             Rectangle(pos=(qx, qy), size=(size, size), texture=QUEEN_TEXTURE)
                         Color(0, 0, 0, 1)
-
-            # Draw solution queens if enabled
-            if self.show_solution:
-                Color(0.5, 0.5, 1, 0.7)  # Semi-transparent blue tint
-                for row, col in self.queens:
-                    x = self.x + col * cell_w
-                    y = self.y + (n - 1 - row) * cell_h
-                    margin = min(cell_w, cell_h) * 0.2  # 20% smaller
-                    size = min(cell_w, cell_h) - 2 * margin
-                    qx = x + (cell_w - size) / 2
-                    qy = y + (cell_h - size) / 2
-                    Rectangle(pos=(qx, qy), size=(size, size), texture=QUEEN_TEXTURE)
 
     def _get_marked_queens(self) -> List[Tuple[int, int]]:
         """Get all cells marked as queens."""
@@ -402,6 +408,14 @@ class BoardWidget(Widget):
         # Mark as solved and start celebration
         self.solved = True
         self.start_celebration()
+
+    def cycle_solution(self) -> int:
+        """Cycle to the next solution. Returns the new solution index (0-based)."""
+        if not self.all_solutions:
+            return 0
+        self.current_solution_index = (self.current_solution_index + 1) % len(self.all_solutions)
+        self.draw_board()
+        return self.current_solution_index
 
     def on_touch_down(self, touch):
         if self.hidden:
