@@ -14,6 +14,12 @@ from kivy.graphics import Color, Ellipse, Rectangle, PushMatrix, PopMatrix, Rota
 from kivy.metrics import dp
 
 from game import Game
+from ui_constants import (
+    TEXT_DARK, TEXT_MEDIUM, TEXT_LIGHT, TEXT_HEADER, TEXT_WHITE, COLOR_WHITE,
+    POPUP_BACKGROUND, INPUT_BACKGROUND, INPUT_HINT_COLOR,
+    STATUS_SUCCESS, STATUS_ERROR, SPINNER_BORDER,
+    DEFAULT_BUTTON_COLOR_DOWN, BUTTON_UNSELECTED
+)
 from widgets import RoundedButton, GrayRoundedButton
 
 ICONS_DIR = os.path.join(os.path.dirname(__file__), 'assets', 'icons')
@@ -48,7 +54,7 @@ def show_share_popup(share_url, code):
         text='Share Puzzle',
         font_name='DMSansBlack',
         font_size='18sp',
-        color=(0.3, 0.3, 0.3, 1),
+        color=TEXT_DARK,
         size_hint_y=None,
         height=dp(35)
     ))
@@ -67,8 +73,8 @@ def show_share_popup(share_url, code):
         padding=[dp(8), dp(10)],
         readonly=True,
         multiline=False,
-        background_color=(0.95, 0.95, 0.95, 1),
-        foreground_color=(0.3, 0.3, 0.3, 1)
+        background_color=INPUT_BACKGROUND,
+        foreground_color=TEXT_DARK
     )
     content.add_widget(url_input)
 
@@ -77,7 +83,7 @@ def show_share_popup(share_url, code):
         text='',
         font_name='DMSansBlack',
         font_size='13sp',
-        color=(0.2, 0.6, 0.2, 1),
+        color=STATUS_SUCCESS,
         size_hint_y=None,
         height=dp(22)
     )
@@ -100,7 +106,7 @@ def show_share_popup(share_url, code):
         text='Copy URL',
         font_name='DMSansBlack',
         font_size='15sp',
-        color=(1, 1, 1, 1)
+        color=TEXT_WHITE
     )
     copy_url_btn.bind(on_press=copy_url)
     buttons.add_widget(copy_url_btn)
@@ -109,7 +115,7 @@ def show_share_popup(share_url, code):
         text='Copy Code',
         font_name='DMSansBlack',
         font_size='15sp',
-        color=(1, 1, 1, 1)
+        color=TEXT_WHITE
     )
     copy_code_btn.bind(on_press=copy_code)
     buttons.add_widget(copy_code_btn)
@@ -121,7 +127,7 @@ def show_share_popup(share_url, code):
         text='Close',
         font_name='DMSansBlack',
         font_size='16sp',
-        color=(0.3, 0.3, 0.3, 1),
+        color=TEXT_DARK,
         size_hint_y=None,
         height=dp(44)
     )
@@ -131,7 +137,7 @@ def show_share_popup(share_url, code):
         size_hint=(0.85, None),
         height=dp(450),
         auto_dismiss=True,
-        background_color=(1, 1, 1, 0.95)
+        background_color=POPUP_BACKGROUND
     )
     popup.add_widget(content)
     close_btn.bind(on_press=popup.dismiss)
@@ -151,7 +157,7 @@ def show_load_popup(on_game_loaded):
         text='Load Shared Puzzle',
         font_name='DMSansBlack',
         font_size='18sp',
-        color=(0.3, 0.3, 0.3, 1),
+        color=TEXT_DARK,
         size_hint_y=None,
         height=dp(35)
     ))
@@ -161,7 +167,7 @@ def show_load_popup(on_game_loaded):
         text='Paste puzzle code or URL:',
         font_name='DMSansBlack',
         font_size='14sp',
-        color=(0.4, 0.4, 0.4, 1),
+        color=TEXT_LIGHT,
         size_hint_y=None,
         height=dp(25)
     ))
@@ -174,11 +180,11 @@ def show_load_popup(on_game_loaded):
         size_hint_y=None,
         height=dp(48),
         padding=[dp(10), dp(12)],
-        background_color=(0.95, 0.95, 0.95, 1),
-        foreground_color=(0.2, 0.2, 0.2, 1),
-        cursor_color=(0.3, 0.3, 0.3, 1),
+        background_color=INPUT_BACKGROUND,
+        foreground_color=TEXT_HEADER,
+        cursor_color=TEXT_DARK,
         hint_text='Enter code here...',
-        hint_text_color=(0.6, 0.6, 0.6, 1)
+        hint_text_color=INPUT_HINT_COLOR
     )
     content.add_widget(text_input)
 
@@ -187,7 +193,7 @@ def show_load_popup(on_game_loaded):
         text='',
         font_name='DMSansBlack',
         font_size='13sp',
-        color=(0.8, 0.2, 0.2, 1),
+        color=STATUS_ERROR,
         size_hint_y=None,
         height=dp(22)
     )
@@ -225,7 +231,7 @@ def show_load_popup(on_game_loaded):
         text='Paste',
         font_name='DMSansBlack',
         font_size='16sp',
-        color=(0.3, 0.3, 0.3, 1)
+        color=TEXT_DARK
     )
     paste_btn.bind(on_press=paste_clipboard)
     buttons.add_widget(paste_btn)
@@ -234,7 +240,7 @@ def show_load_popup(on_game_loaded):
         text='Load',
         font_name='DMSansBlack',
         font_size='16sp',
-        color=(1, 1, 1, 1)
+        color=TEXT_WHITE
     )
     load_btn.bind(on_press=load_puzzle)
     buttons.add_widget(load_btn)
@@ -246,7 +252,7 @@ def show_load_popup(on_game_loaded):
         text='Cancel',
         font_name='DMSansBlack',
         font_size='16sp',
-        color=(0.3, 0.3, 0.3, 1),
+        color=TEXT_DARK,
         size_hint_y=None,
         height=dp(44)
     )
@@ -256,7 +262,7 @@ def show_load_popup(on_game_loaded):
         size_hint=(0.85, None),
         height=dp(300),
         auto_dismiss=False,
-        background_color=(1, 1, 1, 0.95)
+        background_color=POPUP_BACKGROUND
     )
     popup.add_widget(content)
     cancel_btn.bind(on_press=popup.dismiss)
@@ -270,7 +276,7 @@ class LoadingPopup(ModalView):
         super().__init__(**kwargs)
         self.size_hint = (0.7, 0.45)
         self.auto_dismiss = False
-        self.background_color = (1, 1, 1, 0.95)
+        self.background_color = POPUP_BACKGROUND
         self.on_cancel_callback = on_cancel
         self.rotation_angle = 0
         self.elapsed_time = 0.0
@@ -288,7 +294,7 @@ class LoadingPopup(ModalView):
             text='Generating puzzle...',
             font_name='DMSansBlack',
             font_size='16sp',
-            color=(0.3, 0.3, 0.3, 1),
+            color=TEXT_DARK,
             size_hint_y=None,
             height=dp(45),
             halign='center',
@@ -308,7 +314,7 @@ class LoadingPopup(ModalView):
             text='0:00',
             font_name='DMSansBlack',
             font_size='12sp',
-            color=(0.5, 0.5, 0.5, 1),
+            color=TEXT_MEDIUM,
             size_hint_y=None,
             height=dp(18)
         )
@@ -319,7 +325,7 @@ class LoadingPopup(ModalView):
             text='Cancel',
             font_name='DMSansBlack',
             font_size='15sp',
-            color=(0.3, 0.3, 0.3, 1),
+            color=TEXT_DARK,
             size_hint=(None, None),
             size=(dp(100), dp(40)),
             pos_hint={'center_x': 0.5}
@@ -342,19 +348,19 @@ class LoadingPopup(ModalView):
 
         with self.spinner_widget.canvas:
             # White circle background
-            Color(1, 1, 1, 1)
+            Color(*COLOR_WHITE)
             Ellipse(pos=(cx - circle_radius, cy - circle_radius),
                    size=(circle_radius * 2, circle_radius * 2))
 
             # Light gray border
-            Color(0.8, 0.8, 0.8, 1)
+            Color(*SPINNER_BORDER)
             Line(ellipse=(cx - circle_radius, cy - circle_radius,
                          circle_radius * 2, circle_radius * 2), width=dp(2))
 
             # Spinning queen
             PushMatrix()
             Rotate(angle=self.rotation_angle, origin=(cx, cy))
-            Color(1, 1, 1, 1)
+            Color(*COLOR_WHITE)
             Rectangle(
                 pos=(cx - queen_size / 2, cy - queen_size / 2),
                 size=(queen_size, queen_size),
@@ -420,7 +426,7 @@ def _show_size_selection_popup(title, sizes, on_size_selected, popup_height):
         text=title,
         font_name='DMSansBlack',
         font_size='18sp',
-        color=(0.3, 0.3, 0.3, 1),
+        color=TEXT_DARK,
         size_hint_y=None,
         height=dp(40)
     ))
@@ -441,7 +447,7 @@ def _show_size_selection_popup(title, sizes, on_size_selected, popup_height):
                 text=f'{size}x{size}',
                 font_name='DMSansBlack',
                 font_size='18sp',
-                color=(1, 1, 1, 1)
+                color=TEXT_WHITE
             )
             btn.bind(on_press=make_callback(size))
             row.add_widget(btn)
@@ -455,7 +461,7 @@ def _show_size_selection_popup(title, sizes, on_size_selected, popup_height):
         text='Cancel',
         font_name='DMSansBlack',
         font_size='16sp',
-        color=(0.3, 0.3, 0.3, 1),
+        color=TEXT_DARK,
         size_hint_y=None,
         height=dp(44)
     )
@@ -465,7 +471,7 @@ def _show_size_selection_popup(title, sizes, on_size_selected, popup_height):
         size_hint=(0.8, None),
         height=dp(popup_height),
         auto_dismiss=True,
-        background_color=(1, 1, 1, 0.95)
+        background_color=POPUP_BACKGROUND
     )
     popup.add_widget(content)
     cancel_btn.bind(on_press=popup.dismiss)
@@ -507,7 +513,7 @@ def show_game_size_popup(on_size_and_strategy_selected):
         text='Select Puzzle Size',
         font_name='DMSansBlack',
         font_size='18sp',
-        color=(0.3, 0.3, 0.3, 1),
+        color=TEXT_DARK,
         size_hint_y=None,
         height=dp(35)
     ))
@@ -530,7 +536,7 @@ def show_game_size_popup(on_size_and_strategy_selected):
             text=f'{size}x{size}',
             font_name='DMSansBlack',
             font_size='18sp',
-            color=(1, 1, 1, 1)
+            color=TEXT_WHITE
         )
         btn.bind(on_press=make_size_callback(size))
         row.add_widget(btn)
@@ -543,7 +549,7 @@ def show_game_size_popup(on_size_and_strategy_selected):
         text='Kingdom Style',
         font_name='DMSansBlack',
         font_size='14sp',
-        color=(0.4, 0.4, 0.4, 1),
+        color=TEXT_LIGHT,
         size_hint_y=None,
         height=dp(25)
     ))
@@ -564,9 +570,9 @@ def show_game_size_popup(on_size_and_strategy_selected):
             # Update button colors to show selection
             for s, b in strategy_buttons.items():
                 if s == strategy:
-                    b.bg_color = (0.45, 0.68, 0.3, 1)  # Darker = selected
+                    b.bg_color = DEFAULT_BUTTON_COLOR_DOWN  # Darker = selected
                 else:
-                    b.bg_color = (0.7, 0.7, 0.7, 1)  # Gray = unselected
+                    b.bg_color = BUTTON_UNSELECTED  # Gray = unselected
                 b._update_bg()
         return callback
 
@@ -575,8 +581,8 @@ def show_game_size_popup(on_size_and_strategy_selected):
             text=label,
             font_name='DMSansBlack',
             font_size='14sp',
-            color=(1, 1, 1, 1),
-            bg_color=(0.7, 0.7, 0.7, 1) if strategy != 'mixed' else (0.45, 0.68, 0.3, 1)
+            color=TEXT_WHITE,
+            bg_color=BUTTON_UNSELECTED if strategy != 'mixed' else DEFAULT_BUTTON_COLOR_DOWN
         )
         btn.bind(on_press=select_strategy(strategy))
         strategy_buttons[strategy] = btn
@@ -592,7 +598,7 @@ def show_game_size_popup(on_size_and_strategy_selected):
         text='Cancel',
         font_name='DMSansBlack',
         font_size='16sp',
-        color=(0.3, 0.3, 0.3, 1),
+        color=TEXT_DARK,
         size_hint_y=None,
         height=dp(44)
     )
@@ -602,7 +608,7 @@ def show_game_size_popup(on_size_and_strategy_selected):
         size_hint=(0.85, None),
         height=dp(340),
         auto_dismiss=True,
-        background_color=(1, 1, 1, 0.95)
+        background_color=POPUP_BACKGROUND
     )
     popup.add_widget(content)
     cancel_btn.bind(on_press=popup.dismiss)

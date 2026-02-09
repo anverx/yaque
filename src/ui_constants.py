@@ -22,9 +22,24 @@ TODAY_HIGHLIGHT = (0.4, 0.7, 0.9, 1)
 
 # Button colors
 DEFAULT_BUTTON_COLOR = (0.55, 0.78, 0.4, 1)       # Salad green
-DEFAULT_BUTTON_COLOR_DOWN = (0.45, 0.68, 0.3, 1)  # Darker salad green
+DEFAULT_BUTTON_COLOR_DOWN = (0.45, 0.68, 0.3, 1)  # Darker salad green (also used for selected state)
 GRAY_BUTTON_COLOR = (0.75, 0.75, 0.75, 1)
 GRAY_BUTTON_COLOR_DOWN = (0.6, 0.6, 0.6, 1)
+BUTTON_UNSELECTED = (0.7, 0.7, 0.7, 1)            # Unselected toggle button
+
+# Popup colors
+POPUP_BACKGROUND = (1, 1, 1, 0.95)
+
+# Input field colors
+INPUT_BACKGROUND = (0.95, 0.95, 0.95, 1)
+INPUT_HINT_COLOR = (0.6, 0.6, 0.6, 1)
+
+# Status/feedback colors
+STATUS_SUCCESS = (0.2, 0.6, 0.2, 1)  # Green for success messages
+STATUS_ERROR = (0.8, 0.2, 0.2, 1)    # Red for error messages
+
+# Spinner colors
+SPINNER_BORDER = (0.8, 0.8, 0.8, 1)
 
 # Common dimensions (as raw values, use with dp())
 TOP_SPACER_HEIGHT = 70
