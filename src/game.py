@@ -32,17 +32,162 @@ class Game:
         self.seed = seed
         random.seed(seed)
 
-        # Generate puzzles until we find one with acceptable number of solutions
+        # For larger boards, use best-of-N strategy instead of rejection sampling
+        if size >= 8:
+            self._generate_best_of_n(size, kingdom_strategy, max_solutions, max_attempts)
+        else:
+            self._generate_rejection_sampling(size, kingdom_strategy, max_solutions, max_attempts)
+
+    def _generate_rejection_sampling(self, size: int, kingdom_strategy: str,
+                                      max_solutions: int, max_attempts: int) -> None:
+        """Traditional approach: generate until we find one with few solutions."""
         for attempt in range(max_attempts):
-            self.queens: list[tuple[int, int]] = self.place_queens(size)
-            self.kingdoms: list[list[int]] = self.create_kingdoms(self.queens, kingdom_strategy)
+            self.queens = self.place_queens(size)
+            self.kingdoms = self.create_kingdoms(self.queens, kingdom_strategy)
             solutions = self.count_solutions(max_count=max_solutions + 1)
             if 1 <= solutions <= max_solutions:
                 self.num_solutions = solutions
                 self.attempts = attempt + 1
+                return
+        raise ValueError(f"Could not generate puzzle with <={max_solutions} solutions after {max_attempts} attempts")
+
+    def _generate_best_of_n(self, size: int, kingdom_strategy: str,
+                            max_solutions: int, max_attempts: int) -> None:
+        """Generate N candidates, pick the best, then refine with local search."""
+        # Phase 1: Best-of-N sampling - more samples for larger boards
+        batch_size = min(5000 if size <= 8 else 8000, max_attempts)
+
+        best_queens: list[tuple[int, int]] | None = None
+        best_kingdoms: list[list[int]] | None = None
+        best_solutions = 999999
+
+        # Higher comparison limit to properly rank candidates
+        comparison_limit = 200
+
+        for attempt in range(batch_size):
+            self.queens = self.place_queens(size)
+            self.kingdoms = self.create_kingdoms(self.queens, kingdom_strategy)
+
+            solutions = self.count_solutions(max_count=min(best_solutions, comparison_limit))
+
+            if solutions <= max_solutions:
+                self.num_solutions = solutions
+                self.attempts = attempt + 1
+                return
+
+            if solutions < best_solutions:
+                best_solutions = solutions
+                best_queens = self.queens
+                best_kingdoms = [row[:] for row in self.kingdoms]
+
+        if best_queens is None or best_kingdoms is None:
+            raise ValueError(f"Could not generate any puzzle after {batch_size} attempts")
+
+        # Phase 2: Local search refinement
+        self.queens = best_queens
+        self.kingdoms = [row[:] for row in best_kingdoms]
+        current_solutions = best_solutions
+
+        # Simple hill-climbing with more iterations for larger boards
+        max_refinement = 2000 if size <= 8 else 5000
+        no_improve_limit = 500 if size <= 8 else 1000
+        no_improve = 0
+
+        for _ in range(max_refinement):
+            if current_solutions <= max_solutions:
                 break
+            if no_improve >= no_improve_limit:
+                break
+
+            improved = self._try_boundary_swap(current_solutions)
+            if improved is not None and improved < current_solutions:
+                current_solutions = improved
+                no_improve = 0
+            else:
+                no_improve += 1
+
+        self.num_solutions = current_solutions
+        self.attempts = batch_size
+
+    def _try_boundary_swap(self, current_solutions: int) -> int | None:
+        """Try swapping a boundary cell between kingdoms. Returns new solution count if improved."""
+        no = self.size
+        directions = [(-1, 0), (1, 0), (0, -1), (0, 1)]
+
+        # Find all boundary cells (cells adjacent to a different kingdom)
+        boundary_cells: list[tuple[int, int, int, int]] = []  # (row, col, from_kingdom, to_kingdom)
+
+        for r in range(no):
+            for c in range(no):
+                # Skip queen cells - they must stay in their kingdom
+                if (r, c) in set(self.queens):
+                    continue
+
+                current_k = self.kingdoms[r][c]
+
+                for dr, dc in directions:
+                    nr, nc = r + dr, c + dc
+                    if 0 <= nr < no and 0 <= nc < no:
+                        neighbor_k = self.kingdoms[nr][nc]
+                        if neighbor_k != current_k:
+                            # This cell can potentially move to neighbor's kingdom
+                            boundary_cells.append((r, c, current_k, neighbor_k))
+                            break
+
+        if not boundary_cells:
+            return None
+
+        # Pick a random boundary cell and try the swap
+        r, c, from_k, to_k = random.choice(boundary_cells)
+
+        # Check if moving this cell would disconnect the from_kingdom
+        # (Simple check: the from_kingdom must still be connected after removal)
+        if not self._would_stay_connected(r, c, from_k):
+            return None
+
+        # Make the swap
+        self.kingdoms[r][c] = to_k
+
+        # Count solutions
+        new_solutions = self.count_solutions(max_count=current_solutions)
+
+        if new_solutions < current_solutions:
+            # Keep the swap
+            return new_solutions
         else:
-            raise ValueError(f"Could not generate puzzle with <={max_solutions} solutions after {max_attempts} attempts")
+            # Revert the swap
+            self.kingdoms[r][c] = from_k
+            return None
+
+    def _would_stay_connected(self, remove_r: int, remove_c: int, kingdom: int) -> bool:
+        """Check if kingdom would stay connected after removing cell (remove_r, remove_c)."""
+        no = self.size
+        directions = [(-1, 0), (1, 0), (0, -1), (0, 1)]
+
+        # Find all cells in this kingdom except the one being removed
+        kingdom_cells = []
+        for r in range(no):
+            for c in range(no):
+                if self.kingdoms[r][c] == kingdom and (r, c) != (remove_r, remove_c):
+                    kingdom_cells.append((r, c))
+
+        if len(kingdom_cells) <= 1:
+            return True  # Single cell or empty is trivially connected
+
+        # BFS to check connectivity
+        start = kingdom_cells[0]
+        visited = {start}
+        queue = [start]
+
+        while queue:
+            r, c = queue.pop(0)
+            for dr, dc in directions:
+                nr, nc = r + dr, c + dc
+                if (nr, nc) in kingdom_cells and (nr, nc) not in visited:
+                    visited.add((nr, nc))
+                    queue.append((nr, nc))
+
+        return len(visited) == len(kingdom_cells)
 
     def place_queens(self, no: int) -> list[tuple[int, int]]:
         def is_valid(placed: dict[int, int], row: int, col: int) -> bool:
@@ -101,17 +246,51 @@ class Game:
             print(line)
 
     def create_kingdoms(self, queens: list[tuple[int, int]], kingdom_strategy: str = 'mixed') -> list[list[int]]:
+        """Create kingdoms using constrained growth to minimize solutions.
+
+        Key insight: For a puzzle to have few solutions, each kingdom should have
+        few valid queen positions. A cell is "attacked" if it shares a row/column
+        with another queen or is adjacent to one. By preferring attacked cells,
+        we ensure each kingdom's queen position is one of very few valid spots.
+        """
         no = self.size
         kingdoms = [[-1] * no for _ in range(no)]
         directions = [(-1, 0), (1, 0), (0, -1), (0, 1)]
 
-        # Assign growth strategy to each kingdom based on overall strategy:
-        # 1 = maximize perimeter (jagged), -1 = minimize (compact), 0 = random
+        # Build attack map: for each cell, which queens attack it
+        queen_set = set(queens)
+        attacked_by: dict[tuple[int, int], set[int]] = {(r, c): set() for r in range(no) for c in range(no)}
+
+        for k, (qr, qc) in enumerate(queens):
+            # Same row
+            for c in range(no):
+                if c != qc:
+                    attacked_by[(qr, c)].add(k)
+            # Same column
+            for r in range(no):
+                if r != qr:
+                    attacked_by[(r, qc)].add(k)
+            # Adjacent cells
+            for dr in [-1, 0, 1]:
+                for dc in [-1, 0, 1]:
+                    if dr == 0 and dc == 0:
+                        continue
+                    nr, nc = qr + dr, qc + dc
+                    if 0 <= nr < no and 0 <= nc < no:
+                        attacked_by[(nr, nc)].add(k)
+
+        # Cells attacked by OTHER queens (not this kingdom's queen) are safe to add
+        def is_attacked_by_others(r: int, c: int, k: int) -> bool:
+            """Check if cell is attacked by any queen other than kingdom k's queen."""
+            attackers = attacked_by[(r, c)]
+            return bool(attackers - {k})
+
+        # Assign growth strategy
         if kingdom_strategy == 'classic':
-            strategies = [0] * no  # All random
+            strategies = [0] * no
         elif kingdom_strategy == 'jagged':
-            strategies = [1] * no  # All maximize perimeter
-        else:  # 'mixed'
+            strategies = [1] * no
+        else:
             strategies = [random.choice([-1, 0, 1]) for _ in range(no)]
 
         def get_free_neighbors(r: int, c: int) -> list[tuple[int, int]]:
@@ -123,7 +302,6 @@ class Game:
             return neighbors
 
         def count_same_kingdom_neighbors(r: int, c: int, k: int) -> int:
-            """Count how many neighbors of (r,c) belong to kingdom k."""
             count = 0
             for dr, dc in directions:
                 nr, nc = r + dr, c + dc
@@ -132,24 +310,27 @@ class Game:
             return count
 
         def perimeter_change(r: int, c: int, k: int) -> int:
-            """Calculate perimeter change if cell (r,c) is added to kingdom k.
-            +2 = extends outward (1 adjacent), 0 = neutral (2 adjacent), -2 = fills gap (3 adjacent)
-            """
             adjacent = count_same_kingdom_neighbors(r, c, k)
             return 4 - 2 * adjacent
 
         def pick_neighbor(neighbors: list[tuple[int, int]], k: int) -> tuple[int, int]:
-            """Pick a neighbor based on kingdom's growth strategy."""
+            """Pick a neighbor, ALWAYS preferring cells attacked by other queens."""
+            # Cells attacked by other queens cannot be valid queen positions for this kingdom
+            safe_neighbors = [(r, c) for r, c in neighbors if is_attacked_by_others(r, c, k)]
+
+            # ALWAYS prefer safe cells to minimize solutions (100%)
+            if safe_neighbors:
+                neighbors = safe_neighbors
+
             strategy = strategies[k]
             if strategy == 0 or len(neighbors) == 1:
                 return random.choice(neighbors)
 
-            # Calculate perimeter change for each candidate
             candidates = [(nr, nc, perimeter_change(nr, nc, k)) for nr, nc in neighbors]
 
-            if strategy == 1:  # Maximize perimeter (jagged)
+            if strategy == 1:
                 target = max(change for _, _, change in candidates)
-            else:  # strategy == -1, minimize perimeter (compact)
+            else:
                 target = min(change for _, _, change in candidates)
 
             best = [(nr, nc) for nr, nc, change in candidates if change == target]
@@ -164,11 +345,13 @@ class Game:
         total = no * no
         filled = len(queens)
 
-        # First ensure each kingdom has at least 2 cells (no single-cell kingdoms)
+        # First ensure each kingdom has at least 2 cells
         for k, (r, c) in enumerate(queens):
             neighbors = get_free_neighbors(r, c)
             if neighbors:
-                nr, nc = random.choice(neighbors)
+                safe = [(nr, nc) for nr, nc in neighbors if is_attacked_by_others(nr, nc, k)]
+                choice_from = safe if safe else neighbors
+                nr, nc = random.choice(choice_from)
                 kingdoms[nr][nc] = k
                 frontier[k].append((nr, nc))
                 filled += 1
