@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<full-backup-content>
+    <!-- Include the database file -->
+    <include domain="database" path="." />
+    <!-- Include shared preferences if any -->
+    <include domain="sharedpref" path="." />
+    <!-- Include files in the app's private directory (where Kivy stores user_data_dir) -->
+    <include domain="file" path="." />
+</full-backup-content>

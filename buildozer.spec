@@ -16,9 +16,9 @@ source.dir = src
 source.include_exts = py,png,jpg,kv,atlas,json,ttf
 
 # Application versioning
-version = 0.1
+version = 1.0.1
 # Numeric version code for Android (must increment for updates!)
-android.numeric_version = 1
+android.numeric_version = 2
 
 # Application requirements
 # Note: Cython<3 is required for pyjnius compatibility
@@ -46,6 +46,9 @@ p4a.branch = master
 
 # Android features
 android.allow_backup = True
+
+# Backup rules for Android Auto Backup (ensures database is backed up)
+android.backup_rules = backup_rules.xml
 
 # Custom URL scheme - intent filter for yaque:// links
 android.manifest.intent_filters = intent_filters.xml
