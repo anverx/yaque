@@ -494,12 +494,13 @@ def get_daily_seed(day: date, size: int, secret: str = SECRET, offset: int = 0) 
 
 
 def get_daily_game(day: date, size: int, secret: str = SECRET,
-                   max_solutions: int = 1, max_seed_attempts: int = 100) -> Game:
+                   max_solutions: int = 1, max_seed_attempts: int = 100,
+                   kingdom_strategy: str = 'jagged') -> Game:
     """Generate a daily puzzle for a given date and size, trying multiple seeds if needed."""
     for offset in range(max_seed_attempts):
         seed = get_daily_seed(day, size, secret, offset)
         try:
-            game = Game(size, max_solutions=max_solutions, seed=seed)
+            game = Game(size, max_solutions=max_solutions, seed=seed, kingdom_strategy=kingdom_strategy)
             game.seed_offset = offset  # Store which offset worked
             return game
         except ValueError:
