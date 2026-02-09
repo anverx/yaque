@@ -2,16 +2,15 @@ import os
 from datetime import datetime
 
 from kivy.uix.boxlayout import BoxLayout
-from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.scrollview import ScrollView
 from kivy.uix.label import Label
 from kivy.uix.image import Image
-from kivy.uix.screenmanager import Screen
 from kivy.uix.behaviors import ButtonBehavior
-from kivy.graphics import Color, Rectangle, RoundedRectangle
+from kivy.graphics import Color, RoundedRectangle
 from kivy.metrics import dp
 
 import database
+from base_screens import BackgroundedScreen, TEXT_DARK, TEXT_MEDIUM, TEXT_LIGHT, ROW_BACKGROUND, ROW_PRESSED, QUEEN_GRAY, QUEEN_GOLD, QUEEN_SILVER
 from game import Game
 from widgets import RoundedButton, GrayRoundedButton
 
@@ -33,7 +32,7 @@ class LogbookRow(ButtonBehavior, BoxLayout):
         self.padding = [dp(10), dp(5)]
         self.spacing = dp(8)
 
-        self._bg_color = (1, 1, 1, 0.7)
+        self._bg_color = ROW_BACKGROUND
         self._update_bg()
         self.bind(pos=self._update_bg, size=self._update_bg, state=self._update_bg)
 
@@ -62,23 +61,23 @@ class LogbookRow(ButtonBehavior, BoxLayout):
             duration_str = '-'
 
         # Determine crown color
-        crown_color = (0.5, 0.5, 0.5, 0.3)  # Gray/faded for random or incomplete
+        crown_color = QUEEN_GRAY  # Gray/faded for random or incomplete
         if completed and daily_date:
             if completed_at:
                 completed_date = completed_at[:10]
                 if completed_date == daily_date:
-                    crown_color = (1.0, 0.84, 0.0, 1)  # Gold
+                    crown_color = QUEEN_GOLD
                 else:
-                    crown_color = (0.85, 0.88, 0.95, 1)  # Silver
+                    crown_color = QUEEN_SILVER
             else:
-                crown_color = (0.85, 0.88, 0.95, 1)  # Silver (old data without completed_at)
+                crown_color = QUEEN_SILVER  # Old data without completed_at
 
         # Time column
         self.add_widget(Label(
             text=time_str,
             font_name='DMSansBlack',
             font_size='13sp',
-            color=(0.3, 0.3, 0.3, 1),
+            color=TEXT_DARK,
             size_hint_x=0.25,
             halign='left',
             valign='middle'
@@ -89,7 +88,7 @@ class LogbookRow(ButtonBehavior, BoxLayout):
             text=f'{size}x{size}',
             font_name='DMSansBlack',
             font_size='13sp',
-            color=(0.4, 0.4, 0.4, 1),
+            color=TEXT_LIGHT,
             size_hint_x=0.25,
             halign='center'
         ))
@@ -99,7 +98,7 @@ class LogbookRow(ButtonBehavior, BoxLayout):
             text=duration_str,
             font_name='DMSansBlack',
             font_size='13sp',
-            color=(0.3, 0.3, 0.3, 1),
+            color=TEXT_DARK,
             size_hint_x=0.25,
             halign='center'
         ))
@@ -117,7 +116,7 @@ class LogbookRow(ButtonBehavior, BoxLayout):
         self.canvas.before.clear()
         with self.canvas.before:
             if self.state == 'down':
-                Color(0.9, 0.9, 0.9, 1)
+                Color(*ROW_PRESSED)
             else:
                 Color(*self._bg_color)
             RoundedRectangle(pos=self.pos, size=self.size, radius=[dp(8)])
@@ -140,53 +139,27 @@ class DateSeparator(BoxLayout):
             text=date_str,
             font_name='DMSansBlack',
             font_size='12sp',
-            color=(0.5, 0.5, 0.5, 1),
+            color=TEXT_MEDIUM,
             halign='left',
             valign='middle'
         ))
 
 
-class LogbookScreen(Screen):
-    def __init__(self, app, **kwargs):
-        super().__init__(**kwargs)
-        self.app = app
+class LogbookScreen(BackgroundedScreen):
+    def get_padding(self):
+        return 15
+
+    def build_content(self):
         self.current_offset = 0
         self.has_more = False
-
-        # Root layout with background
-        root = FloatLayout()
-
-        # Background image (washed out)
-        bg_image = Image(
-            source='assets/images/splashscreen.jpg',
-            fit_mode='cover'
-        )
-        root.add_widget(bg_image)
-
-        # White overlay
-        overlay = BoxLayout()
-        with overlay.canvas:
-            Color(1, 1, 1, 0.7)
-            self._overlay_rect = Rectangle(pos=overlay.pos, size=overlay.size)
-        overlay.bind(pos=self._update_overlay, size=self._update_overlay)
-        root.add_widget(overlay)
-
-        # Main content layout
-        main_layout = BoxLayout(
-            orientation='vertical',
-            padding=dp(15),
-            spacing=dp(10)
-        )
-
-        # Top spacer (pushes content below the splash image title)
-        main_layout.add_widget(BoxLayout(size_hint_y=None, height=dp(70)))
+        layout = self.content_layout
 
         # Title
-        main_layout.add_widget(Label(
+        layout.add_widget(Label(
             text='Logbook',
             font_name='DMSansBlack',
             font_size='24sp',
-            color=(0.3, 0.3, 0.3, 1),
+            color=TEXT_DARK,
             size_hint_y=None,
             height=dp(40)
         ))
@@ -202,7 +175,7 @@ class LogbookScreen(Screen):
             text='Time',
             font_name='DMSansBlack',
             font_size='11sp',
-            color=(0.5, 0.5, 0.5, 1),
+            color=TEXT_MEDIUM,
             size_hint_x=0.25,
             halign='left'
         ))
@@ -210,7 +183,7 @@ class LogbookScreen(Screen):
             text='Size',
             font_name='DMSansBlack',
             font_size='11sp',
-            color=(0.5, 0.5, 0.5, 1),
+            color=TEXT_MEDIUM,
             size_hint_x=0.25,
             halign='center'
         ))
@@ -218,7 +191,7 @@ class LogbookScreen(Screen):
             text='Duration',
             font_name='DMSansBlack',
             font_size='11sp',
-            color=(0.5, 0.5, 0.5, 1),
+            color=TEXT_MEDIUM,
             size_hint_x=0.25,
             halign='center'
         ))
@@ -226,7 +199,7 @@ class LogbookScreen(Screen):
             text='',
             size_hint_x=0.25
         ))
-        main_layout.add_widget(header)
+        layout.add_widget(header)
 
         # Scrollable list
         scroll = ScrollView(size_hint=(1, 1))
@@ -238,26 +211,10 @@ class LogbookScreen(Screen):
         )
         self.list_layout.bind(minimum_height=self.list_layout.setter('height'))
         scroll.add_widget(self.list_layout)
-        main_layout.add_widget(scroll)
+        layout.add_widget(scroll)
 
         # Back button
-        back_btn = GrayRoundedButton(
-            text='Back',
-            font_name='DMSansBlack',
-            font_size='18sp',
-            color=(0.3, 0.3, 0.3, 1),
-            size_hint_y=None,
-            height=dp(48)
-        )
-        back_btn.bind(on_press=lambda x: setattr(self.app.sm, 'current', 'menu'))
-        main_layout.add_widget(back_btn)
-
-        root.add_widget(main_layout)
-        self.add_widget(root)
-
-    def _update_overlay(self, instance, value):
-        self._overlay_rect.pos = instance.pos
-        self._overlay_rect.size = instance.size
+        self.add_back_button()
 
     def _format_date(self, date_str):
         """Format date string for separator."""
@@ -317,7 +274,7 @@ class LogbookScreen(Screen):
                 text='No games played yet',
                 font_name='DMSansBlack',
                 font_size='16sp',
-                color=(0.5, 0.5, 0.5, 1),
+                color=TEXT_MEDIUM,
                 size_hint_y=None,
                 height=dp(50)
             ))
@@ -361,7 +318,7 @@ class LogbookScreen(Screen):
                 text=f'Load More ({remaining} remaining)',
                 font_name='DMSansBlack',
                 font_size='14sp',
-                color=(0.3, 0.3, 0.3, 1),
+                color=TEXT_DARK,
                 size_hint_y=None,
                 height=dp(40)
             )

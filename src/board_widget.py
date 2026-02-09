@@ -7,6 +7,15 @@ from kivy.core.image import Image as CoreImage
 from kivy.animation import Animation
 from typing import List, Tuple, Callable, Optional, Set
 
+from ui_constants import (
+    COLOR_BLACK, COLOR_WHITE,
+    BOARD_HIDDEN_BG, BOARD_HIDDEN_GRID, BOARD_HIDDEN_BORDER,
+    BOARD_CELL_BORDER, BOARD_KINGDOM_BORDER,
+    BOARD_QUEEN_NORMAL, BOARD_QUEEN_GOLDEN, BOARD_QUEEN_CONFLICT, BOARD_QUEEN_SOLUTION,
+    BOARD_CIRCLE_NORMAL, BOARD_CIRCLE_BLOCKED,
+    KINGDOM_COLORS
+)
+
 # Load queen texture
 ICONS_DIR = os.path.join(os.path.dirname(__file__), 'assets', 'icons')
 QUEEN_TEXTURE = CoreImage(os.path.join(ICONS_DIR, 'queen.png')).texture
@@ -16,20 +25,6 @@ QUEEN_RED_TEXTURE = None  # Will be created on demand for conflicts
 MARK_EMPTY = 0
 MARK_CIRCLE = 1
 MARK_QUEEN = 2
-
-# Kingdom colors (RGB, 0-1 range)
-KINGDOM_COLORS = [
-    (0.9, 0.6, 0.6),   # 0: light red
-    (0.6, 0.9, 0.6),   # 1: light green
-    (0.6, 0.6, 0.9),   # 2: light blue
-    (0.9, 0.9, 0.6),   # 3: light yellow
-    (0.9, 0.6, 0.9),   # 4: light magenta
-    (0.6, 0.9, 0.9),   # 5: light cyan
-    (0.9, 0.8, 0.6),   # 6: light orange
-    (0.8, 0.6, 0.9),   # 7: light purple
-    (0.6, 0.8, 0.7),   # 8: light teal
-    (0.85, 0.7, 0.7),  # 9: dusty rose
-]
 
 
 class BoardWidget(Widget):
@@ -78,11 +73,11 @@ class BoardWidget(Widget):
         with self.canvas:
             if self.hidden:
                 # Draw gray empty board when hidden
-                Color(0.85, 0.85, 0.85, 1)
+                Color(*BOARD_HIDDEN_BG)
                 Rectangle(pos=(self.x, self.y), size=(self.width, self.height))
 
                 # Draw thin cell borders only
-                Color(0.7, 0.7, 0.7, 1)
+                Color(*BOARD_HIDDEN_GRID)
                 for i in range(n + 1):
                     x = self.x + i * cell_w
                     Line(points=[x, self.y, x, self.y + self.height], width=1)
@@ -90,7 +85,7 @@ class BoardWidget(Widget):
                     Line(points=[self.x, y, self.x + self.width, y], width=1)
 
                 # Draw outer border
-                Color(0.5, 0.5, 0.5, 1)
+                Color(*BOARD_HIDDEN_BORDER)
                 Line(points=[self.x, self.y, self.x + self.width, self.y], width=2)
                 Line(points=[self.x, self.y + self.height, self.x + self.width, self.y + self.height], width=2)
                 Line(points=[self.x, self.y, self.x, self.y + self.height], width=2)
@@ -109,7 +104,7 @@ class BoardWidget(Widget):
                     Rectangle(pos=(x, y), size=(cell_w, cell_h))
 
             # Draw thin cell borders
-            Color(0.5, 0.5, 0.5, 1)
+            Color(*BOARD_CELL_BORDER)
             for i in range(n + 1):
                 # Vertical lines
                 x = self.x + i * cell_w
@@ -119,7 +114,7 @@ class BoardWidget(Widget):
                 Line(points=[self.x, y, self.x + self.width, y], width=1)
 
             # Draw thick kingdom borders
-            Color(0, 0, 0, 1)
+            Color(*BOARD_KINGDOM_BORDER)
             for row in range(n):
                 for col in range(n):
                     k = self.kingdoms[row][col]
@@ -143,7 +138,7 @@ class BoardWidget(Widget):
             # When solved and showing solutions, draw the current solution queens (blue, 30% bigger)
             if self.solved and not self.celebrating and self.show_solution and self.all_solutions:
                 solution = self.all_solutions[self.current_solution_index]
-                Color(0.5, 0.5, 1, 0.8)  # Blue tint
+                Color(*BOARD_QUEEN_SOLUTION)
                 for row, col in solution:
                     x = self.x + col * cell_w
                     y = self.y + (n - 1 - row) * cell_h
@@ -156,7 +151,7 @@ class BoardWidget(Widget):
                     Rectangle(pos=(qx, qy), size=(size, size), texture=QUEEN_TEXTURE)
 
             # Draw cell marks (user's placements)
-            Color(0, 0, 0, 1)
+            Color(*COLOR_BLACK)
             for row in range(n):
                 for col in range(n):
                     mark = self.cell_marks[row][col]
@@ -168,14 +163,14 @@ class BoardWidget(Widget):
                         # Small circle outline in center - red if blocked, gray otherwise
                         is_blocked = (row, col) in self.blocked_cells
                         if is_blocked:
-                            Color(0.9, 0.3, 0.3, 1)  # Red for blocked kingdom
+                            Color(*BOARD_CIRCLE_BLOCKED)
                         else:
-                            Color(0.4, 0.4, 0.4, 1)  # Gray normal
+                            Color(*BOARD_CIRCLE_NORMAL)
                         circ_size = min(cell_w, cell_h) * 0.15
                         circ_x = x + (cell_w - circ_size) / 2
                         circ_y = y + (cell_h - circ_size) / 2
                         Line(ellipse=(circ_x, circ_y, circ_size, circ_size), width=1.5)
-                        Color(0, 0, 0, 1)
+                        Color(*COLOR_BLACK)
                     elif mark == MARK_QUEEN:
                         # Draw queen icon
                         is_conflict = (row, col) in self.conflict_cells
@@ -201,7 +196,7 @@ class BoardWidget(Widget):
                                 scale = 2.0 - 1.0 * ((progress - 0.5) * 2)
 
                             # Golden color
-                            Color(1.0, 0.85, 0.2, 1)
+                            Color(*BOARD_QUEEN_GOLDEN)
 
                             # Apply transforms
                             PushMatrix()
@@ -213,20 +208,20 @@ class BoardWidget(Widget):
                             PopMatrix()
                         elif self.solved:
                             # Golden queens on top of blue solution queens
-                            Color(1.0, 0.85, 0.2, 1)
+                            Color(*BOARD_QUEEN_GOLDEN)
                             qx = x + (cell_w - size) / 2
                             qy = y + (cell_h - size) / 2
                             Rectangle(pos=(qx, qy), size=(size, size), texture=QUEEN_TEXTURE)
                         else:
                             # Normal drawing
                             if is_conflict:
-                                Color(0.9, 0.3, 0.3, 1)  # Red tint for conflict
+                                Color(*BOARD_QUEEN_CONFLICT)
                             else:
-                                Color(1, 1, 1, 1)  # Normal
+                                Color(*BOARD_QUEEN_NORMAL)
                             qx = x + (cell_w - size) / 2
                             qy = y + (cell_h - size) / 2
                             Rectangle(pos=(qx, qy), size=(size, size), texture=QUEEN_TEXTURE)
-                        Color(0, 0, 0, 1)
+                        Color(*COLOR_BLACK)
 
     def _get_marked_queens(self) -> List[Tuple[int, int]]:
         """Get all cells marked as queens."""

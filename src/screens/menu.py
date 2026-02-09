@@ -1,43 +1,20 @@
 from kivy.uix.boxlayout import BoxLayout
-from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.label import Label
-from kivy.uix.image import Image
-from kivy.uix.screenmanager import Screen
-from kivy.graphics import Color, Rectangle
 from kivy.metrics import dp
 
 import database
+from base_screens import BackgroundedScreen, TEXT_DARK
 from widgets import RoundedButton, GrayRoundedButton
 
 
-class MainMenuScreen(Screen):
-    def __init__(self, app, **kwargs):
-        super().__init__(**kwargs)
-        self.app = app
+class MainMenuScreen(BackgroundedScreen):
+    def get_spacing(self):
+        return 12
 
-        # Root layout
-        root = FloatLayout()
+    def build_content(self):
+        layout = self.content_layout
 
-        # Background image (washed out)
-        bg_image = Image(
-            source='assets/images/splashscreen.jpg',
-            fit_mode='cover'
-        )
-        root.add_widget(bg_image)
-
-        # White overlay to wash out the image (brightness up, contrast down)
-        overlay = BoxLayout()
-        with overlay.canvas:
-            Color(1, 1, 1, 0.7)  # Semi-transparent white
-            self._overlay_rect = Rectangle(pos=overlay.pos, size=overlay.size)
-        overlay.bind(pos=self._update_overlay, size=self._update_overlay)
-        root.add_widget(overlay)
-
-        # Main content layout
-        layout = BoxLayout(orientation='vertical', padding=dp(20), spacing=dp(12))
-
-        # Top spacer (pushes content below the splash image title)
-        layout.add_widget(BoxLayout(size_hint_y=None, height=dp(70)))
+        # Extra spacer for menu layout
         layout.add_widget(BoxLayout(size_hint_y=0.2))
 
         # Daily puzzles section
@@ -45,7 +22,7 @@ class MainMenuScreen(Screen):
             text="Today's Puzzles",
             font_name='DMSansBlack',
             font_size='20sp',
-            color=(0.3, 0.3, 0.3, 1),
+            color=TEXT_DARK,
             size_hint_y=None,
             height=dp(40)
         ))
@@ -126,19 +103,12 @@ class MainMenuScreen(Screen):
             text='Exit',
             font_name='DMSansBlack',
             font_size='18sp',
-            color=(0.3, 0.3, 0.3, 1),
+            color=TEXT_DARK,
             size_hint_y=None,
             height=dp(48)
         )
         exit_btn.bind(on_press=self.app.exit_app)
         layout.add_widget(exit_btn)
-
-        root.add_widget(layout)
-        self.add_widget(root)
-
-    def _update_overlay(self, instance, value):
-        self._overlay_rect.pos = instance.pos
-        self._overlay_rect.size = instance.size
 
     def on_enter(self):
         """Called when screen is entered - refresh streak display."""

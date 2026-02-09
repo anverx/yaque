@@ -3,27 +3,21 @@ import os
 from datetime import date
 
 from kivy.uix.boxlayout import BoxLayout
-from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.gridlayout import GridLayout
 from kivy.uix.label import Label
 from kivy.uix.image import Image
-from kivy.uix.screenmanager import Screen
 from kivy.uix.behaviors import ButtonBehavior
-from kivy.graphics import Color, Rectangle, RoundedRectangle
+from kivy.graphics import Color, RoundedRectangle
 from kivy.metrics import dp
 from kivy.utils import platform
 
 import database
+from base_screens import BackgroundedScreen, TEXT_DARK, TEXT_MEDIUM, TEXT_HEADER, TEXT_WHITE, QUEEN_GRAY, QUEEN_GOLD, QUEEN_SILVER, TODAY_HIGHLIGHT
 from popups import show_date_puzzles_popup
-from widgets import RoundedButton, GrayRoundedButton, DEFAULT_BUTTON_COLOR, DEFAULT_BUTTON_COLOR_DOWN
+from widgets import RoundedButton, DEFAULT_BUTTON_COLOR, DEFAULT_BUTTON_COLOR_DOWN
 
 # Path to icons
 ICONS_DIR = os.path.join(os.path.dirname(__file__), '..', 'assets', 'icons')
-
-# Queen icon colors
-QUEEN_GRAY = (0.5, 0.5, 0.5, 1)  # Not completed
-QUEEN_GOLD = (1.0, 0.84, 0.0, 1)  # Solved on the same day
-QUEEN_SILVER = (0.85, 0.88, 0.95, 1)  # Solved on a later day - bright silver/white
 
 
 class DayCell(ButtonBehavior, BoxLayout):
@@ -40,7 +34,7 @@ class DayCell(ButtonBehavior, BoxLayout):
             text=str(day),
             font_name='DMSansBlack',
             font_size='14sp',
-            color=(1, 1, 1, 1),
+            color=TEXT_WHITE,
             size_hint_y=0.5
         )
         self.add_widget(self.day_label)
@@ -82,40 +76,11 @@ class DayCell(ButtonBehavior, BoxLayout):
             RoundedRectangle(pos=self.pos, size=self.size, radius=[dp(8)])
 
 
-class CalendarScreen(Screen):
-    def __init__(self, app, **kwargs):
-        super().__init__(**kwargs)
-        self.app = app
+class CalendarScreen(BackgroundedScreen):
+    def build_content(self):
         self.current_year = date.today().year
         self.current_month = date.today().month
-
-        # Root layout with background
-        root = FloatLayout()
-
-        # Background image (washed out)
-        bg_image = Image(
-            source='assets/images/splashscreen.jpg',
-            fit_mode='cover'
-        )
-        root.add_widget(bg_image)
-
-        # White overlay to wash out the image
-        overlay = BoxLayout()
-        with overlay.canvas:
-            Color(1, 1, 1, 0.7)
-            self._overlay_rect = Rectangle(pos=overlay.pos, size=overlay.size)
-        overlay.bind(pos=self._update_overlay, size=self._update_overlay)
-        root.add_widget(overlay)
-
-        # Main content layout
-        self.main_layout = BoxLayout(
-            orientation='vertical',
-            padding=dp(20),
-            spacing=dp(10)
-        )
-
-        # Top spacer (pushes content below the splash image title)
-        self.main_layout.add_widget(BoxLayout(size_hint_y=None, height=dp(70)))
+        layout = self.content_layout
 
         # Header with month/year and navigation
         header = BoxLayout(size_hint_y=None, height=dp(50), spacing=dp(10))
@@ -134,7 +99,7 @@ class CalendarScreen(Screen):
             text='',
             font_name='DMSansBlack',
             font_size='22sp',
-            color=(0.2, 0.2, 0.2, 1)
+            color=TEXT_HEADER
         )
         header.add_widget(self.month_label)
 
@@ -148,7 +113,7 @@ class CalendarScreen(Screen):
         next_btn.bind(on_press=self.next_month)
         header.add_widget(next_btn)
 
-        self.main_layout.add_widget(header)
+        layout.add_widget(header)
 
         # Day labels
         days_header = GridLayout(cols=7, size_hint_y=None, height=dp(30), spacing=dp(2))
@@ -157,48 +122,33 @@ class CalendarScreen(Screen):
                 text=day_name,
                 font_name='DMSansBlack',
                 font_size='14sp',
-                color=(0.3, 0.3, 0.3, 1)
+                color=TEXT_DARK
             ))
-        self.main_layout.add_widget(days_header)
+        layout.add_widget(days_header)
 
         # Calendar grid
         self.calendar_grid = GridLayout(cols=7, spacing=dp(4), size_hint_y=None)
         self.calendar_grid.bind(minimum_height=self.calendar_grid.setter('height'))
-        self.main_layout.add_widget(self.calendar_grid)
+        layout.add_widget(self.calendar_grid)
 
         # Streak display
         self.streak_label = Label(
             text='',
             font_name='DMSansBlack',
             font_size='16sp',
-            color=(0.3, 0.3, 0.3, 1),
+            color=TEXT_DARK,
             size_hint_y=None,
             height=dp(40)
         )
-        self.main_layout.add_widget(self.streak_label)
+        layout.add_widget(self.streak_label)
 
         # Spacer
-        self.main_layout.add_widget(BoxLayout())
+        layout.add_widget(BoxLayout())
 
         # Back button
-        back_btn = GrayRoundedButton(
-            text='Back',
-            font_name='DMSansBlack',
-            font_size='18sp',
-            color=(0.3, 0.3, 0.3, 1),
-            size_hint_y=None,
-            height=dp(48)
-        )
-        back_btn.bind(on_press=lambda x: setattr(self.app.sm, 'current', 'menu'))
-        self.main_layout.add_widget(back_btn)
+        self.add_back_button()
 
-        root.add_widget(self.main_layout)
-        self.add_widget(root)
         self.refresh_calendar()
-
-    def _update_overlay(self, instance, value):
-        self._overlay_rect.pos = instance.pos
-        self._overlay_rect.size = instance.size
 
     def prev_month(self, instance):
         if self.current_month == 1:
@@ -261,7 +211,7 @@ class CalendarScreen(Screen):
                     cell.bind(on_press=lambda x, d=day_date: self.select_date(d))
                     # Highlight today with slightly different color
                     if day_date == today:
-                        cell.background_color = (0.4, 0.7, 0.9, 1)
+                        cell.background_color = TODAY_HIGHLIGHT
 
                 self.calendar_grid.add_widget(cell)
 
