@@ -79,12 +79,14 @@ jobs:
             ${{ runner.os }}-gradle-
 
       - name: Restore debug keystore
-        if: ${{ env.DEBUG_KEYSTORE != '' }}
+        if: ${{ secrets.DEBUG_KEYSTORE != '' }}
         env:
           DEBUG_KEYSTORE: ${{ secrets.DEBUG_KEYSTORE }}
         run: |
           echo "$DEBUG_KEYSTORE" | base64 -d > debug.keystore
           echo "Debug keystore restored from secrets"
+          # Verify the keystore
+          keytool -list -keystore debug.keystore -storepass android -alias androiddebugkey
 
       - name: Build APK
         env:
@@ -105,6 +107,12 @@ jobs:
               -storepass android -keypass android \
               -dname "CN=Debug, OU=Debug, O=Debug, L=Debug, ST=Debug, C=US"
           fi
+
+          # Auto-increment version code using GitHub run number
+          # This ensures each build has a higher version code
+          VERSION_CODE=${{ github.run_number }}
+          echo "Setting android.numeric_version to $VERSION_CODE"
+          sed -i "s/^android.numeric_version = .*/android.numeric_version = $VERSION_CODE/" buildozer.spec
 
           yes | buildozer android debug 2>&1 | tee build.log || true
           # Check if APK was created
