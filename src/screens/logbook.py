@@ -13,7 +13,10 @@ import database
 from base_screens import BackgroundedScreen, ROW_BACKGROUND, ROW_PRESSED, QUEEN_GRAY, QUEEN_GOLD, QUEEN_SILVER
 from game import Game
 from widgets import RoundedButton, GrayRoundedButton, TitleLabel, CaptionLabel, StyledLabel
-from ui_constants import TEXT_DARK, TEXT_LIGHT
+from ui_constants import (
+    TEXT_LIGHT, ROW_HEIGHT, BUTTON_HEIGHT_SM,
+    PADDING_ROW, SPACING_XS, SPACING_MD, RADIUS_SM,
+)
 
 # Path to icons
 ICONS_DIR = os.path.join(os.path.dirname(__file__), '..', 'assets', 'icons')
@@ -29,9 +32,9 @@ class LogbookRow(ButtonBehavior, BoxLayout):
         self.play_data = play_data
         self.on_select = on_select
         self.size_hint_y = None
-        self.height = dp(50)
-        self.padding = [dp(10), dp(5)]
-        self.spacing = dp(8)
+        self.height = dp(ROW_HEIGHT)
+        self.padding = [dp(PADDING_ROW[0]), dp(PADDING_ROW[1])]
+        self.spacing = dp(SPACING_MD)
 
         self._bg_color = ROW_BACKGROUND
         self._update_bg()
@@ -115,7 +118,7 @@ class LogbookRow(ButtonBehavior, BoxLayout):
                 Color(*ROW_PRESSED)
             else:
                 Color(*self._bg_color)
-            RoundedRectangle(pos=self.pos, size=self.size, radius=[dp(8)])
+            RoundedRectangle(pos=self.pos, size=self.size, radius=[dp(RADIUS_SM)])
 
     def on_press(self):
         if self.on_select:
@@ -129,7 +132,7 @@ class DateSeparator(BoxLayout):
         super().__init__(**kwargs)
         self.size_hint_y = None
         self.height = dp(30)
-        self.padding = [dp(10), dp(5)]
+        self.padding = [dp(PADDING_ROW[0]), dp(PADDING_ROW[1])]
 
         self.add_widget(CaptionLabel(date_str, halign='left', valign='middle'))
 
@@ -150,8 +153,8 @@ class LogbookScreen(BackgroundedScreen):
         header = BoxLayout(
             size_hint_y=None,
             height=dp(20),
-            padding=[dp(10), 0],
-            spacing=dp(8)
+            padding=[dp(PADDING_ROW[0]), 0],
+            spacing=dp(SPACING_MD)
         )
         header.add_widget(CaptionLabel('Time', font_size='11sp', size_hint_x=0.25, halign='left'))
         header.add_widget(CaptionLabel('Size', font_size='11sp', size_hint_x=0.25, halign='center'))
@@ -164,8 +167,8 @@ class LogbookScreen(BackgroundedScreen):
         self.list_layout = BoxLayout(
             orientation='vertical',
             size_hint_y=None,
-            spacing=dp(3),
-            padding=[0, dp(5)]
+            spacing=dp(SPACING_XS),
+            padding=[0, dp(PADDING_ROW[1])]
         )
         self.list_layout.bind(minimum_height=self.list_layout.setter('height'))
         scroll.add_widget(self.list_layout)
@@ -232,7 +235,7 @@ class LogbookScreen(BackgroundedScreen):
                 'No games played yet',
                 font_size='16sp',
                 size_hint_y=None,
-                height=dp(50)
+                height=dp(ROW_HEIGHT)
             ))
             return
 
@@ -274,7 +277,7 @@ class LogbookScreen(BackgroundedScreen):
                 text=f'Load More ({remaining} remaining)',
                 font_size='14sp',
                 size_hint_y=None,
-                height=dp(40)
+                height=dp(BUTTON_HEIGHT_SM)
             )
             load_more_btn.bind(on_press=self._load_more)
             self.list_layout.add_widget(load_more_btn)
