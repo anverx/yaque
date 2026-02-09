@@ -82,7 +82,6 @@ class BackgroundedScreen(Screen):
         back_btn = GrayRoundedButton(
             text='Back',
             font_size='18sp',
-            color=TEXT_DARK,
             size_hint_y=None,
             height=dp(BACK_BUTTON_HEIGHT)
         )

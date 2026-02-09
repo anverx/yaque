@@ -97,7 +97,6 @@ class MainMenuScreen(BackgroundedScreen):
         exit_btn = GrayRoundedButton(
             text='Exit',
             font_size='18sp',
-            color=TEXT_DARK,
             size_hint_y=None,
             height=dp(48)
         )

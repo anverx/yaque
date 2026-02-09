@@ -317,7 +317,6 @@ class LogbookScreen(BackgroundedScreen):
             load_more_btn = GrayRoundedButton(
                 text=f'Load More ({remaining} remaining)',
                 font_size='14sp',
-                color=TEXT_DARK,
                 size_hint_y=None,
                 height=dp(40)
             )

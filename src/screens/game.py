@@ -146,7 +146,6 @@ class GameScreen(Screen):
         self.solutions_text_btn = GrayRoundedButton(
             text='',
             font_size='12sp',
-            color=TEXT_DARK,
             size_hint=(None, None),
             size=(dp(120), dp(28))
         )
@@ -222,7 +221,6 @@ class GameScreen(Screen):
         back_btn = GrayRoundedButton(
             text='Back',
             font_size='18sp',
-            color=TEXT_DARK,
             size_hint_y=None,
             height=dp(48)
         )

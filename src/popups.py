@@ -105,16 +105,14 @@ def show_share_popup(share_url, code):
 
     copy_url_btn = RoundedButton(
         text='Copy URL',
-        font_size='15sp',
-        color=TEXT_WHITE
+        font_size='15sp'
     )
     copy_url_btn.bind(on_press=copy_url)
     buttons.add_widget(copy_url_btn)
 
     copy_code_btn = RoundedButton(
         text='Copy Code',
-        font_size='15sp',
-        color=TEXT_WHITE
+        font_size='15sp'
     )
     copy_code_btn.bind(on_press=copy_code)
     buttons.add_widget(copy_code_btn)
@@ -125,7 +123,6 @@ def show_share_popup(share_url, code):
     close_btn = GrayRoundedButton(
         text='Close',
         font_size='16sp',
-        color=TEXT_DARK,
         size_hint_y=None,
         height=dp(44)
     )
@@ -227,16 +224,14 @@ def show_load_popup(on_game_loaded):
 
     paste_btn = GrayRoundedButton(
         text='Paste',
-        font_size='16sp',
-        color=TEXT_DARK
+        font_size='16sp'
     )
     paste_btn.bind(on_press=paste_clipboard)
     buttons.add_widget(paste_btn)
 
     load_btn = RoundedButton(
         text='Load',
-        font_size='16sp',
-        color=TEXT_WHITE
+        font_size='16sp'
     )
     load_btn.bind(on_press=load_puzzle)
     buttons.add_widget(load_btn)
@@ -247,7 +242,6 @@ def show_load_popup(on_game_loaded):
     cancel_btn = GrayRoundedButton(
         text='Cancel',
         font_size='16sp',
-        color=TEXT_DARK,
         size_hint_y=None,
         height=dp(44)
     )
@@ -319,7 +313,6 @@ class LoadingPopup(ModalView):
         cancel_btn = GrayRoundedButton(
             text='Cancel',
             font_size='15sp',
-            color=TEXT_DARK,
             size_hint=(None, None),
             size=(dp(100), dp(40)),
             pos_hint={'center_x': 0.5}
@@ -439,8 +432,7 @@ def _show_size_selection_popup(title, sizes, on_size_selected, popup_height):
         for size in row_sizes:
             btn = RoundedButton(
                 text=f'{size}x{size}',
-                font_size='18sp',
-                color=TEXT_WHITE
+                font_size='18sp'
             )
             btn.bind(on_press=make_callback(size))
             row.add_widget(btn)
@@ -453,7 +445,6 @@ def _show_size_selection_popup(title, sizes, on_size_selected, popup_height):
     cancel_btn = GrayRoundedButton(
         text='Cancel',
         font_size='16sp',
-        color=TEXT_DARK,
         size_hint_y=None,
         height=dp(44)
     )
@@ -526,8 +517,7 @@ def show_game_size_popup(on_size_and_strategy_selected):
     for size, row in [(6, row1), (7, row1), (8, row2), (9, row2)]:
         btn = RoundedButton(
             text=f'{size}x{size}',
-            font_size='18sp',
-            color=TEXT_WHITE
+            font_size='18sp'
         )
         btn.bind(on_press=make_size_callback(size))
         row.add_widget(btn)
@@ -571,7 +561,6 @@ def show_game_size_popup(on_size_and_strategy_selected):
         btn = RoundedButton(
             text=label,
             font_size='14sp',
-            color=TEXT_WHITE,
             bg_color=BUTTON_UNSELECTED if strategy != 'mixed' else DEFAULT_BUTTON_COLOR_DOWN
         )
         btn.bind(on_press=select_strategy(strategy))
@@ -587,7 +576,6 @@ def show_game_size_popup(on_size_and_strategy_selected):
     cancel_btn = GrayRoundedButton(
         text='Cancel',
         font_size='16sp',
-        color=TEXT_DARK,
         size_hint_y=None,
         height=dp(44)
     )

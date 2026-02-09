@@ -6,7 +6,7 @@ from kivy.graphics import Color, RoundedRectangle
 from kivy.metrics import dp
 
 from ui_constants import (
-    FONT_NAME,
+    FONT_NAME, TEXT_WHITE, TEXT_DARK,
     DEFAULT_BUTTON_COLOR, DEFAULT_BUTTON_COLOR_DOWN,
     GRAY_BUTTON_COLOR, GRAY_BUTTON_COLOR_DOWN
 )
@@ -23,6 +23,7 @@ class RoundedButton(ButtonBehavior, Label):
     """
     def __init__(self, bg_color=None, bg_color_down=None, **kwargs):
         kwargs.setdefault('font_name', FONT_NAME)
+        kwargs.setdefault('color', TEXT_WHITE)
         super().__init__(**kwargs)
         self.bg_color = bg_color or DEFAULT_BUTTON_COLOR
         self.bg_color_down = bg_color_down or DEFAULT_BUTTON_COLOR_DOWN
@@ -41,6 +42,7 @@ class RoundedButton(ButtonBehavior, Label):
 
 def GrayRoundedButton(**kwargs):
     """Factory for gray rounded buttons (cancel buttons)."""
+    kwargs.setdefault('color', TEXT_DARK)
     return RoundedButton(
         bg_color=GRAY_BUTTON_COLOR,
         bg_color_down=GRAY_BUTTON_COLOR_DOWN,

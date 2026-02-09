@@ -349,7 +349,6 @@ class YaqueApp(App):
         close_btn = GrayRoundedButton(
             text='Close',
             font_size='15sp',
-            color=TEXT_DARK,
             size_hint=(None, None),
             size=(dp(100), dp(40)),
             pos_hint={'center_x': 0.5}
