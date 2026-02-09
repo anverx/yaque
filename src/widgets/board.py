@@ -17,7 +17,7 @@ from ui_constants import (
 )
 
 # Load queen texture
-ICONS_DIR = os.path.join(os.path.dirname(__file__), 'assets', 'icons')
+ICONS_DIR = os.path.join(os.path.dirname(__file__), '..', 'assets', 'icons')
 QUEEN_TEXTURE = CoreImage(os.path.join(ICONS_DIR, 'queen.png')).texture
 QUEEN_RED_TEXTURE = None  # Will be created on demand for conflicts
 

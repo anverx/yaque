@@ -12,7 +12,6 @@ from kivy.core.image import Image as CoreImage
 from kivy.metrics import dp, sp
 from kivy.utils import platform
 
-from board_widget import BoardWidget
 from ui_constants import (
     INDICATOR_CURRENT, INDICATOR_OTHER,
     HEADER_HEIGHT, BUTTON_HEIGHT, SPACING_SM, SPACING_LG, SPACING_XL,
@@ -23,6 +22,7 @@ from ui_constants import (
     ICON_LABEL_HEIGHT, ICON_LABEL_TOTAL,
 )
 from widgets import (
+    BoardWidget,
     GrayRoundedButton, FixedGrayRoundedButton, TitleSmLabel, CaptionLabel, ClockLabel, IconLabel,
 )
 import database
