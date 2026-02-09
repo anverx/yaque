@@ -1,6 +1,9 @@
 """Shared UI widgets for Yaque."""
 
+from __future__ import annotations
+
 import os
+from typing import Any, Callable
 
 from kivy.uix.label import Label
 from kivy.uix.button import Button
@@ -31,6 +34,10 @@ ICONS_DIR = os.path.join(os.path.dirname(__file__), 'assets', 'icons')
 BUTTON_RADIUS = dp(RADIUS_MD)
 
 
+# Type alias for color tuples
+ColorTuple = tuple[float, float, float, float]
+
+
 class RoundedButton(ButtonBehavior, Label):
     """A button with rounded corners. Use in ButtonRow or containers.
 
@@ -38,7 +45,7 @@ class RoundedButton(ButtonBehavior, Label):
         bg_color: Background color tuple (r, g, b, a). Defaults to salad green.
         bg_color_down: Pressed background color. Defaults to darker shade.
     """
-    def __init__(self, bg_color=None, bg_color_down=None, **kwargs):
+    def __init__(self, bg_color: ColorTuple | None = None, bg_color_down: ColorTuple | None = None, **kwargs: Any) -> None:
         kwargs.setdefault('font_name', FONT_NAME)
         kwargs.setdefault('color', TEXT_WHITE)
         kwargs.setdefault('markup', True)
@@ -52,10 +59,10 @@ class RoundedButton(ButtonBehavior, Label):
         self.bind(pos=self._update_bg, size=self._update_bg, state=self._update_bg)
         self.bind(size=self._update_text_size)
 
-    def _update_text_size(self, *args):
+    def _update_text_size(self, *args: Any) -> None:
         self.text_size = self.size
 
-    def _update_bg(self, *args):
+    def _update_bg(self, *args: Any) -> None:
         self.canvas.before.clear()
         with self.canvas.before:
             if self.state == 'down':
@@ -65,7 +72,7 @@ class RoundedButton(ButtonBehavior, Label):
             RoundedRectangle(pos=self.pos, size=self.size, radius=[BUTTON_RADIUS])
 
 
-def GrayRoundedButton(**kwargs):
+def GrayRoundedButton(**kwargs: Any) -> RoundedButton:
     """Factory for gray rounded buttons in containers."""
     kwargs.setdefault('color', TEXT_DARK)
     return RoundedButton(
@@ -75,13 +82,13 @@ def GrayRoundedButton(**kwargs):
     )
 
 
-def FixedRoundedButton(**kwargs):
+def FixedRoundedButton(**kwargs: Any) -> RoundedButton:
     """Factory for standalone buttons with fixed height."""
     kwargs.setdefault('size_hint_y', None)
     return RoundedButton(**kwargs)
 
 
-def FixedGrayRoundedButton(**kwargs):
+def FixedGrayRoundedButton(**kwargs: Any) -> RoundedButton:
     """Factory for standalone gray buttons with fixed height."""
     kwargs.setdefault('size_hint_y', None)
     return GrayRoundedButton(**kwargs)
@@ -94,13 +101,13 @@ def FixedGrayRoundedButton(**kwargs):
 class QueenSpinner(Widget):
     """Animated spinning queen widget for loading indicators."""
 
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
-        self.rotation_angle = 0
+        self.rotation_angle: float = 0
         self.queen_texture = CoreImage(os.path.join(ICONS_DIR, 'queen.png')).texture
         self.bind(pos=self._draw, size=self._draw)
 
-    def _draw(self, *args):
+    def _draw(self, *args: Any) -> None:
         """Draw the spinner."""
         self.canvas.clear()
 
@@ -133,12 +140,12 @@ class QueenSpinner(Widget):
             )
             PopMatrix()
 
-    def rotate(self, angle_delta=3):
+    def rotate(self, angle_delta: float = 3) -> None:
         """Rotate the queen by the given angle."""
         self.rotation_angle = (self.rotation_angle + angle_delta) % 360
         self._draw()
 
-    def reset(self):
+    def reset(self) -> None:
         """Reset rotation to initial position."""
         self.rotation_angle = 0
         self._draw()
@@ -148,7 +155,7 @@ class QueenSpinner(Widget):
 # Label Factory (CSS-like: styles defined in ui_constants.LABEL_STYLES)
 # -----------------------------------------------------------------------------
 
-def styled_label(style='default', text='', **overrides):
+def styled_label(style: str = 'default', text: str = '', **overrides: Any) -> Label:
     """Create a label with the specified style.
 
     Styles are defined in ui_constants.LABEL_STYLES (CSS-like separation).
@@ -176,77 +183,77 @@ def styled_label(style='default', text='', **overrides):
 
 
 # Convenience wrappers (content-only calls)
-def StyledLabel(**kwargs):
+def StyledLabel(**kwargs: Any) -> Label:
     """Base styled label with app font."""
     return styled_label('default', **kwargs)
 
 
-def TitleLgLabel(text, **kwargs):
+def TitleLgLabel(text: str, **kwargs: Any) -> Label:
     """Large title label for screen headers (24sp)."""
     return styled_label('title_lg', text, **kwargs)
 
 
-def TitleMdLabel(text, **kwargs):
+def TitleMdLabel(text: str, **kwargs: Any) -> Label:
     """Medium title label for section headers (20sp)."""
     return styled_label('title_md', text, **kwargs)
 
 
-def TitleLabel(text, **kwargs):
+def TitleLabel(text: str, **kwargs: Any) -> Label:
     """Title label for popups and screen headers (18sp)."""
     return styled_label('title', text, **kwargs)
 
 
-def TitleSmLabel(text, **kwargs):
+def TitleSmLabel(text: str, **kwargs: Any) -> Label:
     """Small title label for game screen headers (16sp)."""
     return styled_label('title_sm', text, **kwargs)
 
 
-def SubtitleLabel(text, **kwargs):
+def SubtitleLabel(text: str, **kwargs: Any) -> Label:
     """Subtitle label for descriptions (14sp)."""
     return styled_label('subtitle', text, **kwargs)
 
 
-def CaptionLabel(text, **kwargs):
+def CaptionLabel(text: str, **kwargs: Any) -> Label:
     """Caption label for small text and metadata (12sp)."""
     return styled_label('caption', text, **kwargs)
 
 
-def MonthLabel(text, **kwargs):
+def MonthLabel(text: str, **kwargs: Any) -> Label:
     """Month/year display label for calendar (22sp)."""
     return styled_label('month', text, **kwargs)
 
 
-def DayLabel(text, **kwargs):
+def DayLabel(text: str, **kwargs: Any) -> Label:
     """Day name/number label for calendar (14sp)."""
     return styled_label('day', text, **kwargs)
 
 
-def TableHeaderLabel(text, **kwargs):
+def TableHeaderLabel(text: str, **kwargs: Any) -> Label:
     """Table column header label (11sp)."""
     return styled_label('table_header', text, **kwargs)
 
 
-def TableCellLabel(text, **kwargs):
+def TableCellLabel(text: str, **kwargs: Any) -> Label:
     """Table cell data label (13sp)."""
     return styled_label('table_cell', text, **kwargs)
 
 
-def ClockLabel(text='00:00', **kwargs):
+def ClockLabel(text: str = '00:00', **kwargs: Any) -> Label:
     """Large clock/timer display label (36sp)."""
     return styled_label('clock', text, **kwargs)
 
 
-def IconLabel(text, **kwargs):
+def IconLabel(text: str, **kwargs: Any) -> Label:
     """Tiny label for icon button captions (9sp)."""
     return styled_label('icon_label', text, **kwargs)
 
 
-def AboutTitleLabel(text, **kwargs):
+def AboutTitleLabel(text: str, **kwargs: Any) -> Label:
     """Large title for About popup (28sp)."""
     return styled_label('about_title', text, **kwargs)
 
 
-def AboutSubtitleLabel(text, **kwargs):
+def AboutSubtitleLabel(text: str, **kwargs: Any) -> Label:
     """Subtitle for About popup (16sp)."""
     return styled_label('about_subtitle', text, **kwargs)
 
@@ -255,7 +262,7 @@ def AboutSubtitleLabel(text, **kwargs):
 # Layout Factories
 # -----------------------------------------------------------------------------
 
-def PopupContent(**kwargs):
+def PopupContent(**kwargs: Any) -> BoxLayout:
     """Vertical BoxLayout with popup padding/spacing defaults."""
     kwargs.setdefault('orientation', 'vertical')
     kwargs.setdefault('padding', [dp(PADDING_POPUP[0]), dp(PADDING_POPUP[1])])
@@ -263,7 +270,7 @@ def PopupContent(**kwargs):
     return BoxLayout(**kwargs)
 
 
-def styled_layout(style='button_row', **overrides):
+def styled_layout(style: str = 'button_row', **overrides: Any) -> BoxLayout:
     """Create a BoxLayout with the specified style.
 
     Styles are defined in ui_constants.LAYOUT_STYLES.
@@ -280,17 +287,17 @@ def styled_layout(style='button_row', **overrides):
     return BoxLayout(**props)
 
 
-def ButtonRow(**kwargs):
+def ButtonRow(**kwargs: Any) -> BoxLayout:
     """Horizontal BoxLayout for button rows with standard height/spacing."""
     return styled_layout('button_row', **kwargs)
 
 
-def SizeButtonRow(**kwargs):
+def SizeButtonRow(**kwargs: Any) -> BoxLayout:
     """Horizontal BoxLayout for size selection buttons (taller)."""
     return styled_layout('size_button_row', **kwargs)
 
 
-def Popup(content, height, width_hint=POPUP_WIDTH, auto_dismiss=True):
+def Popup(content: Widget, height: float, width_hint: float = POPUP_WIDTH, auto_dismiss: bool = True) -> ModalView:
     """Create a styled ModalView popup.
 
     Args:
@@ -313,7 +320,7 @@ def Popup(content, height, width_hint=POPUP_WIDTH, auto_dismiss=True):
 # Input Factories
 # -----------------------------------------------------------------------------
 
-def UrlInput(text, **kwargs):
+def UrlInput(text: str, **kwargs: Any) -> TextInput:
     """Readonly text input for displaying URLs (small font, selectable)."""
     kwargs.setdefault('font_name', FONT_NAME)
     kwargs.setdefault('font_size', '11sp')
@@ -327,7 +334,7 @@ def UrlInput(text, **kwargs):
     return TextInput(text=text, **kwargs)
 
 
-def CodeInput(**kwargs):
+def CodeInput(**kwargs: Any) -> TextInput:
     """Text input for entering puzzle codes."""
     kwargs.setdefault('multiline', False)
     kwargs.setdefault('font_name', FONT_NAME)
@@ -343,7 +350,7 @@ def CodeInput(**kwargs):
     return TextInput(**kwargs)
 
 
-def LinkButton(text, **kwargs):
+def LinkButton(text: str, **kwargs: Any) -> Button:
     """Transparent button styled as a link."""
     kwargs.setdefault('font_name', FONT_NAME)
     kwargs.setdefault('font_size', '12sp')
@@ -354,7 +361,7 @@ def LinkButton(text, **kwargs):
     return Button(text=text, **kwargs)
 
 
-def SmallRoundedButton(**kwargs):
+def SmallRoundedButton(**kwargs: Any) -> RoundedButton:
     """Smaller rounded button for compact UI elements."""
     kwargs.setdefault('font_size', '14sp')
     return RoundedButton(**kwargs)
@@ -366,7 +373,7 @@ class SelectableButton(RoundedButton):
     Use with SelectableButtonGroup for radio-style selection.
     """
 
-    def __init__(self, selected=False, **kwargs):
+    def __init__(self, selected: bool = False, **kwargs: Any) -> None:
         from ui_constants import BUTTON_UNSELECTED
         # Set initial colors based on selected state
         if not selected:
@@ -375,11 +382,11 @@ class SelectableButton(RoundedButton):
         self._selected = selected
 
     @property
-    def selected(self):
+    def selected(self) -> bool:
         return self._selected
 
     @selected.setter
-    def selected(self, value):
+    def selected(self, value: bool) -> None:
         from ui_constants import BUTTON_UNSELECTED
         self._selected = value
         if value:
@@ -392,19 +399,19 @@ class SelectableButton(RoundedButton):
 class SelectableButtonGroup:
     """Manages a group of SelectableButtons for radio-style selection."""
 
-    def __init__(self, on_select=None):
-        self.buttons = {}
-        self.selected_value = None
+    def __init__(self, on_select: Callable[[Any], None] | None = None) -> None:
+        self.buttons: dict[Any, SelectableButton] = {}
+        self.selected_value: Any = None
         self.on_select = on_select
 
-    def add(self, value, button):
+    def add(self, value: Any, button: SelectableButton) -> None:
         """Add a button to the group with associated value."""
         self.buttons[value] = button
         button.bind(on_press=lambda btn: self.select(value))
         if button.selected:
             self.selected_value = value
 
-    def select(self, value):
+    def select(self, value: Any) -> None:
         """Select a button by its value."""
         self.selected_value = value
         for v, btn in self.buttons.items():
@@ -413,14 +420,14 @@ class SelectableButtonGroup:
             self.on_select(value)
 
 
-def BackButton(**kwargs):
+def BackButton(**kwargs: Any) -> RoundedButton:
     """Standard back button with fixed height."""
     kwargs.setdefault('text', 'Back')
     kwargs.setdefault('font_size', '18sp')
     return FixedGrayRoundedButton(**kwargs)
 
 
-def StatusLabel(text, **kwargs):
+def StatusLabel(text: str, **kwargs: Any) -> Label:
     """Centered status label for loading popups."""
     kwargs.setdefault('font_size', '16sp')
     kwargs.setdefault('halign', 'center')

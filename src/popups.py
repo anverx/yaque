@@ -1,4 +1,8 @@
+from __future__ import annotations
+
 import io
+from datetime import date
+from typing import Any, Callable
 
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.image import Image
@@ -27,7 +31,7 @@ from widgets import (
 )
 
 
-def show_share_popup(share_url, code):
+def show_share_popup(share_url: str, code: str) -> None:
     """Show popup with QR code and copy buttons for sharing a puzzle."""
     import qrcode
 
@@ -64,12 +68,12 @@ def show_share_popup(share_url, code):
     status_label = CaptionLabel('', color=STATUS_SUCCESS, size_hint_y=None, height=dp(CAPTION_HEIGHT))
     content.add_widget(status_label)
 
-    def copy_url(btn):
+    def copy_url(btn: Any) -> None:
         Clipboard.copy(share_url)
         status_label.text = 'URL copied!'
         Clock.schedule_once(lambda dt: setattr(status_label, 'text', ''), 2)
 
-    def copy_code(btn):
+    def copy_code(btn: Any) -> None:
         Clipboard.copy(code)
         status_label.text = 'Code copied!'
         Clock.schedule_once(lambda dt: setattr(status_label, 'text', ''), 2)
@@ -94,7 +98,7 @@ def show_share_popup(share_url, code):
     popup.open()
 
 
-def show_load_popup(on_game_loaded):
+def show_load_popup(on_game_loaded: Callable[[Game], None]) -> None:
     """Show popup for loading a shared puzzle code.
 
     Args:
@@ -114,7 +118,7 @@ def show_load_popup(on_game_loaded):
 
     popup = None  # Will be set after popup creation
 
-    def load_puzzle(btn):
+    def load_puzzle(btn: Any) -> None:
         text = text_input.text.strip()
         if not text:
             error_label.text = 'Please enter a code or URL'
@@ -131,10 +135,10 @@ def show_load_popup(on_game_loaded):
             game = Game.from_code(code)
             popup.dismiss()
             on_game_loaded(game)
-        except Exception as e:
+        except Exception:
             error_label.text = 'Invalid puzzle code'
 
-    def paste_clipboard(btn):
+    def paste_clipboard(btn: Any) -> None:
         text_input.text = Clipboard.paste() or ''
 
     # Button row
@@ -160,15 +164,15 @@ def show_load_popup(on_game_loaded):
 class LoadingPopup(ModalView):
     """A loading popup with spinning queen animation."""
 
-    def __init__(self, on_cancel=None, **kwargs):
+    def __init__(self, on_cancel: Callable[[], None] | None = None, **kwargs: Any) -> None:
         super().__init__(**kwargs)
         self.size_hint = (POPUP_WIDTH_NARROW, 0.45)
         self.auto_dismiss = False
         self.background_color = POPUP_BACKGROUND
         self.on_cancel_callback = on_cancel
-        self.elapsed_time = 0.0
-        self._animation_event = None
-        self._timer_event = None
+        self.elapsed_time: float = 0.0
+        self._animation_event: Any = None
+        self._timer_event: Any = None
 
         # Main layout
         layout = PopupContent(padding=[dp(SPACING_XXL), dp(SPACING_XL)])
@@ -197,22 +201,22 @@ class LoadingPopup(ModalView):
 
         self.add_widget(layout)
 
-    def _animate(self, dt):
+    def _animate(self, dt: float) -> None:
         """Animation tick - rotate the queen."""
         self.spinner.rotate()
 
-    def _update_timer(self, dt):
+    def _update_timer(self, dt: float) -> None:
         """Update the stopwatch display."""
         self.elapsed_time += dt
         minutes = int(self.elapsed_time) // 60
         seconds = int(self.elapsed_time) % 60
         self.timer_label.text = f'{minutes}:{seconds:02d}'
 
-    def set_status(self, text):
+    def set_status(self, text: str) -> None:
         """Update the status text."""
         self.status_label.text = text
 
-    def open(self, *args, **kwargs):
+    def open(self, *args: Any, **kwargs: Any) -> None:
         """Start animation when popup opens."""
         super().open(*args, **kwargs)
         self.spinner.reset()
@@ -221,7 +225,7 @@ class LoadingPopup(ModalView):
         self._animation_event = Clock.schedule_interval(self._animate, 1/60)
         self._timer_event = Clock.schedule_interval(self._update_timer, 1)
 
-    def dismiss(self, *args, **kwargs):
+    def dismiss(self, *args: Any, **kwargs: Any) -> None:
         """Stop animation when popup closes."""
         if self._animation_event:
             self._animation_event.cancel()
@@ -231,14 +235,19 @@ class LoadingPopup(ModalView):
             self._timer_event = None
         super().dismiss(*args, **kwargs)
 
-    def _on_cancel(self, instance):
+    def _on_cancel(self, instance: Any) -> None:
         """Handle cancel button press."""
         if self.on_cancel_callback:
             self.on_cancel_callback()
         self.dismiss()
 
 
-def _show_size_selection_popup(title, sizes, on_size_selected, popup_height):
+def _show_size_selection_popup(
+    title: str,
+    sizes: list[list[int]],
+    on_size_selected: Callable[[int], None],
+    popup_height: float
+) -> None:
     """Generic size selection popup.
 
     Args:
@@ -252,8 +261,8 @@ def _show_size_selection_popup(title, sizes, on_size_selected, popup_height):
 
     popup = None  # Will be set after creation
 
-    def make_callback(size):
-        def callback(btn):
+    def make_callback(size: int) -> Callable[[Any], None]:
+        def callback(btn: Any) -> None:
             popup.dismiss()
             on_size_selected(size)
         return callback
@@ -279,15 +288,13 @@ def _show_size_selection_popup(title, sizes, on_size_selected, popup_height):
     popup.open()
 
 
-def show_date_puzzles_popup(selected_date, on_size_selected):
+def show_date_puzzles_popup(selected_date: date, on_size_selected: Callable[[int], None]) -> None:
     """Show popup for selecting puzzle size for a specific date.
 
     Args:
         selected_date: The date for the puzzles
         on_size_selected: Callback function that receives the selected size (int)
     """
-    from datetime import date
-
     if selected_date == date.today():
         title = "Today's Puzzles"
     else:
@@ -301,7 +308,7 @@ def show_date_puzzles_popup(selected_date, on_size_selected):
     )
 
 
-def show_game_size_popup(on_size_and_strategy_selected):
+def show_game_size_popup(on_size_and_strategy_selected: Callable[[int, str], None]) -> None:
     """Show popup for selecting game size and kingdom strategy.
 
     Args:
@@ -313,8 +320,8 @@ def show_game_size_popup(on_size_and_strategy_selected):
     popup = None
     selected_strategy = ['mixed']  # Use list to allow modification in nested function
 
-    def make_size_callback(size):
-        def callback(btn):
+    def make_size_callback(size: int) -> Callable[[Any], None]:
+        def callback(btn: Any) -> None:
             popup.dismiss()
             on_size_and_strategy_selected(size, selected_strategy[0])
         return callback
