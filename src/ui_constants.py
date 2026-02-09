@@ -55,6 +55,10 @@ BOARD_QUEEN_SOLUTION = (0.5, 0.5, 1, 0.8)  # Blue tint for solution display
 BOARD_CIRCLE_NORMAL = (0.4, 0.4, 0.4, 1)
 BOARD_CIRCLE_BLOCKED = (0.9, 0.3, 0.3, 1)
 
+# Solution indicator colors
+INDICATOR_CURRENT = (1.0, 0.85, 0.2, 1)  # Golden for current solution
+INDICATOR_OTHER = (0.7, 0.7, 0.7, 1)     # Gray for other solutions
+
 # Kingdom colors (RGB, 0-1 range)
 KINGDOM_COLORS = [
     (0.9, 0.6, 0.6),   # 0: light red

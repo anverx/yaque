@@ -13,6 +13,7 @@ from kivy.metrics import dp, sp
 from kivy.utils import platform
 
 from board_widget import BoardWidget
+from ui_constants import TEXT_DARK, TEXT_MEDIUM, COLOR_BLACK, INDICATOR_CURRENT, INDICATOR_OTHER
 from widgets import GrayRoundedButton
 import database
 import game_encoding
@@ -62,11 +63,11 @@ class SolutionIndicator(Widget):
 
                 if i == self.current_index:
                     # Golden circle for current
-                    Color(1.0, 0.85, 0.2, 1)
+                    Color(*INDICATOR_CURRENT)
                     Ellipse(pos=(cx, cy), size=(circle_size, circle_size))
                 else:
                     # Gray circle for others
-                    Color(0.7, 0.7, 0.7, 1)
+                    Color(*INDICATOR_OTHER)
                     Ellipse(pos=(cx, cy), size=(circle_size, circle_size))
 
 
@@ -92,7 +93,7 @@ class IconButton(ButtonBehavior, BoxLayout):
                 text=label,
                 font_name='DMSansBlack',
                 font_size='9sp',
-                color=(0.3, 0.3, 0.3, 1),
+                color=TEXT_DARK,
                 size_hint=(None, None),
                 size=(dp(size_dp), dp(12)),
                 halign='center'
@@ -123,7 +124,7 @@ class GameScreen(Screen):
             text='',
             font_name='DMSansBlack',
             font_size='16sp',
-            color=(0.3, 0.3, 0.3, 1),
+            color=TEXT_DARK,
             size_hint_y=None,
             height=dp(22)
         )
@@ -134,7 +135,7 @@ class GameScreen(Screen):
             text='',
             font_name='DMSansBlack',
             font_size='12sp',
-            color=(0.5, 0.5, 0.5, 1),
+            color=TEXT_MEDIUM,
             size_hint_y=None,
             height=dp(24)
         )
@@ -146,7 +147,7 @@ class GameScreen(Screen):
             text='',
             font_name='DMSansBlack',
             font_size='12sp',
-            color=(0.3, 0.3, 0.3, 1),
+            color=TEXT_DARK,
             size_hint=(None, None),
             size=(dp(120), dp(28))
         )
@@ -167,7 +168,7 @@ class GameScreen(Screen):
             text='00:00',
             font_name='DMSansBlack',
             font_size='36sp',
-            color=(0, 0, 0, 1)
+            color=COLOR_BLACK
         )
         top_bar.add_widget(self.clock_label)
         layout.add_widget(top_bar)
@@ -223,7 +224,7 @@ class GameScreen(Screen):
             text='Back',
             font_name='DMSansBlack',
             font_size='18sp',
-            color=(0.3, 0.3, 0.3, 1),
+            color=TEXT_DARK,
             size_hint_y=None,
             height=dp(48)
         )
