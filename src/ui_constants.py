@@ -67,10 +67,11 @@ PADDING_POPUP_LARGE = (20, 15)
 PADDING_ROW = (10, 5)
 PADDING_CELL = (2, 2)
 
-# Button heights
+# Button dimensions
 BUTTON_HEIGHT_SM = 40
 BUTTON_HEIGHT = 48
 BUTTON_HEIGHT_LG = 58
+BUTTON_FONT_SIZE = '22sp'  # 50% larger than default 15sp
 
 # Layout heights
 TOP_SPACER_HEIGHT = 70

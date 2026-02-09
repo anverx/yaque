@@ -22,7 +22,7 @@ from ui_constants import (
     LABEL_STYLES, LAYOUT_STYLES,
     POPUP_BACKGROUND, POPUP_WIDTH,
     PADDING_POPUP, SPACING_LG, SPACING_MD, SPACING_XL,
-    BUTTON_HEIGHT, BUTTON_HEIGHT_SM, RADIUS_MD, LINK_HEIGHT,
+    BUTTON_HEIGHT, BUTTON_HEIGHT_SM, BUTTON_FONT_SIZE, RADIUS_MD, LINK_HEIGHT,
 )
 
 BUTTON_RADIUS = dp(RADIUS_MD)
@@ -41,6 +41,7 @@ class RoundedButton(ButtonBehavior, Label):
     """
     def __init__(self, bg_color: ColorTuple | None = None, bg_color_down: ColorTuple | None = None, **kwargs: Any) -> None:
         kwargs.setdefault('font_name', FONT_NAME)
+        kwargs.setdefault('font_size', BUTTON_FONT_SIZE)
         kwargs.setdefault('color', TEXT_WHITE)
         kwargs.setdefault('markup', True)
         kwargs.setdefault('halign', 'center')
