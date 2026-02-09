@@ -7,7 +7,7 @@ from kivy.uix.screenmanager import Screen
 from kivy.graphics import Color, Rectangle
 from kivy.metrics import dp
 
-from ui_constants import FONT_NAME, OVERLAY_WHITE, BACKGROUND_IMAGE, TOP_SPACER_HEIGHT, BACK_BUTTON_HEIGHT, TEXT_DARK
+from ui_constants import FONT_NAME, OVERLAY_WHITE, BACKGROUND_IMAGE, TOP_SPACER_HEIGHT, BUTTON_HEIGHT, TEXT_DARK
 from widgets import GrayRoundedButton
 
 
@@ -83,7 +83,7 @@ class BackgroundedScreen(Screen):
             text='Back',
             font_size='18sp',
             size_hint_y=None,
-            height=dp(BACK_BUTTON_HEIGHT)
+            height=dp(BUTTON_HEIGHT)
         )
         back_btn.bind(on_press=lambda x: setattr(self.app.sm, 'current', 'menu'))
         self.content_layout.add_widget(back_btn)
@@ -95,5 +95,5 @@ from ui_constants import (
     TEXT_DARK, TEXT_MEDIUM, TEXT_LIGHT, TEXT_HEADER, TEXT_WHITE,
     OVERLAY_WHITE, ROW_BACKGROUND, ROW_PRESSED,
     QUEEN_GRAY, QUEEN_GOLD, QUEEN_SILVER,
-    TODAY_HIGHLIGHT, TOP_SPACER_HEIGHT, BUTTON_HEIGHT, BACK_BUTTON_HEIGHT
+    TODAY_HIGHLIGHT, TOP_SPACER_HEIGHT, BUTTON_HEIGHT
 )
