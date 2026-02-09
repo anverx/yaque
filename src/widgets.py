@@ -1,12 +1,16 @@
 """Shared UI widgets for Yaque."""
 
+import os
+
 from kivy.uix.label import Label
 from kivy.uix.button import Button
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.modalview import ModalView
 from kivy.uix.textinput import TextInput
+from kivy.uix.widget import Widget
 from kivy.uix.behaviors import ButtonBehavior
-from kivy.graphics import Color, RoundedRectangle
+from kivy.graphics import Color, RoundedRectangle, Ellipse, Rectangle, Line, PushMatrix, PopMatrix, Rotate
+from kivy.core.image import Image as CoreImage
 from kivy.metrics import dp
 
 from ui_constants import (
@@ -14,11 +18,15 @@ from ui_constants import (
     DEFAULT_BUTTON_COLOR, DEFAULT_BUTTON_COLOR_DOWN,
     GRAY_BUTTON_COLOR, GRAY_BUTTON_COLOR_DOWN,
     INPUT_BACKGROUND, INPUT_HINT_COLOR, LINK_COLOR,
+    COLOR_WHITE, SPINNER_BORDER, SPINNER_LINE_WIDTH,
     LABEL_STYLES, LAYOUT_STYLES,
     POPUP_BACKGROUND, POPUP_WIDTH,
     PADDING_POPUP, SPACING_LG, SPACING_MD, SPACING_XL,
     BUTTON_HEIGHT, BUTTON_HEIGHT_SM, RADIUS_MD, LINK_HEIGHT,
 )
+
+# Path to icons
+ICONS_DIR = os.path.join(os.path.dirname(__file__), 'assets', 'icons')
 
 BUTTON_RADIUS = dp(RADIUS_MD)
 
@@ -77,6 +85,63 @@ def FixedGrayRoundedButton(**kwargs):
     """Factory for standalone gray buttons with fixed height."""
     kwargs.setdefault('size_hint_y', None)
     return GrayRoundedButton(**kwargs)
+
+
+# -----------------------------------------------------------------------------
+# Spinner Widget
+# -----------------------------------------------------------------------------
+
+class QueenSpinner(Widget):
+    """Animated spinning queen widget for loading indicators."""
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.rotation_angle = 0
+        self.queen_texture = CoreImage(os.path.join(ICONS_DIR, 'queen.png')).texture
+        self.bind(pos=self._draw, size=self._draw)
+
+    def _draw(self, *args):
+        """Draw the spinner."""
+        self.canvas.clear()
+
+        w, h = self.size
+        x, y = self.pos
+        cx, cy = x + w / 2, y + h / 2
+
+        circle_radius = min(w, h) / 2 * 0.7
+        queen_size = circle_radius * 1.3
+
+        with self.canvas:
+            # White circle background
+            Color(*COLOR_WHITE)
+            Ellipse(pos=(cx - circle_radius, cy - circle_radius),
+                    size=(circle_radius * 2, circle_radius * 2))
+
+            # Light gray border
+            Color(*SPINNER_BORDER)
+            Line(ellipse=(cx - circle_radius, cy - circle_radius,
+                          circle_radius * 2, circle_radius * 2), width=dp(SPINNER_LINE_WIDTH))
+
+            # Spinning queen
+            PushMatrix()
+            Rotate(angle=self.rotation_angle, origin=(cx, cy))
+            Color(*COLOR_WHITE)
+            Rectangle(
+                pos=(cx - queen_size / 2, cy - queen_size / 2),
+                size=(queen_size, queen_size),
+                texture=self.queen_texture
+            )
+            PopMatrix()
+
+    def rotate(self, angle_delta=3):
+        """Rotate the queen by the given angle."""
+        self.rotation_angle = (self.rotation_angle + angle_delta) % 360
+        self._draw()
+
+    def reset(self):
+        """Reset rotation to initial position."""
+        self.rotation_angle = 0
+        self._draw()
 
 
 # -----------------------------------------------------------------------------
