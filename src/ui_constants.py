@@ -74,6 +74,15 @@ ROW_HEIGHT = 50
 CELL_HEIGHT = 52
 NAV_BUTTON_WIDTH = 50
 
+# Game screen dimensions
+ICON_BTN_SIZE = 40
+ICON_BTN_SIZE_LG = 56
+CONTROL_BAR_HEIGHT = 56
+PLAY_AREA_HEIGHT = 72
+INDICATOR_HEIGHT = 20
+INDICATOR_CIRCLE_SIZE = 8
+INDICATOR_SPACING = 14
+
 # Touch/gesture thresholds
 SWIPE_EDGE_THRESHOLD = 20
 SWIPE_DISTANCE_THRESHOLD = 100
@@ -139,6 +148,12 @@ LABEL_STYLES = {
         'size_hint_y': None,
         'height': 35,
     },
+    'title_sm': {
+        'font_size': '16sp',
+        'color': TEXT_DARK,
+        'size_hint_y': None,
+        'height': 22,
+    },
     'subtitle': {
         'font_size': '14sp',
         'color': TEXT_LIGHT,
@@ -147,6 +162,14 @@ LABEL_STYLES = {
     },
     'caption': {
         'font_size': '12sp',
+        'color': TEXT_MEDIUM,
+    },
+    'clock': {
+        'font_size': '36sp',
+        'color': COLOR_BLACK,
+    },
+    'icon_label': {
+        'font_size': '9sp',
         'color': TEXT_MEDIUM,
     },
 }

@@ -108,6 +108,21 @@ def CaptionLabel(text, **kwargs):
     return styled_label('caption', text, **kwargs)
 
 
+def TitleSmLabel(text, **kwargs):
+    """Smaller title label for game screen headers."""
+    return styled_label('title_sm', text, **kwargs)
+
+
+def ClockLabel(text='00:00', **kwargs):
+    """Large clock/timer display label."""
+    return styled_label('clock', text, **kwargs)
+
+
+def IconLabel(text, **kwargs):
+    """Tiny label for icon button captions."""
+    return styled_label('icon_label', text, **kwargs)
+
+
 # -----------------------------------------------------------------------------
 # Layout Factories
 # -----------------------------------------------------------------------------

@@ -13,8 +13,15 @@ from kivy.metrics import dp, sp
 from kivy.utils import platform
 
 from board_widget import BoardWidget
-from ui_constants import COLOR_BLACK, INDICATOR_CURRENT, INDICATOR_OTHER
-from widgets import GrayRoundedButton, StyledLabel, TitleLabel, CaptionLabel
+from ui_constants import (
+    INDICATOR_CURRENT, INDICATOR_OTHER,
+    HEADER_HEIGHT, BUTTON_HEIGHT, SPACING_SM, SPACING_LG, SPACING_XL,
+    ICON_BTN_SIZE, ICON_BTN_SIZE_LG, CONTROL_BAR_HEIGHT, PLAY_AREA_HEIGHT,
+    INDICATOR_HEIGHT, INDICATOR_CIRCLE_SIZE, INDICATOR_SPACING,
+)
+from widgets import (
+    GrayRoundedButton, TitleSmLabel, CaptionLabel, ClockLabel, IconLabel,
+)
 import database
 import game_encoding
 
@@ -52,8 +59,8 @@ class SolutionIndicator(Widget):
 
         with self.canvas:
             # Calculate circle positions (centered)
-            circle_size = dp(8)
-            spacing = dp(14)
+            circle_size = dp(INDICATOR_CIRCLE_SIZE)
+            spacing = dp(INDICATOR_SPACING)
             total_width = self.num_solutions * circle_size + (self.num_solutions - 1) * (spacing - circle_size)
             start_x = self.center_x - total_width / 2
 
@@ -62,18 +69,16 @@ class SolutionIndicator(Widget):
                 cy = self.center_y - circle_size / 2
 
                 if i == self.current_index:
-                    # Golden circle for current
                     Color(*INDICATOR_CURRENT)
                     Ellipse(pos=(cx, cy), size=(circle_size, circle_size))
                 else:
-                    # Gray circle for others
                     Color(*INDICATOR_OTHER)
                     Ellipse(pos=(cx, cy), size=(circle_size, circle_size))
 
 
 class IconButton(ButtonBehavior, BoxLayout):
     """A clickable image button with optional label."""
-    def __init__(self, icon_name, size_dp=48, label=None, **kwargs):
+    def __init__(self, icon_name, size_dp=ICON_BTN_SIZE, label=None, **kwargs):
         super().__init__(orientation='vertical', **kwargs)
         self.icon_name = icon_name
         self.size_hint = (None, None)
@@ -89,9 +94,8 @@ class IconButton(ButtonBehavior, BoxLayout):
 
         # Optional label
         if label:
-            self.label = CaptionLabel(
+            self.label = IconLabel(
                 label,
-                font_size='9sp',
                 size_hint=(None, None),
                 size=(dp(size_dp), dp(12)),
                 halign='center'
@@ -115,10 +119,10 @@ class GameScreen(Screen):
         super().__init__(**kwargs)
         self.app = app
 
-        layout = BoxLayout(orientation='vertical', padding=dp(10), spacing=dp(4))
+        layout = BoxLayout(orientation='vertical', padding=dp(SPACING_LG), spacing=dp(SPACING_SM))
 
         # Game title (Daily puzzle: date / Random)
-        self.title_label = TitleLabel('', font_size='16sp', height=22)
+        self.title_label = TitleSmLabel('')
         layout.add_widget(self.title_label)
 
         # Subtitle - shows "Unique solution!" as label or "X solutions" as clickable button
@@ -145,13 +149,13 @@ class GameScreen(Screen):
         self.showing_solutions = False
 
         # Clock
-        top_bar = BoxLayout(size_hint_y=None, height=dp(50))
-        self.clock_label = StyledLabel(text='00:00', font_size='36sp', color=COLOR_BLACK)
+        top_bar = BoxLayout(size_hint_y=None, height=dp(HEADER_HEIGHT))
+        self.clock_label = ClockLabel()
         top_bar.add_widget(self.clock_label)
         layout.add_widget(top_bar)
 
         # Solution indicator (gray circles with golden indicator)
-        self.solution_indicator = SolutionIndicator(size_hint_y=None, height=dp(20))
+        self.solution_indicator = SolutionIndicator(size_hint_y=None, height=dp(INDICATOR_HEIGHT))
         self.solution_indicator.opacity = 0  # Hidden until solutions shown
         layout.add_widget(self.solution_indicator)
 
@@ -165,44 +169,39 @@ class GameScreen(Screen):
         self.board_container.add_widget(self.qr_image)
 
         # Play/Pause button - attached below the board
-        self.play_btn = IconButton('play', size_dp=56, label='Play')
+        self.play_btn = IconButton('play', size_dp=ICON_BTN_SIZE_LG, label='Play')
         self.play_btn.bind(on_press=self.toggle_play_pause)
-        play_anchor = AnchorLayout(size_hint_y=None, height=dp(72), anchor_x='center')
+        play_anchor = AnchorLayout(size_hint_y=None, height=dp(PLAY_AREA_HEIGHT), anchor_x='center')
         play_anchor.add_widget(self.play_btn)
         layout.add_widget(play_anchor)
 
         # Game control buttons (undo, redo, reset)
-        control_bar = BoxLayout(size_hint=(None, None), height=dp(56), spacing=dp(16))
+        control_bar = BoxLayout(size_hint=(None, None), height=dp(CONTROL_BAR_HEIGHT), spacing=dp(SPACING_XL))
         control_bar.bind(minimum_width=control_bar.setter('width'))
 
-        undo_btn = IconButton('undo', size_dp=40, label='Undo')
+        undo_btn = IconButton('undo', label='Undo')
         undo_btn.bind(on_press=lambda x: self.board.undo() if self.board and not self.board.hidden else None)
         control_bar.add_widget(undo_btn)
 
-        redo_btn = IconButton('redo', size_dp=40, label='Redo')
+        redo_btn = IconButton('redo', label='Redo')
         redo_btn.bind(on_press=lambda x: self.board.redo() if self.board and not self.board.hidden else None)
         control_bar.add_widget(redo_btn)
 
-        reset_btn = IconButton('reset', size_dp=40, label='Reset')
+        reset_btn = IconButton('reset', label='Reset')
         reset_btn.bind(on_press=self.reset_game)
         control_bar.add_widget(reset_btn)
 
-        self.share_btn = IconButton('share', size_dp=40, label='Share')
+        self.share_btn = IconButton('share', label='Share')
         self.share_btn.bind(on_press=self.share_game)
         control_bar.add_widget(self.share_btn)
 
         # Wrap in anchor layout to center
-        control_anchor = AnchorLayout(size_hint_y=None, height=dp(56), anchor_x='center')
+        control_anchor = AnchorLayout(size_hint_y=None, height=dp(CONTROL_BAR_HEIGHT), anchor_x='center')
         control_anchor.add_widget(control_bar)
         layout.add_widget(control_anchor)
 
         # Back button
-        back_btn = GrayRoundedButton(
-            text='Back',
-            font_size='18sp',
-            size_hint_y=None,
-            height=dp(48)
-        )
+        back_btn = GrayRoundedButton(text='Back', size_hint_y=None, height=dp(BUTTON_HEIGHT))
         back_btn.bind(on_press=self.go_back)
         layout.add_widget(back_btn)
 
