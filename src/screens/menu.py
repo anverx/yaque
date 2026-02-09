@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from kivy.uix.boxlayout import BoxLayout
 from kivy.metrics import dp
 
@@ -8,10 +10,10 @@ from widgets import RoundedButton, FixedRoundedButton, FixedGrayRoundedButton, T
 
 
 class MainMenuScreen(BackgroundedScreen):
-    def get_spacing(self):
+    def get_spacing(self) -> int:
         return 12
 
-    def build_content(self):
+    def build_content(self) -> None:
         layout = self.content_layout
 
         # Extra spacer for menu layout
@@ -65,7 +67,7 @@ class MainMenuScreen(BackgroundedScreen):
         exit_btn.bind(on_press=self.app.exit_app)
         layout.add_widget(exit_btn)
 
-    def on_enter(self):
+    def on_enter(self) -> None:
         """Called when screen is entered - refresh streak display."""
         streak = database.get_current_streak()
         if streak > 0:

@@ -1,5 +1,8 @@
+from __future__ import annotations
+
 import os
 from datetime import datetime
+from typing import Any, Callable
 
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.scrollview import ScrollView
@@ -32,7 +35,7 @@ PAGE_SIZE = 20
 class LogbookRow(ButtonBehavior, BoxLayout):
     """A tappable row in the logbook."""
 
-    def __init__(self, play_data, on_select, **kwargs):
+    def __init__(self, play_data: dict[str, Any], on_select: Callable[[dict[str, Any]], None], **kwargs: Any) -> None:
         super().__init__(orientation='horizontal', **kwargs)
         self.play_data = play_data
         self.on_select = on_select
@@ -99,7 +102,7 @@ class LogbookRow(ButtonBehavior, BoxLayout):
         )
         self.add_widget(crown)
 
-    def _update_bg(self, *args):
+    def _update_bg(self, *args: Any) -> None:
         self.canvas.before.clear()
         with self.canvas.before:
             if self.state == 'down':
@@ -108,7 +111,7 @@ class LogbookRow(ButtonBehavior, BoxLayout):
                 Color(*self._bg_color)
             RoundedRectangle(pos=self.pos, size=self.size, radius=[dp(RADIUS_SM)])
 
-    def on_press(self):
+    def on_press(self) -> None:
         if self.on_select:
             self.on_select(self.play_data)
 
@@ -116,7 +119,7 @@ class LogbookRow(ButtonBehavior, BoxLayout):
 class DateSeparator(BoxLayout):
     """A date separator row."""
 
-    def __init__(self, date_str, **kwargs):
+    def __init__(self, date_str: str, **kwargs: Any) -> None:
         super().__init__(**kwargs)
         self.size_hint_y = None
         self.height = dp(DATE_SEPARATOR_HEIGHT)
@@ -126,10 +129,10 @@ class DateSeparator(BoxLayout):
 
 
 class LogbookScreen(BackgroundedScreen):
-    def get_padding(self):
+    def get_padding(self) -> int:
         return 15
 
-    def build_content(self):
+    def build_content(self) -> None:
         self.current_offset = 0
         self.has_more = False
         layout = self.content_layout
@@ -165,7 +168,7 @@ class LogbookScreen(BackgroundedScreen):
         # Back button
         self.add_back_button()
 
-    def _format_date(self, date_str):
+    def _format_date(self, date_str: str) -> str:
         """Format date string for separator."""
         try:
             dt = datetime.fromisoformat(date_str)
@@ -176,14 +179,14 @@ class LogbookScreen(BackgroundedScreen):
                 return 'Yesterday'
             else:
                 return dt.strftime('%A, %b %d')
-        except:
+        except Exception:
             return date_str[:10] if date_str else '?'
 
-    def _get_date_key(self, started_at):
+    def _get_date_key(self, started_at: str) -> str:
         """Extract date part from started_at timestamp."""
         return started_at[:10] if started_at else ''
 
-    def _on_game_selected(self, play_data):
+    def _on_game_selected(self, play_data: dict[str, Any]) -> None:
         """Load and show the selected game."""
         code = play_data['code']
         daily_date = play_data['daily_date']
@@ -198,18 +201,18 @@ class LogbookScreen(BackgroundedScreen):
                 try:
                     parts = daily_date.split('-')
                     parsed_date = date(int(parts[0]), int(parts[1]), int(parts[2]))
-                except:
+                except Exception:
                     pass
 
             self.app._on_game_ready(game, daily_date=parsed_date, from_logbook=True)
         except Exception as e:
             print(f"Error loading game: {e}")
 
-    def _load_more(self, instance):
+    def _load_more(self, instance: Any) -> None:
         """Load next page of games."""
         self._load_plays(append=True)
 
-    def _load_plays(self, append=False):
+    def _load_plays(self, append: bool = False) -> None:
         """Load plays from database."""
         if not append:
             self.list_layout.clear_widgets()
@@ -267,6 +270,6 @@ class LogbookScreen(BackgroundedScreen):
             load_more_btn.bind(on_press=self._load_more)
             self.list_layout.add_widget(load_more_btn)
 
-    def on_enter(self):
+    def on_enter(self) -> None:
         """Refresh list when screen is shown."""
         self._load_plays(append=False)

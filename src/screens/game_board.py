@@ -1,5 +1,9 @@
+from __future__ import annotations
+
 import io
 import os
+from datetime import date
+from typing import Any
 
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.anchorlayout import AnchorLayout
@@ -40,22 +44,22 @@ from kivy.graphics import Color, Ellipse
 class SolutionIndicator(Widget):
     """Shows gray circles for each solution with a golden indicator for current."""
 
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
         self.num_solutions = 0
         self.current_index = 0
         self.bind(pos=self._draw, size=self._draw)
 
-    def set_solutions(self, num_solutions, current_index=0):
+    def set_solutions(self, num_solutions: int, current_index: int = 0) -> None:
         self.num_solutions = num_solutions
         self.current_index = current_index
         self._draw()
 
-    def set_current(self, index):
+    def set_current(self, index: int) -> None:
         self.current_index = index
         self._draw()
 
-    def _draw(self, *args):
+    def _draw(self, *args: Any) -> None:
         self.canvas.clear()
         if self.num_solutions <= 1:
             return
@@ -81,7 +85,7 @@ class SolutionIndicator(Widget):
 
 class IconButton(ButtonBehavior, BoxLayout):
     """A clickable image button with optional label."""
-    def __init__(self, icon_name, size_dp=ICON_BTN_SIZE, label=None, **kwargs):
+    def __init__(self, icon_name: str, size_dp: int = ICON_BTN_SIZE, label: str | None = None, **kwargs: Any) -> None:
         super().__init__(orientation='vertical', **kwargs)
         self.icon_name = icon_name
         self.size_hint = (None, None)
@@ -109,7 +113,7 @@ class IconButton(ButtonBehavior, BoxLayout):
         else:
             self.size = (dp(size_dp), dp(size_dp))
 
-    def set_icon(self, icon_name, label=None):
+    def set_icon(self, icon_name: str, label: str | None = None) -> None:
         """Change the icon and optionally the label."""
         self.icon_name = icon_name
         self.icon.source = os.path.join(ICONS_DIR, f'{icon_name}.png')
@@ -118,7 +122,7 @@ class IconButton(ButtonBehavior, BoxLayout):
 
 
 class GameScreen(Screen):
-    def __init__(self, app, **kwargs):
+    def __init__(self, app: Any, **kwargs: Any) -> None:
         super().__init__(**kwargs)
         self.app = app
 
@@ -221,7 +225,7 @@ class GameScreen(Screen):
         self.play_id = None
         self.daily_date = None  # Set if this is a daily puzzle
 
-    def set_game(self, game, daily_date=None, from_calendar=False, from_logbook=False, strategy=None):
+    def set_game(self, game: Any, daily_date: date | None = None, from_calendar: bool = False, from_logbook: bool = False, strategy: str | None = None) -> None:
         self.game = game
         self.daily_date = daily_date
         self.from_calendar = from_calendar
@@ -344,7 +348,7 @@ class GameScreen(Screen):
             self.qr_image.opacity = 0
         self.board.draw_board()
 
-    def _generate_qr_code(self):
+    def _generate_qr_code(self) -> None:
         """Generate QR code for the current game."""
         import qrcode
 
@@ -368,7 +372,7 @@ class GameScreen(Screen):
         core_img = CoreImage(buf, ext='png')
         self.qr_image.texture = core_img.texture
 
-    def toggle_play_pause(self, instance):
+    def toggle_play_pause(self, instance: Any) -> None:
         if not self.board:
             return
 
@@ -404,16 +408,16 @@ class GameScreen(Screen):
 
         self.board.draw_board()
 
-    def _tick(self, dt):
+    def _tick(self, dt: float) -> None:
         self.elapsed_time += 1
         self._update_clock_display()
 
-    def _update_clock_display(self):
+    def _update_clock_display(self) -> None:
         minutes = self.elapsed_time // 60
         seconds = self.elapsed_time % 60
         self.clock_label.text = f'{minutes:02d}:{seconds:02d}'
 
-    def on_puzzle_solved(self):
+    def on_puzzle_solved(self) -> None:
         if self.timer_event:
             self.timer_event.cancel()
             self.timer_event = None
@@ -443,7 +447,7 @@ class GameScreen(Screen):
         # Update subtitle with solution count
         self._update_solution_subtitle()
 
-    def _resize_board(self, container, size):
+    def _resize_board(self, container: Any, size: tuple[float, float]) -> None:
         if not self.board:
             return
         # Use 90% of available space for bigger margins
@@ -453,7 +457,7 @@ class GameScreen(Screen):
         qr_size = board_size * 0.85
         self.qr_image.size = (qr_size, qr_size)
 
-    def _update_solution_subtitle(self):
+    def _update_solution_subtitle(self) -> None:
         """Update the subtitle to show solution count."""
         num_solutions = len(self.all_solutions)
         if num_solutions == 1:
@@ -468,7 +472,7 @@ class GameScreen(Screen):
             self.solutions_text_btn.opacity = 1
             self.solutions_text_btn.disabled = False
 
-    def toggle_solutions(self, instance):
+    def toggle_solutions(self, instance: Any) -> None:
         """Toggle solution display or cycle to next solution."""
         if not self.board or not self.all_solutions:
             return
@@ -485,13 +489,13 @@ class GameScreen(Screen):
             self.current_solution_index = self.board.cycle_solution()
             self.solution_indicator.set_current(self.current_solution_index)
 
-    def _save_game_state(self):
+    def _save_game_state(self) -> None:
         """Save current game state to database (for daily puzzles)."""
         if self.play_id is not None and self.board and not self.board.solved:
             encoded_state = game_encoding.encode_board_state(self.board.cell_marks)
             database.save_game_state(self.play_id, self.elapsed_time, encoded_state)
 
-    def go_back(self, instance):
+    def go_back(self, instance: Any) -> None:
         """Go back to the previous screen (calendar, logbook, or menu)."""
         if self.timer_event:
             self.timer_event.cancel()
@@ -505,14 +509,14 @@ class GameScreen(Screen):
         else:
             self.app.sm.current = 'menu'
 
-    def share_game(self, instance):
+    def share_game(self, instance: Any) -> None:
         if not self.game:
             return
         code = self.game.encode()
         share_url = f"yaque://start?game={code}"
         self.app.show_share_popup(share_url, code)
 
-    def reset_game(self, instance):
+    def reset_game(self, instance: Any) -> None:
         """Reset the game to initial state."""
         if not self.board:
             return
@@ -548,11 +552,11 @@ class GameScreen(Screen):
         self.showing_solutions = False
         self.board.draw_board()
 
-    def on_cell_click(self, row, col):
+    def on_cell_click(self, row: int, col: int) -> None:
         pass  # Can add debug logging here if needed
 
     # Swipe from left edge to go back (Android)
-    def on_touch_down(self, touch):
+    def on_touch_down(self, touch: Any) -> bool:
         if platform == 'android':
             # Detect touch starting near left edge
             if touch.x < dp(SWIPE_EDGE_THRESHOLD):
@@ -560,7 +564,7 @@ class GameScreen(Screen):
                 touch.ud['start_x'] = touch.x
         return super().on_touch_down(touch)
 
-    def on_touch_up(self, touch):
+    def on_touch_up(self, touch: Any) -> bool:
         if platform == 'android' and touch.ud.get('swipe_from_edge'):
             # Check if swiped right sufficiently
             if touch.x - touch.ud.get('start_x', 0) > dp(SWIPE_DISTANCE_THRESHOLD):

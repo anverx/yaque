@@ -1,6 +1,9 @@
+from __future__ import annotations
+
 import calendar
 import os
 from datetime import date
+from typing import Any
 
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.gridlayout import GridLayout
@@ -28,7 +31,7 @@ ICONS_DIR = os.path.join(os.path.dirname(__file__), '..', 'assets', 'icons')
 
 class DayCell(ButtonBehavior, BoxLayout):
     """Calendar day cell with day number and 3 queen status icons."""
-    def __init__(self, day, completion_status=None, **kwargs):
+    def __init__(self, day: int, completion_status: dict[int, str | None] | None = None, **kwargs: Any) -> None:
         super().__init__(orientation='vertical', **kwargs)
         self.day = day
         self.background_color = DEFAULT_BUTTON_COLOR
@@ -47,7 +50,7 @@ class DayCell(ButtonBehavior, BoxLayout):
             padding=[dp(PADDING_CELL[0]), 0, dp(PADDING_CELL[0]), dp(PADDING_CELL[1])]
         )
 
-        self.queen_icons = []
+        self.queen_icons: list[Image] = []
         for size in [6, 7, 8]:
             status = completion_status.get(size) if completion_status else None
             if status == 'gold':
@@ -66,7 +69,7 @@ class DayCell(ButtonBehavior, BoxLayout):
 
         self.add_widget(icons_row)
 
-    def _update_bg(self, *args):
+    def _update_bg(self, *args: Any) -> None:
         self.canvas.before.clear()
         with self.canvas.before:
             if self.state == 'down':
@@ -77,7 +80,7 @@ class DayCell(ButtonBehavior, BoxLayout):
 
 
 class CalendarScreen(BackgroundedScreen):
-    def build_content(self):
+    def build_content(self) -> None:
         self.current_year = date.today().year
         self.current_month = date.today().month
         layout = self.content_layout
@@ -121,7 +124,7 @@ class CalendarScreen(BackgroundedScreen):
 
         self.refresh_calendar()
 
-    def prev_month(self, instance):
+    def prev_month(self, instance: Any) -> None:
         if self.current_month == 1:
             self.current_month = 12
             self.current_year -= 1
@@ -129,7 +132,7 @@ class CalendarScreen(BackgroundedScreen):
             self.current_month -= 1
         self.refresh_calendar()
 
-    def next_month(self, instance):
+    def next_month(self, instance: Any) -> None:
         today = date.today()
         # Don't allow going past current month
         if self.current_year == today.year and self.current_month >= today.month:
@@ -141,7 +144,7 @@ class CalendarScreen(BackgroundedScreen):
             self.current_month += 1
         self.refresh_calendar()
 
-    def refresh_calendar(self):
+    def refresh_calendar(self) -> None:
         self.month_label.text = f'{calendar.month_name[self.current_month]} {self.current_year}'
         self.calendar_grid.clear_widgets()
 
@@ -186,23 +189,23 @@ class CalendarScreen(BackgroundedScreen):
 
                 self.calendar_grid.add_widget(cell)
 
-    def select_date(self, selected_date):
-        def on_size_selected(size):
+    def select_date(self, selected_date: date) -> None:
+        def on_size_selected(size: int) -> None:
             self.app.start_daily_game(size, selected_date, from_calendar=True)
         show_date_puzzles_popup(selected_date, on_size_selected)
 
-    def on_enter(self):
+    def on_enter(self) -> None:
         """Refresh calendar when screen is shown to reflect completion changes."""
         self.refresh_calendar()
 
     # Swipe from left edge to go back to menu
-    def on_touch_down(self, touch):
+    def on_touch_down(self, touch: Any) -> bool:
         if platform == 'android' and touch.x < dp(SWIPE_EDGE_THRESHOLD):
             touch.ud['swipe_from_edge'] = True
             touch.ud['start_x'] = touch.x
         return super().on_touch_down(touch)
 
-    def on_touch_up(self, touch):
+    def on_touch_up(self, touch: Any) -> bool:
         if platform == 'android' and touch.ud.get('swipe_from_edge'):
             if touch.x - touch.ud.get('start_x', 0) > dp(SWIPE_DISTANCE_THRESHOLD):
                 self.app.sm.current = 'menu'

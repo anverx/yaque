@@ -1,9 +1,13 @@
+from __future__ import annotations
+
+from typing import Any
+
 from kivy.uix.image import Image
 from kivy.uix.screenmanager import Screen
 
 
 class SplashScreen(Screen):
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
 
         # Full screen splash image, cropped to fill
@@ -13,5 +17,5 @@ class SplashScreen(Screen):
         )
         self.add_widget(splash)
 
-    def set_status(self, text):
+    def set_status(self, text: str) -> None:
         pass  # No longer showing status text
