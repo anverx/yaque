@@ -71,7 +71,7 @@ icon.adaptive_foreground.filename = %(source.dir)s/assets/images/icon_foreground
 icon.adaptive_background.filename = %(source.dir)s/assets/images/icon_background.png
 
 # Presplash image
-# presplash.filename = %(source.dir)s/assets/images/splashscreen.jpg
+presplash.filename = %(source.dir)s/assets/images/splashscreen.jpg
 
 [buildozer]
 
