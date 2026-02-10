@@ -190,7 +190,7 @@ class YaqueApp(App):
         self._show_loading_popup(f'Generating {size}x{size} puzzle...')
 
         def generate() -> None:
-            game = get_daily_game(puzzle_date, size, max_solutions=4)
+            game = get_daily_game(puzzle_date, size, max_solutions=1)
             if not self._generation_cancelled:
                 Clock.schedule_once(lambda dt: self._on_game_ready(
                     game, daily_date=puzzle_date, from_calendar=from_calendar

@@ -106,6 +106,10 @@ class Game:
             else:
                 no_improve += 1
 
+        # Reject if we couldn't meet the max_solutions requirement
+        if current_solutions > max_solutions:
+            raise ValueError(f"Could not generate puzzle with <={max_solutions} solutions (best: {current_solutions})")
+
         self.num_solutions = current_solutions
         self.attempts = batch_size
 
@@ -496,16 +500,28 @@ def get_daily_seed(day: date, size: int, secret: str = SECRET, offset: int = 0) 
 def get_daily_game(day: date, size: int, secret: str = SECRET,
                    max_solutions: int = 1, max_seed_attempts: int = 100,
                    kingdom_strategy: str = 'jagged') -> Game:
-    """Generate a daily puzzle for a given date and size, trying multiple seeds if needed."""
-    for offset in range(max_seed_attempts):
-        seed = get_daily_seed(day, size, secret, offset)
-        try:
-            game = Game(size, max_solutions=max_solutions, seed=seed, kingdom_strategy=kingdom_strategy)
-            game.seed_offset = offset  # Store which offset worked
-            return game
-        except ValueError:
-            continue
-    raise ValueError(f"Could not generate puzzle for {day} size {size} after {max_seed_attempts} seed attempts")
+    """Generate a daily puzzle for a given date and size, trying multiple seeds if needed.
+
+    First tries to find a puzzle with max_solutions, then falls back to higher limits.
+    """
+    # Try progressively relaxed solution limits
+    solution_tiers = [max_solutions]
+    if max_solutions < 4:
+        solution_tiers.append(4)
+    if max_solutions < 10:
+        solution_tiers.append(10)
+
+    for tier_max in solution_tiers:
+        for offset in range(max_seed_attempts):
+            seed = get_daily_seed(day, size, secret, offset)
+            try:
+                game = Game(size, max_solutions=tier_max, seed=seed, kingdom_strategy=kingdom_strategy)
+                game.seed_offset = offset  # Store which offset worked
+                return game
+            except ValueError:
+                continue
+
+    raise ValueError(f"Could not generate puzzle for {day} size {size} after all attempts")
 
 
 def get_daily_games(day: date | None = None, secret: str = SECRET, max_solutions: int = 1) -> dict[int, Game]:
