@@ -199,33 +199,44 @@ class YaqueApp(App):
         threading.Thread(target=generate, daemon=True).start()
 
     def start_random_game(self, instance: Any) -> None:
-        """Show size selection popup, then generate random game."""
-        show_game_size_popup(self._start_random_game_with_size_and_strategy)
+        """Show options popup, then generate random game."""
+        show_game_size_popup(self._start_random_game_with_options)
 
-    def _start_random_game_with_size_and_strategy(self, size: int, strategy: str) -> None:
-        """Generate a random game with the selected size and kingdom strategy."""
-        # Expected generation times based on board size
-        expected_times = {6: '<1s', 7: '~1s', 8: '~10s', 9: '~50s'}
+    def _start_random_game_with_options(self, size: int, strategy: str, max_solutions: int) -> None:
+        """Generate a random game with the selected options."""
+        # Expected generation times based on board size and solution requirement
+        if max_solutions == 1:
+            expected_times = {6: '<1s', 7: '~1s', 8: '~10s', 9: '~50s'}
+        else:
+            expected_times = {6: '<1s', 7: '<1s', 8: '~5s', 9: '~20s'}
         time_hint = expected_times.get(size, '')
         time_str = f' (avg. {time_hint})' if time_hint else ''
         self._show_loading_popup(f'Finding the perfect {size}x{size} puzzle...{time_str}')
 
+        # Store the user's requested max_solutions for retry logic
+        self._requested_max_solutions = max_solutions
+
         def generate() -> None:
             try:
-                game = Game(size, max_solutions=1, kingdom_strategy=strategy)
+                game = Game(size, max_solutions=max_solutions, kingdom_strategy=strategy)
                 if not self._generation_cancelled:
                     Clock.schedule_once(lambda dt: self._on_game_ready(game, strategy=strategy))
             except ValueError:
                 # Failed to generate - try again with more solutions allowed
                 if not self._generation_cancelled:
-                    Clock.schedule_once(lambda dt: self._on_generation_failed(size, strategy, 1))
+                    Clock.schedule_once(lambda dt: self._on_generation_failed(size, strategy, max_solutions))
 
         threading.Thread(target=generate, daemon=True).start()
 
     def _on_generation_failed(self, size: int, strategy: str, max_solutions: int) -> None:
         """Handle failed puzzle generation by retrying with relaxed constraints."""
-        # Retry tiers: 1 -> 4 -> 10 -> give up
-        next_max = {1: 4, 4: 10}.get(max_solutions)
+        # Retry tiers based on what user requested
+        if max_solutions < 4:
+            next_max = 4
+        elif max_solutions < 10:
+            next_max = 10
+        else:
+            next_max = None
 
         if next_max is None:
             # Completely failed
@@ -241,7 +252,7 @@ class YaqueApp(App):
             return
 
         self._dismiss_loading_popup()
-        expected_times = {6: '<1s', 7: '~1s', 8: '~10s', 9: '~50s'}
+        expected_times = {6: '<1s', 7: '<1s', 8: '~5s', 9: '~20s'}
         time_hint = expected_times.get(size, '')
         time_str = f' (avg. {time_hint})' if time_hint else ''
         self._show_loading_popup(f'Retrying {size}x{size} puzzle...{time_str}')

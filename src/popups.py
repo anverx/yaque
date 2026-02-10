@@ -23,7 +23,7 @@ from ui_constants import (
     SMALL_BUTTON_WIDTH, SPACER_SM,
 )
 from widgets import (
-    RoundedButton, GrayRoundedButton, FixedGrayRoundedButton, SmallRoundedButton,
+    RoundedButton, GrayRoundedButton, FixedRoundedButton, FixedGrayRoundedButton, SmallRoundedButton,
     SelectableButton, SelectableButtonGroup,
     TitleLabel, SubtitleLabel, CaptionLabel, StatusLabel,
     PopupContent, ButtonRow, SizeButtonRow, Popup,
@@ -308,40 +308,40 @@ def show_date_puzzles_popup(selected_date: date, on_size_selected: Callable[[int
     )
 
 
-def show_game_size_popup(on_size_and_strategy_selected: Callable[[int, str], None]) -> None:
-    """Show popup for selecting game size and kingdom strategy.
+def show_game_size_popup(on_game_options_selected: Callable[[int, str, int], None]) -> None:
+    """Show popup for selecting game size, kingdom strategy, and max solutions.
 
     Args:
-        on_size_and_strategy_selected: Callback receiving (size: int, strategy: str)
+        on_game_options_selected: Callback receiving (size: int, strategy: str, max_solutions: int)
     """
     content = PopupContent()
-    content.add_widget(TitleLabel('Select Puzzle Size'))
+    content.add_widget(TitleLabel('Random Puzzle'))
 
     popup = None
-    selected_strategy = ['mixed']  # Use list to allow modification in nested function
+    selected_size = [8]  # Default size
+    selected_strategy = ['mixed']
+    selected_max_solutions = [1]  # Default: unique
 
-    def make_size_callback(size: int) -> Callable[[Any], None]:
-        def callback(btn: Any) -> None:
-            popup.dismiss()
-            on_size_and_strategy_selected(size, selected_strategy[0])
-        return callback
+    # Size selection
+    content.add_widget(SubtitleLabel('Size'))
+    size_row = ButtonRow(height=dp(BUTTON_HEIGHT_SM), spacing=dp(SPACING_MD))
+    size_group = SelectableButtonGroup(
+        on_select=lambda value: selected_size.__setitem__(0, value)
+    )
 
-    # Size buttons (2x2 grid)
-    row1 = SizeButtonRow()
-    row2 = SizeButtonRow()
+    for size in [6, 7, 8, 9]:
+        btn = SelectableButton(
+            text=f'{size}x{size}',
+            font_size='14sp',
+            selected=(size == 8)
+        )
+        size_group.add(size, btn)
+        size_row.add_widget(btn)
 
-    for size, row in [(6, row1), (7, row1), (8, row2), (9, row2)]:
-        btn = RoundedButton(text=f'{size}x{size}')
-        btn.bind(on_press=make_size_callback(size))
-        row.add_widget(btn)
+    content.add_widget(size_row)
 
-    content.add_widget(row1)
-    content.add_widget(row2)
-
-    # Strategy label
+    # Strategy selection
     content.add_widget(SubtitleLabel('Kingdom Style'))
-
-    # Strategy buttons (radio-style)
     strategy_row = ButtonRow(height=dp(BUTTON_HEIGHT_SM), spacing=dp(SPACING_MD))
     strategy_group = SelectableButtonGroup(
         on_select=lambda value: selected_strategy.__setitem__(0, value)
@@ -364,13 +364,46 @@ def show_game_size_popup(on_size_and_strategy_selected: Callable[[int, str], Non
 
     content.add_widget(strategy_row)
 
+    # Solution count selection
+    content.add_widget(SubtitleLabel('Solutions'))
+    solutions_row = ButtonRow(height=dp(BUTTON_HEIGHT_SM), spacing=dp(SPACING_MD))
+    solutions_group = SelectableButtonGroup(
+        on_select=lambda value: selected_max_solutions.__setitem__(0, value)
+    )
+
+    solution_options = [
+        (1, 'Unique'),
+        (4, '< 4'),
+        (10, '< 10'),
+    ]
+
+    for max_sol, label in solution_options:
+        btn = SelectableButton(
+            text=label,
+            font_size='14sp',
+            selected=(max_sol == 1)
+        )
+        solutions_group.add(max_sol, btn)
+        solutions_row.add_widget(btn)
+
+    content.add_widget(solutions_row)
+
     # Spacer
     content.add_widget(Widget(size_hint_y=None, height=dp(SPACER_SM)))
+
+    # Play button
+    def on_play(btn: Any) -> None:
+        popup.dismiss()
+        on_game_options_selected(selected_size[0], selected_strategy[0], selected_max_solutions[0])
+
+    play_btn = FixedRoundedButton(text='Play')
+    play_btn.bind(on_press=on_play)
+    content.add_widget(play_btn)
 
     # Cancel button
     cancel_btn = FixedGrayRoundedButton(text='Cancel')
     content.add_widget(cancel_btn)
 
-    popup = Popup(content, height=340)
+    popup = Popup(content, height=420)
     cancel_btn.bind(on_press=popup.dismiss)
     popup.open()
