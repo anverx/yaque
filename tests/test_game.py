@@ -1,17 +1,23 @@
 """Tests for game logic: generation, encoding/decoding, daily puzzles."""
 
-import pytest
-from datetime import date, timedelta
-import sys
 import os
+import sys
+from datetime import date
+
+import pytest
 
 # Add src to path for imports
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 
 from game import (
+    MARK_CIRCLE,
+    MARK_EMPTY,
+    MARK_QUEEN,
     Game,
-    get_daily_seed,
+    check_player_solution,
     get_daily_game,
+    get_daily_seed,
+    validate_player_marks,
 )
 
 
@@ -187,11 +193,7 @@ class TestConflictDetection:
         for i, (r1, c1) in enumerate(queens):
             for r2, c2 in queens[i + 1:]:
                 # Same row or column
-                if r1 == r2 or c1 == c2:
-                    conflicts.add((r1, c1))
-                    conflicts.add((r2, c2))
-                # Adjacent (including diagonal)
-                elif abs(r1 - r2) <= 1 and abs(c1 - c2) <= 1:
+                if r1 == r2 or c1 == c2 or (abs(r1 - r2) <= 1 and abs(c1 - c2) <= 1):
                     conflicts.add((r1, c1))
                     conflicts.add((r2, c2))
         return conflicts
@@ -234,6 +236,178 @@ class TestConflictDetection:
         game = Game(7, max_solutions=4)
         conflicts = self.find_conflicts(game.queens)
         assert len(conflicts) == 0, f"Generated solution has conflicts: {conflicts}"
+
+
+class TestPlayerValidation:
+    """Test player mark validation functions."""
+
+    def make_marks(self, size: int, queens: list[tuple[int, int]] | None = None,
+                   circles: list[tuple[int, int]] | None = None) -> list[list[int]]:
+        """Helper to create a cell_marks grid."""
+        marks = [[MARK_EMPTY] * size for _ in range(size)]
+        for r, c in (queens or []):
+            marks[r][c] = MARK_QUEEN
+        for r, c in (circles or []):
+            marks[r][c] = MARK_CIRCLE
+        return marks
+
+    def test_no_conflicts_empty_board(self):
+        """Empty board has no conflicts."""
+        game = Game(6, max_solutions=10)
+        marks = self.make_marks(6)
+        conflicts, blocked = validate_player_marks(game.kingdoms, marks)
+        assert len(conflicts) == 0
+        assert len(blocked) == 0
+
+    def test_same_row_conflict(self):
+        """Two queens in same row should conflict."""
+        game = Game(6, max_solutions=10)
+        marks = self.make_marks(6, queens=[(0, 0), (0, 5)])
+        conflicts, _ = validate_player_marks(game.kingdoms, marks)
+        assert (0, 0) in conflicts
+        assert (0, 5) in conflicts
+
+    def test_same_column_conflict(self):
+        """Two queens in same column should conflict."""
+        game = Game(6, max_solutions=10)
+        marks = self.make_marks(6, queens=[(0, 0), (5, 0)])
+        conflicts, _ = validate_player_marks(game.kingdoms, marks)
+        assert (0, 0) in conflicts
+        assert (5, 0) in conflicts
+
+    def test_adjacent_conflict(self):
+        """Adjacent queens (including diagonal) should conflict."""
+        game = Game(6, max_solutions=10)
+        marks = self.make_marks(6, queens=[(2, 2), (3, 3)])
+        conflicts, _ = validate_player_marks(game.kingdoms, marks)
+        assert (2, 2) in conflicts
+        assert (3, 3) in conflicts
+
+    def test_same_kingdom_conflict(self):
+        """Two queens in same kingdom should conflict."""
+        game = Game(6, max_solutions=10)
+        # Find two cells in the same kingdom
+        k0_cells = [(r, c) for r in range(6) for c in range(6)
+                    if game.kingdoms[r][c] == 0]
+        if len(k0_cells) >= 2:
+            marks = self.make_marks(6, queens=[k0_cells[0], k0_cells[1]])
+            conflicts, _ = validate_player_marks(game.kingdoms, marks)
+            assert k0_cells[0] in conflicts or k0_cells[1] in conflicts
+
+    def test_blocked_row(self):
+        """Row with all circles should be blocked."""
+        game = Game(6, max_solutions=10)
+        # Mark entire first row with circles
+        circles = [(0, c) for c in range(6)]
+        marks = self.make_marks(6, circles=circles)
+        _, blocked = validate_player_marks(game.kingdoms, marks)
+        for c in range(6):
+            assert (0, c) in blocked
+
+    def test_blocked_column(self):
+        """Column with all circles should be blocked."""
+        game = Game(6, max_solutions=10)
+        # Mark entire first column with circles
+        circles = [(r, 0) for r in range(6)]
+        marks = self.make_marks(6, circles=circles)
+        _, blocked = validate_player_marks(game.kingdoms, marks)
+        for r in range(6):
+            assert (r, 0) in blocked
+
+    def test_blocked_kingdom(self):
+        """Kingdom with all circles should be blocked."""
+        game = Game(6, max_solutions=10)
+        # Find all cells in kingdom 0 and mark them with circles
+        k0_cells = [(r, c) for r in range(6) for c in range(6)
+                    if game.kingdoms[r][c] == 0]
+        marks = self.make_marks(6, circles=k0_cells)
+        _, blocked = validate_player_marks(game.kingdoms, marks)
+        for cell in k0_cells:
+            assert cell in blocked
+
+    def test_row_with_queen_not_blocked(self):
+        """Row with a queen and circles should not be blocked."""
+        game = Game(6, max_solutions=10)
+        # Mark row with one queen and rest circles
+        queens = [(0, 0)]
+        circles = [(0, c) for c in range(1, 6)]
+        marks = self.make_marks(6, queens=queens, circles=circles)
+        _, blocked = validate_player_marks(game.kingdoms, marks)
+        # The circles shouldn't be blocked since there's a queen
+        for c in range(1, 6):
+            assert (0, c) not in blocked
+
+    def test_row_with_empty_cell_not_row_blocked(self):
+        """Verify row blocking only triggers when ALL cells are circles."""
+        # Use a simple 3x3 kingdoms grid where each row is its own kingdom
+        # This isolates row-blocking from kingdom-blocking
+        kingdoms = [
+            [0, 0, 0],
+            [1, 1, 1],
+            [2, 2, 2],
+        ]
+        # Mark row 0 with only 2 circles (leave one empty)
+        marks = [
+            [MARK_CIRCLE, MARK_CIRCLE, MARK_EMPTY],
+            [MARK_EMPTY, MARK_EMPTY, MARK_EMPTY],
+            [MARK_EMPTY, MARK_EMPTY, MARK_EMPTY],
+        ]
+        _, blocked = validate_player_marks(kingdoms, marks)
+        # Row 0 shouldn't be blocked because (0, 2) is empty
+        # Kingdom 0 also isn't blocked because (0, 2) is empty
+        assert (0, 0) not in blocked
+        assert (0, 1) not in blocked
+
+    def test_row_fully_circled_is_blocked(self):
+        """Row with all circles should be blocked."""
+        kingdoms = [
+            [0, 0, 0],
+            [1, 1, 1],
+            [2, 2, 2],
+        ]
+        marks = [
+            [MARK_CIRCLE, MARK_CIRCLE, MARK_CIRCLE],
+            [MARK_EMPTY, MARK_EMPTY, MARK_EMPTY],
+            [MARK_EMPTY, MARK_EMPTY, MARK_EMPTY],
+        ]
+        _, blocked = validate_player_marks(kingdoms, marks)
+        # Row 0 is fully circled, so all cells should be blocked
+        assert (0, 0) in blocked
+        assert (0, 1) in blocked
+        assert (0, 2) in blocked
+
+    def test_check_solution_correct(self):
+        """Correct solution should be recognized."""
+        game = Game(6, max_solutions=10)
+        # Place queens at the actual solution positions
+        marks = self.make_marks(6, queens=game.queens)
+        assert check_player_solution(game.kingdoms, marks)
+
+    def test_check_solution_incomplete(self):
+        """Incomplete solution should not be valid."""
+        game = Game(6, max_solutions=10)
+        # Place only some queens
+        marks = self.make_marks(6, queens=game.queens[:3])
+        assert not check_player_solution(game.kingdoms, marks)
+
+    def test_check_solution_too_many_queens(self):
+        """Too many queens in a kingdom should not be valid."""
+        game = Game(6, max_solutions=10)
+        # Find a cell in kingdom 0 that's not a queen position
+        k0_cells = [(r, c) for r in range(6) for c in range(6)
+                    if game.kingdoms[r][c] == 0 and (r, c) not in game.queens]
+        if k0_cells:
+            extra_queens = [*game.queens, k0_cells[0]]
+            marks = self.make_marks(6, queens=extra_queens)
+            assert not check_player_solution(game.kingdoms, marks)
+
+    def test_check_solution_with_conflicts(self):
+        """Solution with conflicts should not be valid."""
+        game = Game(6, max_solutions=10)
+        # Create a set of queens that conflicts (same row)
+        fake_queens = [(i, i) for i in range(6)]  # Diagonal - will have adjacency conflicts
+        marks = self.make_marks(6, queens=fake_queens)
+        assert not check_player_solution(game.kingdoms, marks)
 
 
 class TestEdgeCases:

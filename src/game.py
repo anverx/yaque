@@ -6,6 +6,11 @@ from datetime import date
 
 from game_encoding import decode_game_b64, encode_game_b64
 
+# Player mark states
+MARK_EMPTY = 0
+MARK_CIRCLE = 1
+MARK_QUEEN = 2
+
 
 class GenerationCancelled(Exception):
     """Raised when puzzle generation is cancelled."""
@@ -146,36 +151,36 @@ class Game:
         # Find all boundary cells (cells adjacent to a different kingdom)
         boundary_cells: list[tuple[int, int, int, int]] = []  # (row, col, from_kingdom, to_kingdom)
 
-        for r in range(no):
-            for c in range(no):
+        for row in range(no):
+            for col in range(no):
                 # Skip queen cells - they must stay in their kingdom
-                if (r, c) in set(self.queens):
+                if (row, col) in set(self.queens):
                     continue
 
-                current_k = self.kingdoms[r][c]
+                current_k = self.kingdoms[row][col]
 
-                for dr, dc in directions:
-                    nr, nc = r + dr, c + dc
-                    if 0 <= nr < no and 0 <= nc < no:
-                        neighbor_k = self.kingdoms[nr][nc]
+                for d_row, d_col in directions:
+                    n_row, n_col = row + d_row, col + d_col
+                    if 0 <= n_row < no and 0 <= n_col < no:
+                        neighbor_k = self.kingdoms[n_row][n_col]
                         if neighbor_k != current_k:
                             # This cell can potentially move to neighbor's kingdom
-                            boundary_cells.append((r, c, current_k, neighbor_k))
+                            boundary_cells.append((row, col, current_k, neighbor_k))
                             break
 
         if not boundary_cells:
             return None
 
         # Pick a random boundary cell and try the swap
-        r, c, from_k, to_k = random.choice(boundary_cells)
+        row, col, from_k, to_k = random.choice(boundary_cells)
 
         # Check if moving this cell would disconnect the from_kingdom
         # (Simple check: the from_kingdom must still be connected after removal)
-        if not self._would_stay_connected(r, c, from_k):
+        if not self._would_stay_connected(row, col, from_k):
             return None
 
         # Make the swap
-        self.kingdoms[r][c] = to_k
+        self.kingdoms[row][col] = to_k
 
         # Count solutions
         new_solutions = self.count_solutions(max_count=current_solutions)
@@ -185,20 +190,20 @@ class Game:
             return new_solutions
         else:
             # Revert the swap
-            self.kingdoms[r][c] = from_k
+            self.kingdoms[row][col] = from_k
             return None
 
-    def _would_stay_connected(self, remove_r: int, remove_c: int, kingdom: int) -> bool:
-        """Check if kingdom would stay connected after removing cell (remove_r, remove_c)."""
+    def _would_stay_connected(self, remove_row: int, remove_col: int, kingdom: int) -> bool:
+        """Check if kingdom would stay connected after removing cell (remove_row, remove_col)."""
         no = self.size
         directions = [(-1, 0), (1, 0), (0, -1), (0, 1)]
 
         # Find all cells in this kingdom except the one being removed
         kingdom_cells = []
-        for r in range(no):
-            for c in range(no):
-                if self.kingdoms[r][c] == kingdom and (r, c) != (remove_r, remove_c):
-                    kingdom_cells.append((r, c))
+        for row in range(no):
+            for col in range(no):
+                if self.kingdoms[row][col] == kingdom and (row, col) != (remove_row, remove_col):
+                    kingdom_cells.append((row, col))
 
         if len(kingdom_cells) <= 1:
             return True  # Single cell or empty is trivially connected
@@ -209,21 +214,21 @@ class Game:
         queue = [start]
 
         while queue:
-            r, c = queue.pop(0)
-            for dr, dc in directions:
-                nr, nc = r + dr, c + dc
-                if (nr, nc) in kingdom_cells and (nr, nc) not in visited:
-                    visited.add((nr, nc))
-                    queue.append((nr, nc))
+            row, col = queue.pop(0)
+            for d_row, d_col in directions:
+                n_row, n_col = row + d_row, col + d_col
+                if (n_row, n_col) in kingdom_cells and (n_row, n_col) not in visited:
+                    visited.add((n_row, n_col))
+                    queue.append((n_row, n_col))
 
         return len(visited) == len(kingdom_cells)
 
     def place_queens(self, no: int) -> list[tuple[int, int]]:
         def is_valid(placed: dict[int, int], row: int, col: int) -> bool:
-            for r, c in placed.items():
-                if c == col:
+            for placed_row, placed_col in placed.items():
+                if placed_col == col:
                     return False
-                if abs(r - row) <= 1 and abs(c - col) <= 1:
+                if abs(placed_row - row) <= 1 and abs(placed_col - col) <= 1:
                     return False
             return True
 
@@ -249,7 +254,7 @@ class Game:
         result = backtrack(0, rows, {})
         if result is None:
             raise ValueError(f"Cannot place {no} queens on {no}x{no} board")
-        return [(r, result[r]) for r in range(no)]
+        return [(row, result[row]) for row in range(no)]
 
     def print_queens(self) -> None:
         queen_set = set(self.queens)
@@ -287,30 +292,32 @@ class Game:
         directions = [(-1, 0), (1, 0), (0, -1), (0, 1)]
 
         # Build attack map: for each cell, which queens attack it
-        attacked_by: dict[tuple[int, int], set[int]] = {(r, c): set() for r in range(no) for c in range(no)}
+        attacked_by: dict[tuple[int, int], set[int]] = {
+            (row, col): set() for row in range(no) for col in range(no)
+        }
 
-        for k, (qr, qc) in enumerate(queens):
+        for k, (queen_row, queen_col) in enumerate(queens):
             # Same row
-            for c in range(no):
-                if c != qc:
-                    attacked_by[(qr, c)].add(k)
+            for col in range(no):
+                if col != queen_col:
+                    attacked_by[(queen_row, col)].add(k)
             # Same column
-            for r in range(no):
-                if r != qr:
-                    attacked_by[(r, qc)].add(k)
+            for row in range(no):
+                if row != queen_row:
+                    attacked_by[(row, queen_col)].add(k)
             # Adjacent cells
-            for dr in [-1, 0, 1]:
-                for dc in [-1, 0, 1]:
-                    if dr == 0 and dc == 0:
+            for d_row in [-1, 0, 1]:
+                for d_col in [-1, 0, 1]:
+                    if d_row == 0 and d_col == 0:
                         continue
-                    nr, nc = qr + dr, qc + dc
-                    if 0 <= nr < no and 0 <= nc < no:
-                        attacked_by[(nr, nc)].add(k)
+                    n_row, n_col = queen_row + d_row, queen_col + d_col
+                    if 0 <= n_row < no and 0 <= n_col < no:
+                        attacked_by[(n_row, n_col)].add(k)
 
         # Cells attacked by OTHER queens (not this kingdom's queen) are safe to add
-        def is_attacked_by_others(r: int, c: int, k: int) -> bool:
+        def is_attacked_by_others(row: int, col: int, k: int) -> bool:
             """Check if cell is attacked by any queen other than kingdom k's queen."""
-            attackers = attacked_by[(r, c)]
+            attackers = attacked_by[(row, col)]
             return bool(attackers - {k})
 
         # Assign growth strategy
@@ -321,30 +328,30 @@ class Game:
         else:
             strategies = [random.choice([-1, 0, 1]) for _ in range(no)]
 
-        def get_free_neighbors(r: int, c: int) -> list[tuple[int, int]]:
+        def get_free_neighbors(row: int, col: int) -> list[tuple[int, int]]:
             neighbors: list[tuple[int, int]] = []
-            for dr, dc in directions:
-                nr, nc = r + dr, c + dc
-                if 0 <= nr < no and 0 <= nc < no and kingdoms[nr][nc] == -1:
-                    neighbors.append((nr, nc))
+            for d_row, d_col in directions:
+                n_row, n_col = row + d_row, col + d_col
+                if 0 <= n_row < no and 0 <= n_col < no and kingdoms[n_row][n_col] == -1:
+                    neighbors.append((n_row, n_col))
             return neighbors
 
-        def count_same_kingdom_neighbors(r: int, c: int, k: int) -> int:
+        def count_same_kingdom_neighbors(row: int, col: int, k: int) -> int:
             count = 0
-            for dr, dc in directions:
-                nr, nc = r + dr, c + dc
-                if 0 <= nr < no and 0 <= nc < no and kingdoms[nr][nc] == k:
+            for d_row, d_col in directions:
+                n_row, n_col = row + d_row, col + d_col
+                if 0 <= n_row < no and 0 <= n_col < no and kingdoms[n_row][n_col] == k:
                     count += 1
             return count
 
-        def perimeter_change(r: int, c: int, k: int) -> int:
-            adjacent = count_same_kingdom_neighbors(r, c, k)
+        def perimeter_change(row: int, col: int, k: int) -> int:
+            adjacent = count_same_kingdom_neighbors(row, col, k)
             return 4 - 2 * adjacent
 
         def pick_neighbor(neighbors: list[tuple[int, int]], k: int) -> tuple[int, int]:
             """Pick a neighbor, ALWAYS preferring cells attacked by other queens."""
             # Cells attacked by other queens cannot be valid queen positions for this kingdom
-            safe_neighbors = [(r, c) for r, c in neighbors if is_attacked_by_others(r, c, k)]
+            safe_neighbors = [(row, col) for row, col in neighbors if is_attacked_by_others(row, col, k)]
 
             # ALWAYS prefer safe cells to minimize solutions (100%)
             if safe_neighbors:
@@ -354,34 +361,34 @@ class Game:
             if strategy == 0 or len(neighbors) == 1:
                 return random.choice(neighbors)
 
-            candidates = [(nr, nc, perimeter_change(nr, nc, k)) for nr, nc in neighbors]
+            candidates = [(n_row, n_col, perimeter_change(n_row, n_col, k)) for n_row, n_col in neighbors]
 
             if strategy == 1:
                 target = max(change for _, _, change in candidates)
             else:
                 target = min(change for _, _, change in candidates)
 
-            best = [(nr, nc) for nr, nc, change in candidates if change == target]
+            best = [(n_row, n_col) for n_row, n_col, change in candidates if change == target]
             return random.choice(best)
 
         # Initialize: each queen starts a kingdom
         frontier = []
-        for k, (r, c) in enumerate(queens):
-            kingdoms[r][c] = k
-            frontier.append([(r, c)])
+        for k, (row, col) in enumerate(queens):
+            kingdoms[row][col] = k
+            frontier.append([(row, col)])
 
         total = no * no
         filled = len(queens)
 
         # First ensure each kingdom has at least 2 cells
-        for k, (r, c) in enumerate(queens):
-            neighbors = get_free_neighbors(r, c)
+        for k, (row, col) in enumerate(queens):
+            neighbors = get_free_neighbors(row, col)
             if neighbors:
-                safe = [(nr, nc) for nr, nc in neighbors if is_attacked_by_others(nr, nc, k)]
+                safe = [(n_row, n_col) for n_row, n_col in neighbors if is_attacked_by_others(n_row, n_col, k)]
                 choice_from = safe if safe else neighbors
-                nr, nc = random.choice(choice_from)
-                kingdoms[nr][nc] = k
-                frontier[k].append((nr, nc))
+                n_row, n_col = random.choice(choice_from)
+                kingdoms[n_row][n_col] = k
+                frontier[k].append((n_row, n_col))
                 filled += 1
 
         # Grow kingdoms until board is full
@@ -392,14 +399,14 @@ class Game:
 
             k = random.choice(active)
             cell_idx = random.randrange(len(frontier[k]))
-            r, c = frontier[k][cell_idx]
+            row, col = frontier[k][cell_idx]
 
-            neighbors = get_free_neighbors(r, c)
+            neighbors = get_free_neighbors(row, col)
 
             if neighbors:
-                nr, nc = pick_neighbor(neighbors, k)
-                kingdoms[nr][nc] = k
-                frontier[k].append((nr, nc))
+                n_row, n_col = pick_neighbor(neighbors, k)
+                kingdoms[n_row][n_col] = k
+                frontier[k].append((n_row, n_col))
                 filled += 1
             else:
                 frontier[k].pop(cell_idx)
@@ -419,12 +426,12 @@ class Game:
                 kingdom_cells[k].append((row, col))
 
         def is_valid_placement(placed: list[tuple[int, int]], row: int, col: int) -> bool:
-            for r, c in placed:
+            for placed_row, placed_col in placed:
                 # Same row or column
-                if r == row or c == col:
+                if placed_row == row or placed_col == col:
                     return False
                 # Adjacent (including diagonal)
-                if abs(r - row) <= 1 and abs(c - col) <= 1:
+                if abs(placed_row - row) <= 1 and abs(placed_col - col) <= 1:
                     return False
             return True
 
@@ -462,10 +469,10 @@ class Game:
                 kingdom_cells[k].append((row, col))
 
         def is_valid_placement(placed: list[tuple[int, int]], row: int, col: int) -> bool:
-            for r, c in placed:
-                if r == row or c == col:
+            for placed_row, placed_col in placed:
+                if placed_row == row or placed_col == col:
                     return False
-                if abs(r - row) <= 1 and abs(c - col) <= 1:
+                if abs(placed_row - row) <= 1 and abs(placed_col - col) <= 1:
                     return False
             return True
 
@@ -507,10 +514,10 @@ class Game:
                 kingdom_cells[k].append((row, col))
 
         def is_valid_placement(placed: list[tuple[int, int]], row: int, col: int) -> bool:
-            for r, c in placed:
-                if r == row or c == col:
+            for placed_row, placed_col in placed:
+                if placed_row == row or placed_col == col:
                     return False
-                if abs(r - row) <= 1 and abs(c - col) <= 1:
+                if abs(placed_row - row) <= 1 and abs(placed_col - col) <= 1:
                     return False
             return True
 
@@ -554,6 +561,105 @@ class Game:
         game.num_solutions = None
         game.attempts = None
         return game
+
+
+# -----------------------------------------------------------------------------
+# Player mark validation
+# -----------------------------------------------------------------------------
+
+def validate_player_marks(
+    kingdoms: list[list[int]],
+    cell_marks: list[list[int]]
+) -> tuple[set[tuple[int, int]], set[tuple[int, int]]]:
+    """Validate player's marks and find problems.
+
+    Args:
+        kingdoms: The kingdom grid (from Game.kingdoms)
+        cell_marks: Player's marks grid (MARK_EMPTY/MARK_CIRCLE/MARK_QUEEN)
+
+    Returns:
+        (conflicts, blocked) where:
+        - conflicts: Queen positions that conflict (same row/col/kingdom or adjacent)
+        - blocked: Circle positions in fully-blocked rows/columns/kingdoms
+    """
+    n = len(kingdoms)
+    conflicts: set[tuple[int, int]] = set()
+    blocked: set[tuple[int, int]] = set()
+
+    # Collect marked queens and build kingdom map
+    marked_queens: list[tuple[int, int]] = []
+    kingdom_cells: dict[int, list[tuple[int, int]]] = {}
+    for row in range(n):
+        for col in range(n):
+            if cell_marks[row][col] == MARK_QUEEN:
+                marked_queens.append((row, col))
+            k = kingdoms[row][col]
+            if k not in kingdom_cells:
+                kingdom_cells[k] = []
+            kingdom_cells[k].append((row, col))
+
+    # Check queen conflicts (same row, column, kingdom, or adjacent)
+    for i, (row1, col1) in enumerate(marked_queens):
+        for row2, col2 in marked_queens[i + 1:]:
+            same_row = row1 == row2
+            same_col = col1 == col2
+            adjacent = abs(row1 - row2) <= 1 and abs(col1 - col2) <= 1
+            same_kingdom = kingdoms[row1][col1] == kingdoms[row2][col2]
+            if same_row or same_col or adjacent or same_kingdom:
+                conflicts.add((row1, col1))
+                conflicts.add((row2, col2))
+
+    # Check blocked kingdoms (all cells are circles)
+    for cells in kingdom_cells.values():
+        has_queen = any(cell_marks[row][col] == MARK_QUEEN for row, col in cells)
+        all_circles = all(cell_marks[row][col] == MARK_CIRCLE for row, col in cells)
+        if not has_queen and all_circles:
+            blocked.update(cells)
+
+    # Check blocked rows
+    for row in range(n):
+        has_queen = any(cell_marks[row][col] == MARK_QUEEN for col in range(n))
+        all_circles = all(cell_marks[row][col] == MARK_CIRCLE for col in range(n))
+        if not has_queen and all_circles:
+            blocked.update((row, col) for col in range(n))
+
+    # Check blocked columns
+    for col in range(n):
+        has_queen = any(cell_marks[row][col] == MARK_QUEEN for row in range(n))
+        all_circles = all(cell_marks[row][col] == MARK_CIRCLE for row in range(n))
+        if not has_queen and all_circles:
+            blocked.update((row, col) for row in range(n))
+
+    return conflicts, blocked
+
+
+def check_player_solution(
+    kingdoms: list[list[int]],
+    cell_marks: list[list[int]]
+) -> bool:
+    """Check if player's marks represent a valid solution.
+
+    A valid solution has exactly one queen per kingdom with no conflicts.
+    """
+    n = len(kingdoms)
+
+    # Count queens and check kingdom assignment
+    kingdom_queens: dict[int, tuple[int, int]] = {}
+    for row in range(n):
+        for col in range(n):
+            if cell_marks[row][col] == MARK_QUEEN:
+                k = kingdoms[row][col]
+                if k in kingdom_queens:
+                    return False  # More than one queen in kingdom
+                kingdom_queens[k] = (row, col)
+
+    # Must have exactly one queen per kingdom
+    if len(kingdom_queens) != n:
+        return False
+
+    # Check no conflicts
+    conflicts, _ = validate_player_marks(kingdoms, cell_marks)
+    return len(conflicts) == 0
 
 
 SECRET = "yaque_daily_puzzle_2024"

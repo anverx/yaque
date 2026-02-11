@@ -10,6 +10,7 @@ from kivy.core.image import Image as CoreImage
 from kivy.graphics import Color, Line, PopMatrix, PushMatrix, Rectangle, Rotate, Scale, Translate
 from kivy.uix.widget import Widget
 
+from game import MARK_CIRCLE, MARK_EMPTY, MARK_QUEEN, check_player_solution, validate_player_marks
 from ui_constants import (
     BOARD_CELL_BORDER,
     BOARD_CIRCLE_BLOCKED,
@@ -29,12 +30,6 @@ from ui_constants import (
 # Load queen texture
 ICONS_DIR = os.path.join(os.path.dirname(__file__), '..', 'assets', 'icons')
 QUEEN_TEXTURE = CoreImage(os.path.join(ICONS_DIR, 'queen.png')).texture
-QUEEN_RED_TEXTURE = None  # Will be created on demand for conflicts
-
-# Cell mark states
-MARK_EMPTY = 0
-MARK_CIRCLE = 1
-MARK_QUEEN = 2
 
 
 class BoardWidget(Widget):
@@ -238,89 +233,13 @@ class BoardWidget(Widget):
                             Rectangle(pos=(qx, qy), size=(size, size), texture=QUEEN_TEXTURE)
                         Color(*COLOR_BLACK)
 
-    def _validate_board(self) -> tuple[set[tuple[int, int]], set[tuple[int, int]]]:
-        """Find all problem cells on the board.
-
-        Returns:
-            (conflicts, blocked) where:
-            - conflicts: Queens that conflict (same row/col/kingdom or adjacent)
-            - blocked: Circles in fully-blocked rows, columns, or kingdoms
-        """
-        n = self.size_cells
-        conflicts: set[tuple[int, int]] = set()
-        blocked: set[tuple[int, int]] = set()
-
-        # Collect marked queens and build kingdom map
-        marked_queens: list[tuple[int, int]] = []
-        kingdom_cells: dict[int, list[tuple[int, int]]] = {}
-        for row in range(n):
-            for col in range(n):
-                if self.cell_marks[row][col] == MARK_QUEEN:
-                    marked_queens.append((row, col))
-                k = self.kingdoms[row][col]
-                if k not in kingdom_cells:
-                    kingdom_cells[k] = []
-                kingdom_cells[k].append((row, col))
-
-        # Check queen conflicts (same row, column, kingdom, or adjacent)
-        for i, (r1, c1) in enumerate(marked_queens):
-            for r2, c2 in marked_queens[i + 1:]:
-                if r1 == r2 or c1 == c2 or (abs(r1 - r2) <= 1 and abs(c1 - c2) <= 1) or self.kingdoms[r1][c1] == self.kingdoms[r2][c2]:
-                    conflicts.add((r1, c1))
-                    conflicts.add((r2, c2))
-
-        # Check blocked kingdoms (all cells are circles)
-        for cells in kingdom_cells.values():
-            has_queen = any(self.cell_marks[r][c] == MARK_QUEEN for r, c in cells)
-            all_circles = all(self.cell_marks[r][c] == MARK_CIRCLE for r, c in cells)
-            if not has_queen and all_circles:
-                blocked.update(cells)
-
-        # Check blocked rows
-        for row in range(n):
-            has_queen = any(self.cell_marks[row][c] == MARK_QUEEN for c in range(n))
-            all_circles = all(self.cell_marks[row][c] == MARK_CIRCLE for c in range(n))
-            if not has_queen and all_circles:
-                blocked.update((row, c) for c in range(n))
-
-        # Check blocked columns
-        for col in range(n):
-            has_queen = any(self.cell_marks[r][col] == MARK_QUEEN for r in range(n))
-            all_circles = all(self.cell_marks[r][col] == MARK_CIRCLE for r in range(n))
-            if not has_queen and all_circles:
-                blocked.update((r, col) for r in range(n))
-
-        return conflicts, blocked
-
-    def is_solved(self) -> bool:
-        """Check if the puzzle is solved correctly."""
-        n = self.size_cells
-
-        # Count queens and check kingdom assignment
-        kingdom_queens: dict[int, tuple[int, int]] = {}
-        for row in range(n):
-            for col in range(n):
-                if self.cell_marks[row][col] == MARK_QUEEN:
-                    k = self.kingdoms[row][col]
-                    if k in kingdom_queens:
-                        return False  # More than one queen in kingdom
-                    kingdom_queens[k] = (row, col)
-
-        # Must have exactly one queen per kingdom
-        if len(kingdom_queens) != n:
-            return False
-
-        # Check no conflicts
-        conflicts, _ = self._validate_board()
-        return len(conflicts) == 0
-
     def _validate_after_delay(self, dt: float) -> None:
         """Called after delay to validate queen placements."""
-        self.conflict_cells, self.blocked_cells = self._validate_board()
+        self.conflict_cells, self.blocked_cells = validate_player_marks(self.kingdoms, self.cell_marks)
         self.draw_board()
 
         # Check if solved
-        if not self.solved and self.is_solved():
+        if not self.solved and check_player_solution(self.kingdoms, self.cell_marks):
             self.solved = True
             self.start_celebration()
             if self.on_solved:
