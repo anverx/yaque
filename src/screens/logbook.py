@@ -20,11 +20,13 @@ from widgets import (
     RoundedButton, FixedGrayRoundedButton,
     TitleLgLabel, CaptionLabel, SubtitleLabel,
     TableHeaderLabel, TableCellLabel,
+    SelectableButton, SelectableButtonGroup,
 )
 from ui_constants import (
     TEXT_LIGHT, ROW_HEIGHT, BUTTON_HEIGHT_SM,
     PADDING_ROW, SPACING_XS, SPACING_MD, RADIUS_SM,
     DATE_SEPARATOR_HEIGHT, TABLE_HEADER_HEIGHT,
+    SPACING_SM,
 )
 
 # Path to icons
@@ -56,6 +58,7 @@ class LogbookRow(ButtonBehavior, BoxLayout):
         daily_date = play_data['daily_date']
         completed_at = play_data['completed_at']
         size = play_data['size']
+        fun_rating = play_data.get('fun_rating')
 
         # Format time only (date shown in separator)
         try:
@@ -73,6 +76,9 @@ class LogbookRow(ButtonBehavior, BoxLayout):
         else:
             duration_str = '-'
 
+        # Format rating
+        rating_str = '★' * fun_rating if fun_rating else '-'
+
         # Determine crown color
         crown_color = QUEEN_GRAY  # Gray/faded for random or incomplete
         if completed and daily_date:
@@ -85,20 +91,33 @@ class LogbookRow(ButtonBehavior, BoxLayout):
             else:
                 crown_color = QUEEN_SILVER  # Old data without completed_at
 
-        # Time column
-        self.add_widget(TableCellLabel(time_str, size_hint_x=0.25, halign='left', valign='middle'))
+        # Type icon (calendar for daily, dice for random)
+        type_icon = 'calendar' if daily_date else 'dice'
+        type_img = Image(
+            source=os.path.join(ICONS_DIR, f'{type_icon}.png'),
+            color=(0.5, 0.5, 0.5, 1),
+            size_hint_x=0.1,
+            fit_mode='contain'
+        )
+        self.add_widget(type_img)
 
         # Size column
-        self.add_widget(TableCellLabel(f'{size}x{size}', color=TEXT_LIGHT, size_hint_x=0.25, halign='center'))
+        self.add_widget(TableCellLabel(f'{size}x{size}', color=TEXT_LIGHT, size_hint_x=0.12, halign='center'))
 
         # Duration column
-        self.add_widget(TableCellLabel(duration_str, size_hint_x=0.25, halign='center'))
+        self.add_widget(TableCellLabel(duration_str, size_hint_x=0.18, halign='center'))
+
+        # Rating column
+        self.add_widget(TableCellLabel(rating_str, color=(1, 0.8, 0, 1), size_hint_x=0.2, halign='center'))
+
+        # Time column
+        self.add_widget(TableCellLabel(time_str, size_hint_x=0.2, halign='center', valign='middle'))
 
         # Crown icon
         crown = Image(
             source=os.path.join(ICONS_DIR, 'queen-small.png'),
             color=crown_color,
-            size_hint_x=0.25,
+            size_hint_x=0.2,
             fit_mode='contain'
         )
         self.add_widget(crown)
@@ -136,10 +155,37 @@ class LogbookScreen(BackgroundedScreen):
     def build_content(self) -> None:
         self.current_offset = 0
         self.has_more = False
+        self.current_sort = 'time'
         layout = self.content_layout
 
         # Title
         layout.add_widget(TitleLgLabel('Logbook'))
+
+        # Sort selector row
+        sort_row = BoxLayout(
+            size_hint_y=None,
+            height=dp(BUTTON_HEIGHT_SM),
+            spacing=dp(SPACING_SM),
+            padding=[dp(PADDING_ROW[0]), 0]
+        )
+
+        sort_label = CaptionLabel('Sort:', size_hint_x=None, width=dp(40))
+        sort_row.add_widget(sort_label)
+
+        self.sort_group = SelectableButtonGroup(on_select=self._on_sort_changed)
+
+        for sort_key, label in [('time', 'When'), ('size', 'Size'), ('duration', 'Time'), ('rating', 'Rating')]:
+            btn = SelectableButton(
+                text=label,
+                font_size='12sp',
+                selected=(sort_key == 'time')
+            )
+            self.sort_group.add(sort_key, btn)
+            sort_row.add_widget(btn)
+
+        # Spacer to push buttons left
+        sort_row.add_widget(Label(size_hint_x=1))
+        layout.add_widget(sort_row)
 
         # Header row
         header = BoxLayout(
@@ -148,10 +194,12 @@ class LogbookScreen(BackgroundedScreen):
             padding=[dp(PADDING_ROW[0]), 0],
             spacing=dp(SPACING_MD)
         )
-        header.add_widget(TableHeaderLabel('Time', size_hint_x=0.25, halign='left'))
-        header.add_widget(TableHeaderLabel('Size', size_hint_x=0.25, halign='center'))
-        header.add_widget(TableHeaderLabel('Duration', size_hint_x=0.25, halign='center'))
-        header.add_widget(Label(text='', size_hint_x=0.25))
+        header.add_widget(Label(text='', size_hint_x=0.1))  # Type icon column
+        header.add_widget(TableHeaderLabel('Size', size_hint_x=0.12, halign='center'))
+        header.add_widget(TableHeaderLabel('Time', size_hint_x=0.18, halign='center'))
+        header.add_widget(TableHeaderLabel('Rating', size_hint_x=0.2, halign='center'))
+        header.add_widget(TableHeaderLabel('When', size_hint_x=0.2, halign='center'))
+        header.add_widget(Label(text='', size_hint_x=0.2))  # Crown column
         layout.add_widget(header)
 
         # Scrollable list
@@ -219,8 +267,8 @@ class LogbookScreen(BackgroundedScreen):
             self.list_layout.clear_widgets()
             self.current_offset = 0
 
-        plays = database.get_all_plays(limit=PAGE_SIZE, offset=self.current_offset)
-        total = database.get_plays_count()
+        plays = database.get_all_plays(limit=PAGE_SIZE, offset=self.current_offset, sort_by=self.current_sort)
+        total = database.get_plays_count(sort_by=self.current_sort)
 
         if not plays and not append:
             self.list_layout.add_widget(SubtitleLabel(
@@ -270,6 +318,11 @@ class LogbookScreen(BackgroundedScreen):
             )
             load_more_btn.bind(on_press=self._load_more)
             self.list_layout.add_widget(load_more_btn)
+
+    def _on_sort_changed(self, sort_key: str) -> None:
+        """Handle sort option change."""
+        self.current_sort = sort_key
+        self._load_plays(append=False)
 
     def on_enter(self) -> None:
         """Refresh list when screen is shown."""

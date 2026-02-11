@@ -201,6 +201,12 @@ class GameScreen(Screen):
         self.share_btn.bind(on_press=self.share_game)
         control_bar.add_widget(self.share_btn)
 
+        self.rate_btn = IconButton('star', label='Rate')
+        self.rate_btn.bind(on_press=self.show_rating)
+        self.rate_btn.opacity = 0
+        self.rate_btn.disabled = True
+        control_bar.add_widget(self.rate_btn)
+
         # Wrap in anchor layout to center
         control_anchor = AnchorLayout(size_hint_y=None, height=dp(CONTROL_BAR_HEIGHT), anchor_x='center')
         control_anchor.add_widget(control_bar)
@@ -288,11 +294,22 @@ class GameScreen(Screen):
         # Save puzzle to database
         code = game.encode()
         daily_date_str = daily_date.isoformat() if daily_date else None
+
+        # Calculate difficulty score if not already set
+        difficulty_score = getattr(game, 'difficulty_score', None)
+        if difficulty_score is None and hasattr(game, 'calculate_difficulty'):
+            difficulty_score = game.calculate_difficulty()
+
         self.puzzle_id = database.save_puzzle(
             code=code,
             size=game.size,
             daily_date=daily_date_str,
-            seed=getattr(game, 'seed', None)
+            seed=getattr(game, 'seed', None),
+            generation_time_ms=getattr(game, 'generation_time_ms', None),
+            num_solutions=getattr(game, 'num_solutions', None),
+            kingdom_strategy=strategy,
+            generation_attempts=getattr(game, 'attempts', None),
+            difficulty_score=difficulty_score
         )
 
         # Check for existing play to resume (only for daily puzzles)
@@ -472,6 +489,10 @@ class GameScreen(Screen):
         self.play_btn.disabled = True
         self.qr_image.opacity = 0
 
+        # Show rate button
+        self.rate_btn.opacity = 1
+        self.rate_btn.disabled = False
+
         # Find all solutions and pass to board
         self.all_solutions = self.game.find_all_solutions(max_count=100)
         self.current_solution_index = 0
@@ -588,10 +609,53 @@ class GameScreen(Screen):
         self.solution_indicator.opacity = 0
         self.all_solutions = []
         self.showing_solutions = False
+
+        # Hide rate button
+        self.rate_btn.opacity = 0
+        self.rate_btn.disabled = True
+
         self.board.draw_board()
 
     def on_cell_click(self, row: int, col: int) -> None:
         pass  # Can add debug logging here if needed
+
+    def show_rating(self, instance: Any) -> None:
+        """Show a simple rating popup."""
+        from kivy.uix.modalview import ModalView
+        from kivy.uix.boxlayout import BoxLayout
+        from kivy.uix.button import Button
+
+        popup = ModalView(size_hint=(0.7, None), height=dp(120), auto_dismiss=True)
+        content = BoxLayout(orientation='vertical', padding=dp(15), spacing=dp(10))
+
+        # Title
+        title = CaptionLabel('Rate this puzzle', size_hint_y=None, height=dp(30))
+        content.add_widget(title)
+
+        # Star buttons row
+        stars_row = BoxLayout(size_hint_y=None, height=dp(45), spacing=dp(5))
+
+        def make_rate_callback(rating: int):
+            def callback(btn: Any) -> None:
+                if self.play_id:
+                    database.rate_play(self.play_id, rating)
+                popup.dismiss()
+            return callback
+
+        for i in range(1, 6):
+            star_btn = Button(
+                text='★' * i,
+                font_size=sp(14),
+                background_color=(0.3, 0.3, 0.3, 1),
+                color=(1, 0.8, 0, 1) if i <= 3 else (1, 0.6, 0, 1),
+                size_hint_x=1
+            )
+            star_btn.bind(on_press=make_rate_callback(i))
+            stars_row.add_widget(star_btn)
+
+        content.add_widget(stars_row)
+        popup.add_widget(content)
+        popup.open()
 
     # Swipe from left edge to go back (Android)
     def on_touch_down(self, touch: Any) -> bool:

@@ -6,10 +6,16 @@ from datetime import date
 
 from game_encoding import encode_game, encode_game_b64, decode_game_b64
 
+class GenerationCancelled(Exception):
+    """Raised when puzzle generation is cancelled."""
+    pass
+
+
 class Game:
 
     def __init__(self, size: int, max_solutions: int = 1, max_attempts: int = 50000,
-                 seed: int | None = None, kingdom_strategy: str = 'mixed') -> None:
+                 seed: int | None = None, kingdom_strategy: str = 'mixed',
+                 cancel_check: callable = None) -> None:
         """Create a new puzzle.
 
         Args:
@@ -21,10 +27,12 @@ class Game:
                 - 'classic': Original random growth
                 - 'mixed': Each kingdom randomly picks jagged/compact/random
                 - 'jagged': All kingdoms maximize perimeter (snaky shapes)
+            cancel_check: Optional callable that returns True if generation should stop
         """
         self.size = size
         self.max_solutions = max_solutions
         self.kingdom_strategy = kingdom_strategy
+        self._cancel_check = cancel_check
 
         # Set up seed for reproducibility
         if seed is None:
@@ -38,10 +46,18 @@ class Game:
         else:
             self._generate_rejection_sampling(size, kingdom_strategy, max_solutions, max_attempts)
 
+    def _is_cancelled(self) -> bool:
+        """Check if generation has been cancelled."""
+        return self._cancel_check is not None and self._cancel_check()
+
     def _generate_rejection_sampling(self, size: int, kingdom_strategy: str,
                                       max_solutions: int, max_attempts: int) -> None:
         """Traditional approach: generate until we find one with few solutions."""
         for attempt in range(max_attempts):
+            # Check for cancellation every 100 attempts
+            if attempt % 100 == 0 and self._is_cancelled():
+                raise GenerationCancelled()
+
             self.queens = self.place_queens(size)
             self.kingdoms = self.create_kingdoms(self.queens, kingdom_strategy)
             solutions = self.count_solutions(max_count=max_solutions + 1)
@@ -65,6 +81,10 @@ class Game:
         comparison_limit = 200
 
         for attempt in range(batch_size):
+            # Check for cancellation every 100 attempts
+            if attempt % 100 == 0 and self._is_cancelled():
+                raise GenerationCancelled()
+
             self.queens = self.place_queens(size)
             self.kingdoms = self.create_kingdoms(self.queens, kingdom_strategy)
 
@@ -93,7 +113,11 @@ class Game:
         no_improve_limit = 500 if size <= 8 else 1000
         no_improve = 0
 
-        for _ in range(max_refinement):
+        for refinement_step in range(max_refinement):
+            # Check for cancellation every 100 steps
+            if refinement_step % 100 == 0 and self._is_cancelled():
+                raise GenerationCancelled()
+
             if current_solutions <= max_solutions:
                 break
             if no_improve >= no_improve_limit:
@@ -466,6 +490,53 @@ class Game:
         backtrack(0, [])
         return solutions
 
+    def calculate_difficulty(self) -> int:
+        """Calculate difficulty score based on solver backtrack count.
+
+        Higher score = more difficult puzzle.
+        Returns the number of backtrack steps needed to find the first solution.
+        """
+        no = self.size
+        num_kingdoms = no
+
+        # Build list of cells for each kingdom
+        kingdom_cells: list[list[tuple[int, int]]] = [[] for _ in range(num_kingdoms)]
+        for row in range(no):
+            for col in range(no):
+                k = self.kingdoms[row][col]
+                kingdom_cells[k].append((row, col))
+
+        def is_valid_placement(placed: list[tuple[int, int]], row: int, col: int) -> bool:
+            for r, c in placed:
+                if r == row or c == col:
+                    return False
+                if abs(r - row) <= 1 and abs(c - col) <= 1:
+                    return False
+            return True
+
+        backtrack_count = [0]
+        found = [False]
+
+        def backtrack(kingdom_idx: int, placed: list[tuple[int, int]]) -> None:
+            if found[0]:
+                return
+
+            if kingdom_idx == num_kingdoms:
+                found[0] = True
+                return
+
+            for row, col in kingdom_cells[kingdom_idx]:
+                if is_valid_placement(placed, row, col):
+                    placed.append((row, col))
+                    backtrack(kingdom_idx + 1, placed)
+                    placed.pop()
+                    if found[0]:
+                        return
+                    backtrack_count[0] += 1
+
+        backtrack(0, [])
+        return backtrack_count[0]
+
     def encode(self) -> str:
         """Encode this game to a shareable base64 string."""
         return encode_game_b64(self.kingdoms, self.queens)
@@ -499,7 +570,7 @@ def get_daily_seed(day: date, size: int, secret: str = SECRET, offset: int = 0) 
 
 def get_daily_game(day: date, size: int, secret: str = SECRET,
                    max_solutions: int = 1, max_seed_attempts: int = 100,
-                   kingdom_strategy: str = 'jagged') -> Game:
+                   kingdom_strategy: str = 'jagged', cancel_check: callable = None) -> Game:
     """Generate a daily puzzle for a given date and size, trying multiple seeds if needed.
 
     First tries to find a puzzle with max_solutions, then falls back to higher limits.
@@ -515,10 +586,13 @@ def get_daily_game(day: date, size: int, secret: str = SECRET,
         for offset in range(max_seed_attempts):
             seed = get_daily_seed(day, size, secret, offset)
             try:
-                game = Game(size, max_solutions=tier_max, seed=seed, kingdom_strategy=kingdom_strategy)
+                game = Game(size, max_solutions=tier_max, seed=seed,
+                           kingdom_strategy=kingdom_strategy, cancel_check=cancel_check)
                 game.seed_offset = offset  # Store which offset worked
                 return game
-            except ValueError:
+            except (ValueError, GenerationCancelled):
+                if cancel_check and cancel_check():
+                    raise GenerationCancelled()
                 continue
 
     raise ValueError(f"Could not generate puzzle for {day} size {size} after all attempts")

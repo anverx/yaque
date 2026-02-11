@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import threading
+import time
 import os
 from datetime import date
 from typing import Any
@@ -28,7 +29,7 @@ LabelBase.register(
     fn_regular=os.path.join(FONTS_DIR, 'DMSans-Black.ttf')
 )
 
-from game import Game, get_daily_game
+from game import Game, get_daily_game, GenerationCancelled
 from screens import (
     SplashScreen,
     MainMenuScreen,
@@ -163,6 +164,8 @@ class YaqueApp(App):
     def _show_loading_popup(self, status_text: str) -> None:
         """Show the loading popup with spinning queen."""
         self._generation_cancelled = False
+        # Increment generation ID to invalidate any previous generation
+        self._generation_id = getattr(self, '_generation_id', 0) + 1
         self.loading_popup = LoadingPopup(on_cancel=self.cancel_generation)
         self.loading_popup.set_status(status_text)
         self.loading_popup.open()
@@ -188,13 +191,23 @@ class YaqueApp(App):
 
         # Generate new puzzle
         self._show_loading_popup(f'Generating {size}x{size} puzzle...')
+        gen_id = self._generation_id  # Capture current generation ID
+
+        def cancel_check() -> bool:
+            return self._generation_cancelled or gen_id != self._generation_id
 
         def generate() -> None:
-            game = get_daily_game(puzzle_date, size, max_solutions=1)
-            if not self._generation_cancelled:
-                Clock.schedule_once(lambda dt: self._on_game_ready(
-                    game, daily_date=puzzle_date, from_calendar=from_calendar
-                ))
+            try:
+                start_time = time.time()
+                game = get_daily_game(puzzle_date, size, max_solutions=1, cancel_check=cancel_check)
+                game.generation_time_ms = int((time.time() - start_time) * 1000)
+                # Check both cancelled flag and generation ID
+                if not cancel_check():
+                    Clock.schedule_once(lambda dt: self._on_game_ready(
+                        game, daily_date=puzzle_date, from_calendar=from_calendar
+                    ))
+            except GenerationCancelled:
+                pass  # Silently ignore cancelled generation
 
         threading.Thread(target=generate, daemon=True).start()
 
@@ -212,18 +225,26 @@ class YaqueApp(App):
         time_hint = expected_times.get(size, '')
         time_str = f' (avg. {time_hint})' if time_hint else ''
         self._show_loading_popup(f'Finding the perfect {size}x{size} puzzle...{time_str}')
+        gen_id = self._generation_id  # Capture current generation ID
 
         # Store the user's requested max_solutions for retry logic
         self._requested_max_solutions = max_solutions
 
+        def cancel_check() -> bool:
+            return self._generation_cancelled or gen_id != self._generation_id
+
         def generate() -> None:
             try:
-                game = Game(size, max_solutions=max_solutions, kingdom_strategy=strategy)
-                if not self._generation_cancelled:
+                start_time = time.time()
+                game = Game(size, max_solutions=max_solutions, kingdom_strategy=strategy, cancel_check=cancel_check)
+                game.generation_time_ms = int((time.time() - start_time) * 1000)
+                if not cancel_check():
                     Clock.schedule_once(lambda dt: self._on_game_ready(game, strategy=strategy))
+            except GenerationCancelled:
+                pass  # Silently ignore cancelled generation
             except ValueError:
                 # Failed to generate - try again with more solutions allowed
-                if not self._generation_cancelled:
+                if not cancel_check():
                     Clock.schedule_once(lambda dt: self._on_generation_failed(size, strategy, max_solutions))
 
         threading.Thread(target=generate, daemon=True).start()
@@ -256,14 +277,22 @@ class YaqueApp(App):
         time_hint = expected_times.get(size, '')
         time_str = f' (avg. {time_hint})' if time_hint else ''
         self._show_loading_popup(f'Retrying {size}x{size} puzzle...{time_str}')
+        gen_id = self._generation_id  # Capture current generation ID
+
+        def cancel_check() -> bool:
+            return self._generation_cancelled or gen_id != self._generation_id
 
         def retry() -> None:
             try:
-                game = Game(size, max_solutions=next_max, kingdom_strategy=strategy)
-                if not self._generation_cancelled:
+                start_time = time.time()
+                game = Game(size, max_solutions=next_max, kingdom_strategy=strategy, cancel_check=cancel_check)
+                game.generation_time_ms = int((time.time() - start_time) * 1000)
+                if not cancel_check():
                     Clock.schedule_once(lambda dt: self._on_game_ready(game, strategy=strategy))
+            except GenerationCancelled:
+                pass  # Silently ignore cancelled generation
             except ValueError:
-                if not self._generation_cancelled:
+                if not cancel_check():
                     Clock.schedule_once(lambda dt: self._on_generation_failed(size, strategy, next_max))
 
         threading.Thread(target=retry, daemon=True).start()
@@ -296,6 +325,8 @@ class YaqueApp(App):
         """Show the about popup."""
         from kivy.uix.boxlayout import BoxLayout
         from kivy.uix.modalview import ModalView
+        from kivy.uix.behaviors import ButtonBehavior
+        from kivy.uix.label import Label
         from kivy.metrics import dp
 
         content = PopupContent(padding=[dp(PADDING_POPUP_LARGE[0]), dp(PADDING_POPUP_LARGE[1])])
@@ -322,8 +353,34 @@ class YaqueApp(App):
         # License
         content.add_widget(CaptionLabel('License: CC BY-NC-SA 4.0', size_hint_y=None, height=dp(CAPTION_HEIGHT_XS)))
 
-        # Version
-        content.add_widget(CaptionLabel(f'Version {__version__}', size_hint_y=None, height=dp(CAPTION_HEIGHT_XS)))
+        # Tappable version label for hidden dev menu
+        class TappableLabel(ButtonBehavior, Label):
+            pass
+
+        tap_state = {'count': 0, 'last_tap': 0.0}
+
+        def on_version_tap(instance: Any) -> None:
+            current_time = time.time()
+            # Reset if more than 2 seconds since last tap
+            if current_time - tap_state['last_tap'] > 2.0:
+                tap_state['count'] = 0
+            tap_state['count'] += 1
+            tap_state['last_tap'] = current_time
+            if tap_state['count'] >= 5:
+                tap_state['count'] = 0
+                popup.dismiss()
+                self._show_dev_menu()
+
+        version_label = TappableLabel(
+            text=f'Version {__version__}',
+            font_name='DMSans',
+            font_size='12sp',
+            color=(0.5, 0.5, 0.5, 1),
+            size_hint_y=None,
+            height=dp(CAPTION_HEIGHT_XS)
+        )
+        version_label.bind(on_press=on_version_tap)
+        content.add_widget(version_label)
 
         # GitHub link
         github_btn = LinkButton('github.com/anverx/yaque')
@@ -352,6 +409,217 @@ class YaqueApp(App):
         """Open URL in browser."""
         import webbrowser
         webbrowser.open(url)
+
+    def _show_dev_menu(self) -> None:
+        """Show the hidden developer menu."""
+        import json
+        import shutil
+        from kivy.uix.modalview import ModalView
+        from kivy.uix.label import Label
+        from kivy.metrics import dp
+
+        # Dev menu styling constants
+        DEV_BUTTON_WIDTH = 150
+        DEV_BUTTON_HEIGHT = 32
+
+        content = PopupContent(padding=[dp(PADDING_POPUP_LARGE[0]), dp(PADDING_POPUP_LARGE[1])])
+        title = Label(
+            text='Developer Menu',
+            font_name='DMSans',
+            font_size='14sp',
+            color=(0.3, 0.3, 0.3, 1),
+            size_hint_y=None,
+            height=dp(24)
+        )
+        content.add_widget(title)
+
+        status_label = Label(
+            text='',
+            font_name='DMSans',
+            font_size='10sp',
+            color=(0.5, 0.5, 0.5, 1),
+            size_hint_y=None,
+            height=dp(60),
+            halign='center',
+            valign='top'
+        )
+        status_label.bind(width=lambda *x: setattr(status_label, 'text_size', (status_label.width, None)))
+        content.add_widget(status_label)
+
+        popup = None
+
+        def export_json(btn: Any) -> None:
+            from plyer import filechooser
+
+            # Prepare data first
+            try:
+                data = database.export_to_json()
+                json_content = json.dumps(data, indent=2)
+            except Exception as e:
+                status_label.text = f'Error: {e}'
+                return
+
+            def handle_selection(selection: list) -> None:
+                if not selection:
+                    status_label.text = 'Export cancelled'
+                    return
+                try:
+                    export_path = selection[0]
+                    with open(export_path, 'w') as f:
+                        f.write(json_content)
+                    status_label.text = f'Exported to {os.path.basename(export_path)}'
+                except Exception as e:
+                    status_label.text = f'Error: {e}'
+
+            timestamp = date.today().isoformat()
+            try:
+                filechooser.save_file(
+                    on_selection=handle_selection,
+                    filters=[('JSON files', '*.json')],
+                    path=f'yaque_export_{timestamp}.json'
+                )
+            except Exception as e:
+                status_label.text = f'Error: {e}'
+
+        def export_sqlite(btn: Any) -> None:
+            from plyer import filechooser
+
+            db_path = database.get_db_path()
+            if not db_path:
+                status_label.text = 'Database not initialized'
+                return
+
+            def handle_selection(selection: list) -> None:
+                if not selection:
+                    status_label.text = 'Export cancelled'
+                    return
+                try:
+                    export_path = selection[0]
+                    shutil.copy2(db_path, export_path)
+                    status_label.text = f'Exported to {os.path.basename(export_path)}'
+                except Exception as e:
+                    status_label.text = f'Error: {e}'
+
+            timestamp = date.today().isoformat()
+            try:
+                filechooser.save_file(
+                    on_selection=handle_selection,
+                    filters=[('SQLite files', '*.db')],
+                    path=f'yaque_{timestamp}.db'
+                )
+            except Exception as e:
+                status_label.text = f'Error: {e}'
+
+        def show_stats(btn: Any) -> None:
+            try:
+                stats = database.get_generation_stats()
+                overall = stats['overall']
+                if overall['total'] == 0:
+                    status_label.text = 'No generation data yet'
+                    return
+
+                avg_ms = int(overall['avg_time']) if overall['avg_time'] else 0
+                avg_att = int(overall['avg_attempts']) if overall['avg_attempts'] else 0
+                avg_diff = int(overall['avg_difficulty']) if overall['avg_difficulty'] else 0
+                lines = [f"Total: {overall['total']} | Avg: {avg_ms}ms | Att: {avg_att} | Diff: {avg_diff}"]
+
+                for size_stats in stats['by_size']:
+                    avg = int(size_stats['avg_time']) if size_stats['avg_time'] else 0
+                    att = int(size_stats['avg_attempts']) if size_stats['avg_attempts'] else 0
+                    diff = int(size_stats['avg_difficulty']) if size_stats['avg_difficulty'] else 0
+                    lines.append(f"{size_stats['size']}x{size_stats['size']}: {size_stats['count']} | {avg}ms | att:{att} | diff:{diff}")
+
+                status_label.text = '\n'.join(lines)
+            except Exception as e:
+                status_label.text = f'Error: {e}'
+
+        def import_json(btn: Any) -> None:
+            from plyer import filechooser
+
+            def handle_selection(selection: list) -> None:
+                if not selection:
+                    status_label.text = 'No file selected'
+                    return
+                try:
+                    import_path = selection[0]
+                    with open(import_path, 'r') as f:
+                        data = json.load(f)
+                    result = database.import_from_json(data)
+                    status_label.text = f"Imported {result['puzzles']} puzzles, {result['plays']} plays"
+                except Exception as e:
+                    status_label.text = f'Error: {e}'
+
+            try:
+                filechooser.open_file(
+                    on_selection=handle_selection,
+                    filters=[('JSON files', '*.json')],
+                    title='Select Yaque export file'
+                )
+            except Exception as e:
+                status_label.text = f'Error opening picker: {e}'
+
+        # Export JSON button
+        json_btn = GrayRoundedButton(
+            text='Export JSON',
+            font_size='12sp',
+            size_hint=(None, None),
+            size=(dp(DEV_BUTTON_WIDTH), dp(DEV_BUTTON_HEIGHT)),
+            pos_hint={'center_x': 0.5}
+        )
+        json_btn.bind(on_press=export_json)
+        content.add_widget(json_btn)
+
+        # Export SQLite button
+        sqlite_btn = GrayRoundedButton(
+            text='Export SQLite',
+            font_size='12sp',
+            size_hint=(None, None),
+            size=(dp(DEV_BUTTON_WIDTH), dp(DEV_BUTTON_HEIGHT)),
+            pos_hint={'center_x': 0.5}
+        )
+        sqlite_btn.bind(on_press=export_sqlite)
+        content.add_widget(sqlite_btn)
+
+        # Import JSON button
+        import_btn = GrayRoundedButton(
+            text='Import JSON',
+            font_size='12sp',
+            size_hint=(None, None),
+            size=(dp(DEV_BUTTON_WIDTH), dp(DEV_BUTTON_HEIGHT)),
+            pos_hint={'center_x': 0.5}
+        )
+        import_btn.bind(on_press=import_json)
+        content.add_widget(import_btn)
+
+        # Show Stats button
+        stats_btn = GrayRoundedButton(
+            text='Gen Stats',
+            font_size='12sp',
+            size_hint=(None, None),
+            size=(dp(DEV_BUTTON_WIDTH), dp(DEV_BUTTON_HEIGHT)),
+            pos_hint={'center_x': 0.5}
+        )
+        stats_btn.bind(on_press=show_stats)
+        content.add_widget(stats_btn)
+
+        # Close button
+        close_btn = GrayRoundedButton(
+            text='Close',
+            font_size='12sp',
+            size_hint=(None, None),
+            size=(dp(DEV_BUTTON_WIDTH), dp(DEV_BUTTON_HEIGHT)),
+            pos_hint={'center_x': 0.5}
+        )
+        content.add_widget(close_btn)
+
+        popup = ModalView(
+            size_hint=(0.85, 0.55),
+            auto_dismiss=True,
+            background_color=POPUP_BACKGROUND
+        )
+        popup.add_widget(content)
+        close_btn.bind(on_press=popup.dismiss)
+        popup.open()
 
     # -------------------------------------------------------------------------
     # App lifecycle

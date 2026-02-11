@@ -6,7 +6,7 @@ from datetime import datetime, date, timedelta
 from typing import Optional, List, Dict, Any
 
 # Current schema version - increment when making schema changes
-SCHEMA_VERSION = 3
+SCHEMA_VERSION = 5
 
 # Database will be initialized with actual path when app starts
 _db_path: Optional[str] = None
@@ -107,6 +107,30 @@ def _run_migrations() -> None:
             cursor.execute('ALTER TABLE plays ADD COLUMN completed_at TEXT')
         _connection.commit()
 
+    # Migration 3 -> 4: Add generation_time_ms and num_solutions to puzzles
+    if current_version < 4:
+        cursor = _connection.cursor()
+        cursor.execute("PRAGMA table_info(puzzles)")
+        columns = {row[1] for row in cursor.fetchall()}
+        if 'generation_time_ms' not in columns:
+            cursor.execute('ALTER TABLE puzzles ADD COLUMN generation_time_ms INTEGER')
+        if 'num_solutions' not in columns:
+            cursor.execute('ALTER TABLE puzzles ADD COLUMN num_solutions INTEGER')
+        if 'kingdom_strategy' not in columns:
+            cursor.execute('ALTER TABLE puzzles ADD COLUMN kingdom_strategy TEXT')
+        _connection.commit()
+
+    # Migration 4 -> 5: Add generation_attempts and difficulty_score to puzzles
+    if current_version < 5:
+        cursor = _connection.cursor()
+        cursor.execute("PRAGMA table_info(puzzles)")
+        columns = {row[1] for row in cursor.fetchall()}
+        if 'generation_attempts' not in columns:
+            cursor.execute('ALTER TABLE puzzles ADD COLUMN generation_attempts INTEGER')
+        if 'difficulty_score' not in columns:
+            cursor.execute('ALTER TABLE puzzles ADD COLUMN difficulty_score INTEGER')
+        _connection.commit()
+
     set_config('schema_version', str(SCHEMA_VERSION))
 
 
@@ -164,7 +188,17 @@ def reset_db() -> None:
 # Puzzle operations
 # -----------------------------------------------------------------------------
 
-def save_puzzle(code: str, size: int, daily_date: str = None, seed: int = None) -> int:
+def save_puzzle(
+    code: str,
+    size: int,
+    daily_date: str = None,
+    seed: int = None,
+    generation_time_ms: int = None,
+    num_solutions: int = None,
+    kingdom_strategy: str = None,
+    generation_attempts: int = None,
+    difficulty_score: int = None
+) -> int:
     """Save a puzzle and return its ID. Returns existing ID if puzzle already exists."""
     cursor = _connection.cursor()
 
@@ -176,9 +210,11 @@ def save_puzzle(code: str, size: int, daily_date: str = None, seed: int = None) 
 
     # Insert new puzzle
     cursor.execute('''
-        INSERT INTO puzzles (code, size, daily_date, seed)
-        VALUES (?, ?, ?, ?)
-    ''', (code, size, daily_date, seed))
+        INSERT INTO puzzles (code, size, daily_date, seed, generation_time_ms, num_solutions,
+                             kingdom_strategy, generation_attempts, difficulty_score)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ''', (code, size, daily_date, seed, generation_time_ms, num_solutions,
+          kingdom_strategy, generation_attempts, difficulty_score))
 
     _connection.commit()
     return cursor.lastrowid
@@ -395,24 +431,114 @@ def is_daily_completed(daily_date: str, size: int) -> bool:
     return cursor.fetchone()['count'] > 0
 
 
-def get_all_plays(limit: int = 20, offset: int = 0) -> List[Dict[str, Any]]:
-    """Get plays for the logbook, most recent first, with pagination."""
+def get_all_plays(limit: int = 20, offset: int = 0, sort_by: str = 'time') -> List[Dict[str, Any]]:
+    """Get plays for the logbook with pagination and sorting.
+
+    Args:
+        limit: Maximum number of records to return
+        offset: Number of records to skip
+        sort_by: Sort order - 'time' (default), 'size', 'duration', or 'rating'
+                 For size/duration/rating, shows only best play per puzzle.
+    """
     cursor = _connection.cursor()
-    cursor.execute('''
-        SELECT p.id, p.started_at, p.completed_at, p.duration_ms, p.completed,
-               pz.code, pz.size, pz.daily_date
-        FROM plays p
-        JOIN puzzles pz ON p.puzzle_id = pz.id
-        ORDER BY p.started_at DESC
-        LIMIT ? OFFSET ?
-    ''', (limit, offset))
+
+    if sort_by == 'time':
+        # Show all plays, most recent first
+        cursor.execute('''
+            SELECT p.id, p.started_at, p.completed_at, p.duration_ms, p.completed,
+                   p.fun_rating, pz.code, pz.size, pz.daily_date
+            FROM plays p
+            JOIN puzzles pz ON p.puzzle_id = pz.id
+            ORDER BY p.started_at DESC
+            LIMIT ? OFFSET ?
+        ''', (limit, offset))
+    elif sort_by == 'size':
+        # One entry per puzzle, sorted by size (largest first)
+        cursor.execute('''
+            SELECT p.id, p.started_at, p.completed_at, p.duration_ms, p.completed,
+                   p.fun_rating, pz.code, pz.size, pz.daily_date
+            FROM plays p
+            JOIN puzzles pz ON p.puzzle_id = pz.id
+            WHERE p.id = (
+                SELECT p2.id FROM plays p2
+                WHERE p2.puzzle_id = p.puzzle_id
+                ORDER BY p2.duration_ms ASC NULLS LAST, p2.started_at DESC
+                LIMIT 1
+            )
+            ORDER BY pz.size DESC, p.started_at DESC
+            LIMIT ? OFFSET ?
+        ''', (limit, offset))
+    elif sort_by == 'duration':
+        # One entry per puzzle (best time), sorted by duration (longest first = hardest)
+        cursor.execute('''
+            SELECT p.id, p.started_at, p.completed_at, p.duration_ms, p.completed,
+                   p.fun_rating, pz.code, pz.size, pz.daily_date
+            FROM plays p
+            JOIN puzzles pz ON p.puzzle_id = pz.id
+            WHERE p.completed = 1 AND p.id = (
+                SELECT p2.id FROM plays p2
+                WHERE p2.puzzle_id = p.puzzle_id AND p2.completed = 1
+                ORDER BY p2.duration_ms ASC
+                LIMIT 1
+            )
+            ORDER BY p.duration_ms DESC
+            LIMIT ? OFFSET ?
+        ''', (limit, offset))
+    elif sort_by == 'rating':
+        # One entry per puzzle (highest rated), sorted by rating
+        cursor.execute('''
+            SELECT p.id, p.started_at, p.completed_at, p.duration_ms, p.completed,
+                   p.fun_rating, pz.code, pz.size, pz.daily_date
+            FROM plays p
+            JOIN puzzles pz ON p.puzzle_id = pz.id
+            WHERE p.fun_rating IS NOT NULL AND p.id = (
+                SELECT p2.id FROM plays p2
+                WHERE p2.puzzle_id = p.puzzle_id AND p2.fun_rating IS NOT NULL
+                ORDER BY p2.fun_rating DESC
+                LIMIT 1
+            )
+            ORDER BY p.fun_rating DESC, p.started_at DESC
+            LIMIT ? OFFSET ?
+        ''', (limit, offset))
+    else:
+        # Fallback to time sort
+        cursor.execute('''
+            SELECT p.id, p.started_at, p.completed_at, p.duration_ms, p.completed,
+                   p.fun_rating, pz.code, pz.size, pz.daily_date
+            FROM plays p
+            JOIN puzzles pz ON p.puzzle_id = pz.id
+            ORDER BY p.started_at DESC
+            LIMIT ? OFFSET ?
+        ''', (limit, offset))
+
     return [dict(row) for row in cursor.fetchall()]
 
 
-def get_plays_count() -> int:
-    """Get total number of plays."""
+def get_plays_count(sort_by: str = 'time') -> int:
+    """Get total number of plays for the given sort mode.
+
+    For time sort, returns all plays. For other sorts, returns unique puzzles.
+    """
     cursor = _connection.cursor()
-    cursor.execute('SELECT COUNT(*) as count FROM plays')
+
+    if sort_by == 'time':
+        cursor.execute('SELECT COUNT(*) as count FROM plays')
+    elif sort_by == 'duration':
+        # Count unique puzzles with completed plays
+        cursor.execute('''
+            SELECT COUNT(DISTINCT puzzle_id) as count
+            FROM plays WHERE completed = 1
+        ''')
+    elif sort_by == 'rating':
+        # Count unique puzzles with ratings
+        cursor.execute('''
+            SELECT COUNT(DISTINCT puzzle_id) as count
+            FROM plays WHERE fun_rating IS NOT NULL
+        ''')
+    else:  # size or fallback
+        # Count unique puzzles
+        cursor.execute('SELECT COUNT(DISTINCT puzzle_id) as count FROM plays')
+
     return cursor.fetchone()['count']
 
 
@@ -581,3 +707,174 @@ def get_current_streak() -> int:
         check_date = check_date - timedelta(days=1)
 
     return streak
+
+
+# -----------------------------------------------------------------------------
+# Export functions (for dev menu)
+# -----------------------------------------------------------------------------
+
+def get_db_path() -> Optional[str]:
+    """Get the path to the database file."""
+    return _db_path
+
+
+def export_to_json() -> Dict[str, Any]:
+    """Export the entire database to a JSON-serializable dict."""
+    cursor = _connection.cursor()
+
+    # Export puzzles
+    cursor.execute('SELECT * FROM puzzles ORDER BY id')
+    puzzles = [dict(row) for row in cursor.fetchall()]
+
+    # Export plays
+    cursor.execute('SELECT * FROM plays ORDER BY id')
+    plays = [dict(row) for row in cursor.fetchall()]
+
+    # Export config
+    cursor.execute('SELECT * FROM config')
+    config = {row['key']: row['value'] for row in cursor.fetchall()}
+
+    return {
+        'exported_at': datetime.now().isoformat(),
+        'schema_version': SCHEMA_VERSION,
+        'puzzles': puzzles,
+        'plays': plays,
+        'config': config,
+    }
+
+
+def get_generation_stats() -> Dict[str, Any]:
+    """Get statistics about puzzle generation times."""
+    cursor = _connection.cursor()
+
+    # Overall stats
+    cursor.execute('''
+        SELECT
+            COUNT(*) as total,
+            AVG(generation_time_ms) as avg_time,
+            MIN(generation_time_ms) as min_time,
+            MAX(generation_time_ms) as max_time,
+            AVG(generation_attempts) as avg_attempts,
+            AVG(difficulty_score) as avg_difficulty
+        FROM puzzles
+        WHERE generation_time_ms IS NOT NULL
+    ''')
+    overall = dict(cursor.fetchone())
+
+    # Stats by size
+    cursor.execute('''
+        SELECT
+            size,
+            COUNT(*) as count,
+            AVG(generation_time_ms) as avg_time,
+            MIN(generation_time_ms) as min_time,
+            MAX(generation_time_ms) as max_time,
+            AVG(generation_attempts) as avg_attempts,
+            AVG(difficulty_score) as avg_difficulty
+        FROM puzzles
+        WHERE generation_time_ms IS NOT NULL
+        GROUP BY size
+        ORDER BY size
+    ''')
+    by_size = [dict(row) for row in cursor.fetchall()]
+
+    # Stats by num_solutions
+    cursor.execute('''
+        SELECT
+            num_solutions,
+            COUNT(*) as count,
+            AVG(generation_time_ms) as avg_time
+        FROM puzzles
+        WHERE generation_time_ms IS NOT NULL AND num_solutions IS NOT NULL
+        GROUP BY num_solutions
+        ORDER BY num_solutions
+    ''')
+    by_solutions = [dict(row) for row in cursor.fetchall()]
+
+    return {
+        'overall': overall,
+        'by_size': by_size,
+        'by_solutions': by_solutions,
+    }
+
+
+def import_from_json(data: Dict[str, Any]) -> Dict[str, int]:
+    """Import data from a JSON export into the database.
+
+    Args:
+        data: Dictionary from export_to_json() format
+
+    Returns:
+        Dict with counts of imported records: {'puzzles': n, 'plays': n}
+    """
+    cursor = _connection.cursor()
+    puzzles_imported = 0
+    plays_imported = 0
+
+    # Map old puzzle IDs to new IDs for plays import
+    puzzle_id_map = {}
+
+    # Import puzzles
+    for puzzle in data.get('puzzles', []):
+        old_id = puzzle['id']
+        # Check if puzzle already exists by code
+        cursor.execute('SELECT id FROM puzzles WHERE code = ?', (puzzle['code'],))
+        existing = cursor.fetchone()
+
+        if existing:
+            puzzle_id_map[old_id] = existing['id']
+        else:
+            cursor.execute('''
+                INSERT INTO puzzles (code, size, daily_date, seed, created_at,
+                                     generation_time_ms, num_solutions, kingdom_strategy,
+                                     generation_attempts, difficulty_score)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ''', (
+                puzzle['code'],
+                puzzle['size'],
+                puzzle.get('daily_date'),
+                puzzle.get('seed'),
+                puzzle.get('created_at', datetime.now().isoformat()),
+                puzzle.get('generation_time_ms'),
+                puzzle.get('num_solutions'),
+                puzzle.get('kingdom_strategy'),
+                puzzle.get('generation_attempts'),
+                puzzle.get('difficulty_score'),
+            ))
+            puzzle_id_map[old_id] = cursor.lastrowid
+            puzzles_imported += 1
+
+    # Import plays
+    for play in data.get('plays', []):
+        old_puzzle_id = play['puzzle_id']
+        new_puzzle_id = puzzle_id_map.get(old_puzzle_id)
+
+        if new_puzzle_id is None:
+            continue  # Skip plays for puzzles we couldn't map
+
+        # Check if this exact play already exists (by puzzle_id and started_at)
+        cursor.execute('''
+            SELECT id FROM plays WHERE puzzle_id = ? AND started_at = ?
+        ''', (new_puzzle_id, play['started_at']))
+
+        if cursor.fetchone():
+            continue  # Already exists
+
+        cursor.execute('''
+            INSERT INTO plays (puzzle_id, started_at, completed_at, duration_ms,
+                               completed, fun_rating, elapsed_seconds, board_state)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        ''', (
+            new_puzzle_id,
+            play['started_at'],
+            play.get('completed_at'),
+            play.get('duration_ms'),
+            play.get('completed', 0),
+            play.get('fun_rating'),
+            play.get('elapsed_seconds', 0),
+            play.get('board_state'),
+        ))
+        plays_imported += 1
+
+    _connection.commit()
+    return {'puzzles': puzzles_imported, 'plays': plays_imported}

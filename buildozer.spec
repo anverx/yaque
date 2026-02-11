@@ -22,7 +22,7 @@ android.numeric_version = 3
 
 # Application requirements
 # Note: Cython<3 is required for pyjnius compatibility
-requirements = python3,kivy,pillow,qrcode,pyjnius,cython==0.29.36
+requirements = python3,kivy,pillow,qrcode,pyjnius,plyer,cython==0.29.36
 
 # Supported orientations (portrait, landscape, all)
 orientation = portrait
