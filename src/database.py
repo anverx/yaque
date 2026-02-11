@@ -1,16 +1,16 @@
 """Local SQLite database for storing puzzles and play history."""
 
-import sqlite3
 import os
-from datetime import datetime, date, timedelta
-from typing import Optional, List, Dict, Any
+import sqlite3
+from datetime import date, datetime, timedelta
+from typing import Any
 
 # Current schema version - increment when making schema changes
 SCHEMA_VERSION = 5
 
 # Database will be initialized with actual path when app starts
-_db_path: Optional[str] = None
-_connection: Optional[sqlite3.Connection] = None
+_db_path: str | None = None
+_connection: sqlite3.Connection | None = None
 
 
 def init_db(data_dir: str) -> None:
@@ -138,7 +138,7 @@ def _run_migrations() -> None:
 # Config operations (key-value store)
 # -----------------------------------------------------------------------------
 
-def get_config(key: str, default: str = None) -> Optional[str]:
+def get_config(key: str, default: str | None = None) -> str | None:
     """Get a config value by key."""
     cursor = _connection.cursor()
     cursor.execute('SELECT value FROM config WHERE key = ?', (key,))
@@ -191,13 +191,13 @@ def reset_db() -> None:
 def save_puzzle(
     code: str,
     size: int,
-    daily_date: str = None,
-    seed: int = None,
-    generation_time_ms: int = None,
-    num_solutions: int = None,
-    kingdom_strategy: str = None,
-    generation_attempts: int = None,
-    difficulty_score: int = None
+    daily_date: str | None = None,
+    seed: int | None = None,
+    generation_time_ms: int | None = None,
+    num_solutions: int | None = None,
+    kingdom_strategy: str | None = None,
+    generation_attempts: int | None = None,
+    difficulty_score: int | None = None
 ) -> int:
     """Save a puzzle and return its ID. Returns existing ID if puzzle already exists."""
     cursor = _connection.cursor()
@@ -220,7 +220,7 @@ def save_puzzle(
     return cursor.lastrowid
 
 
-def get_puzzle_by_code(code: str) -> Optional[Dict[str, Any]]:
+def get_puzzle_by_code(code: str) -> dict[str, Any] | None:
     """Get a puzzle by its code."""
     cursor = _connection.cursor()
     cursor.execute('SELECT * FROM puzzles WHERE code = ?', (code,))
@@ -228,7 +228,7 @@ def get_puzzle_by_code(code: str) -> Optional[Dict[str, Any]]:
     return dict(row) if row else None
 
 
-def get_puzzle_by_id(puzzle_id: int) -> Optional[Dict[str, Any]]:
+def get_puzzle_by_id(puzzle_id: int) -> dict[str, Any] | None:
     """Get a puzzle by its ID."""
     cursor = _connection.cursor()
     cursor.execute('SELECT * FROM puzzles WHERE id = ?', (puzzle_id,))
@@ -236,7 +236,7 @@ def get_puzzle_by_id(puzzle_id: int) -> Optional[Dict[str, Any]]:
     return dict(row) if row else None
 
 
-def get_daily_puzzles(daily_date: str) -> List[Dict[str, Any]]:
+def get_daily_puzzles(daily_date: str) -> list[dict[str, Any]]:
     """Get all puzzles for a given date."""
     cursor = _connection.cursor()
     cursor.execute(
@@ -246,7 +246,7 @@ def get_daily_puzzles(daily_date: str) -> List[Dict[str, Any]]:
     return [dict(row) for row in cursor.fetchall()]
 
 
-def get_daily_puzzle(daily_date: str, size: int) -> Optional[Dict[str, Any]]:
+def get_daily_puzzle(daily_date: str, size: int) -> dict[str, Any] | None:
     """Get a specific daily puzzle by date and size."""
     cursor = _connection.cursor()
     cursor.execute(
@@ -298,7 +298,7 @@ def rate_play(play_id: int, fun_rating: int) -> None:
     _connection.commit()
 
 
-def get_play(play_id: int) -> Optional[Dict[str, Any]]:
+def get_play(play_id: int) -> dict[str, Any] | None:
     """Get a play by its ID."""
     cursor = _connection.cursor()
     cursor.execute('SELECT * FROM plays WHERE id = ?', (play_id,))
@@ -306,7 +306,7 @@ def get_play(play_id: int) -> Optional[Dict[str, Any]]:
     return dict(row) if row else None
 
 
-def get_plays_for_puzzle(puzzle_id: int) -> List[Dict[str, Any]]:
+def get_plays_for_puzzle(puzzle_id: int) -> list[dict[str, Any]]:
     """Get all plays for a given puzzle, ordered by start time."""
     cursor = _connection.cursor()
     cursor.execute('''
@@ -317,7 +317,7 @@ def get_plays_for_puzzle(puzzle_id: int) -> List[Dict[str, Any]]:
     return [dict(row) for row in cursor.fetchall()]
 
 
-def get_best_time_for_puzzle(puzzle_id: int) -> Optional[int]:
+def get_best_time_for_puzzle(puzzle_id: int) -> int | None:
     """Get the best (shortest) completion time for a puzzle in ms."""
     cursor = _connection.cursor()
     cursor.execute('''
@@ -329,7 +329,7 @@ def get_best_time_for_puzzle(puzzle_id: int) -> Optional[int]:
     return row['best_time'] if row and row['best_time'] is not None else None
 
 
-def get_play_stats() -> Dict[str, Any]:
+def get_play_stats() -> dict[str, Any]:
     """Get overall play statistics."""
     cursor = _connection.cursor()
 
@@ -353,7 +353,7 @@ def get_play_stats() -> Dict[str, Any]:
     }
 
 
-def get_recent_plays(limit: int = 10) -> List[Dict[str, Any]]:
+def get_recent_plays(limit: int = 10) -> list[dict[str, Any]]:
     """Get recent plays with puzzle info."""
     cursor = _connection.cursor()
     cursor.execute('''
@@ -387,7 +387,7 @@ def save_game_state(play_id: int, elapsed_seconds: int, board_state: str) -> Non
     _connection.commit()
 
 
-def get_incomplete_play(puzzle_id: int) -> Optional[Dict[str, Any]]:
+def get_incomplete_play(puzzle_id: int) -> dict[str, Any] | None:
     """Get the most recent incomplete play for a puzzle (for resuming).
 
     Returns dict with board_state as encoded string (use game_encoding.decode_board_state).
@@ -403,7 +403,7 @@ def get_incomplete_play(puzzle_id: int) -> Optional[Dict[str, Any]]:
     return dict(row) if row else None
 
 
-def get_latest_play(puzzle_id: int) -> Optional[Dict[str, Any]]:
+def get_latest_play(puzzle_id: int) -> dict[str, Any] | None:
     """Get the most recent play for a puzzle (completed or not).
 
     Returns dict with board_state as encoded string (use game_encoding.decode_board_state).
@@ -431,7 +431,7 @@ def is_daily_completed(daily_date: str, size: int) -> bool:
     return cursor.fetchone()['count'] > 0
 
 
-def get_all_plays(limit: int = 20, offset: int = 0, sort_by: str = 'time') -> List[Dict[str, Any]]:
+def get_all_plays(limit: int = 20, offset: int = 0, sort_by: str = 'time') -> list[dict[str, Any]]:
     """Get plays for the logbook with pagination and sorting.
 
     Args:
@@ -542,7 +542,7 @@ def get_plays_count(sort_by: str = 'time') -> int:
     return cursor.fetchone()['count']
 
 
-def get_logbook_stats() -> Dict[str, Any]:
+def get_logbook_stats() -> dict[str, Any]:
     """Get statistics for the logbook."""
     cursor = _connection.cursor()
 
@@ -599,7 +599,7 @@ def get_logbook_stats() -> Dict[str, Any]:
     }
 
 
-def get_daily_completion_status(daily_date: str) -> Dict[int, bool]:
+def get_daily_completion_status(daily_date: str) -> dict[int, bool]:
     """Get completion status for all sizes on a given date (single query)."""
     cursor = _connection.cursor()
     cursor.execute('''
@@ -617,7 +617,7 @@ def get_daily_completion_status(daily_date: str) -> Dict[int, bool]:
     return status
 
 
-def get_month_completion_status(year: int, month: int) -> Dict[str, Dict[int, Optional[str]]]:
+def get_month_completion_status(year: int, month: int) -> dict[str, dict[int, str | None]]:
     """Get completion status for all days in a month (single query).
 
     Returns dict mapping date strings to {size: status} dicts where status is:
@@ -713,12 +713,12 @@ def get_current_streak() -> int:
 # Export functions (for dev menu)
 # -----------------------------------------------------------------------------
 
-def get_db_path() -> Optional[str]:
+def get_db_path() -> str | None:
     """Get the path to the database file."""
     return _db_path
 
 
-def export_to_json() -> Dict[str, Any]:
+def export_to_json() -> dict[str, Any]:
     """Export the entire database to a JSON-serializable dict."""
     cursor = _connection.cursor()
 
@@ -743,7 +743,7 @@ def export_to_json() -> Dict[str, Any]:
     }
 
 
-def get_generation_stats() -> Dict[str, Any]:
+def get_generation_stats() -> dict[str, Any]:
     """Get statistics about puzzle generation times."""
     cursor = _connection.cursor()
 
@@ -798,7 +798,7 @@ def get_generation_stats() -> Dict[str, Any]:
     }
 
 
-def import_from_json(data: Dict[str, Any]) -> Dict[str, int]:
+def import_from_json(data: dict[str, Any]) -> dict[str, int]:
     """Import data from a JSON export into the database.
 
     Args:

@@ -1,8 +1,8 @@
 from __future__ import annotations
 
+import os
 import threading
 import time
-import os
 from datetime import date
 from typing import Any
 
@@ -10,12 +10,13 @@ __version__ = "1.0.1"
 __author__ = "Yaque Contributors"
 
 from kivy.app import App
-import database
-from kivy.uix.screenmanager import ScreenManager, FadeTransition
-from kivy.core.window import Window
-from kivy.core.text import LabelBase
 from kivy.clock import Clock
+from kivy.core.text import LabelBase
+from kivy.core.window import Window
+from kivy.uix.screenmanager import FadeTransition, ScreenManager
 from kivy.utils import platform
+
+import database
 
 # Register DM Sans font
 FONTS_DIR = os.path.join(os.path.dirname(__file__), 'assets', 'fonts')
@@ -29,24 +30,32 @@ LabelBase.register(
     fn_regular=os.path.join(FONTS_DIR, 'DMSans-Black.ttf')
 )
 
-from game import Game, get_daily_game, GenerationCancelled
+from game import Game, GenerationCancelled, get_daily_game
+from popups import LoadingPopup, show_game_size_popup, show_load_popup, show_share_popup
 from screens import (
-    SplashScreen,
-    MainMenuScreen,
     CalendarScreen,
     GameScreen,
     LogbookScreen,
-)
-from popups import show_share_popup, show_load_popup, show_game_size_popup, LoadingPopup
-from widgets import (
-    GrayRoundedButton, TitleLabel, SubtitleLabel, CaptionLabel,
-    AboutTitleLabel, AboutSubtitleLabel, LinkButton,
-    PopupContent, Popup,
+    MainMenuScreen,
+    SplashScreen,
 )
 from ui_constants import (
-    BUTTON_HEIGHT_SM, POPUP_BACKGROUND,
-    PADDING_POPUP_LARGE, CAPTION_HEIGHT_XS, SMALL_BUTTON_WIDTH,
-    WINDOW_SIZE, WINDOW_CLEARCOLOR,
+    BUTTON_HEIGHT_SM,
+    CAPTION_HEIGHT_XS,
+    PADDING_POPUP_LARGE,
+    POPUP_BACKGROUND,
+    SMALL_BUTTON_WIDTH,
+    WINDOW_CLEARCOLOR,
+    WINDOW_SIZE,
+)
+from widgets import (
+    AboutSubtitleLabel,
+    AboutTitleLabel,
+    CaptionLabel,
+    GrayRoundedButton,
+    LinkButton,
+    PopupContent,
+    SubtitleLabel,
 )
 
 # Android intent handling
@@ -262,8 +271,8 @@ class YaqueApp(App):
         if next_max is None:
             # Completely failed
             self._dismiss_loading_popup()
-            from kivy.uix.popup import Popup
             from kivy.uix.label import Label
+            from kivy.uix.popup import Popup
             popup = Popup(
                 title='Generation Failed',
                 content=Label(text='Could not generate puzzle.\nPlease try again.'),
@@ -323,11 +332,11 @@ class YaqueApp(App):
 
     def show_about(self, instance: Any) -> None:
         """Show the about popup."""
-        from kivy.uix.boxlayout import BoxLayout
-        from kivy.uix.modalview import ModalView
-        from kivy.uix.behaviors import ButtonBehavior
-        from kivy.uix.label import Label
         from kivy.metrics import dp
+        from kivy.uix.behaviors import ButtonBehavior
+        from kivy.uix.boxlayout import BoxLayout
+        from kivy.uix.label import Label
+        from kivy.uix.modalview import ModalView
 
         content = PopupContent(padding=[dp(PADDING_POPUP_LARGE[0]), dp(PADDING_POPUP_LARGE[1])])
 
@@ -414,9 +423,10 @@ class YaqueApp(App):
         """Show the hidden developer menu."""
         import json
         import shutil
-        from kivy.uix.modalview import ModalView
-        from kivy.uix.label import Label
+
         from kivy.metrics import dp
+        from kivy.uix.label import Label
+        from kivy.uix.modalview import ModalView
 
         # Dev menu styling constants
         DEV_BUTTON_WIDTH = 150
@@ -542,7 +552,7 @@ class YaqueApp(App):
                     return
                 try:
                     import_path = selection[0]
-                    with open(import_path, 'r') as f:
+                    with open(import_path) as f:
                         data = json.load(f)
                     result = database.import_from_json(data)
                     status_label.text = f"Imported {result['puzzles']} puzzles, {result['plays']} plays"

@@ -1,124 +1,37 @@
 from __future__ import annotations
 
 import io
-import os
 from datetime import date
 from typing import Any
 
-from kivy.uix.boxlayout import BoxLayout
-from kivy.uix.anchorlayout import AnchorLayout
-from kivy.uix.label import Label
-from kivy.uix.image import Image
-from kivy.uix.screenmanager import Screen
-from kivy.uix.behaviors import ButtonBehavior
 from kivy.clock import Clock
 from kivy.core.image import Image as CoreImage
 from kivy.metrics import dp, sp
+from kivy.uix.anchorlayout import AnchorLayout
+from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.image import Image
+from kivy.uix.screenmanager import Screen
 from kivy.utils import platform
 
+import database
+import game_encoding
 from ui_constants import (
-    INDICATOR_CURRENT, INDICATOR_OTHER,
-    HEADER_HEIGHT, BUTTON_HEIGHT, SPACING_SM, SPACING_LG, SPACING_XL,
-    ICON_BTN_SIZE, ICON_BTN_SIZE_LG, CONTROL_BAR_HEIGHT, PLAY_AREA_HEIGHT,
-    INDICATOR_HEIGHT, INDICATOR_CIRCLE_SIZE, INDICATOR_SPACING,
-    SUBTITLE_HEIGHT, SOLUTIONS_BTN_WIDTH, SOLUTIONS_BTN_HEIGHT,
-    SOLUTIONS_BTN_AREA_HEIGHT, SWIPE_EDGE_THRESHOLD, SWIPE_DISTANCE_THRESHOLD,
-    ICON_LABEL_HEIGHT, ICON_LABEL_TOTAL,
+    ICON_BTN_SIZE_LG,
+    STYLES,
+    SWIPE_DISTANCE_THRESHOLD,
+    SWIPE_EDGE_THRESHOLD,
 )
 from widgets import (
     BoardWidget,
-    GrayRoundedButton, FixedGrayRoundedButton, TitleSmLabel, CaptionLabel, ClockLabel, IconLabel,
+    CaptionLabel,
+    ClockLabel,
+    FixedGrayRoundedButton,
+    GrayRoundedButton,
+    IconButton,
+    SolutionIndicator,
+    TitleSmLabel,
+    styled,
 )
-import database
-import game_encoding
-
-
-# Path to icons directory
-ICONS_DIR = os.path.join(os.path.dirname(__file__), '..', 'assets', 'icons')
-
-
-from kivy.uix.widget import Widget
-from kivy.graphics import Color, Ellipse
-
-
-class SolutionIndicator(Widget):
-    """Shows gray circles for each solution with a golden indicator for current."""
-
-    def __init__(self, **kwargs: Any) -> None:
-        super().__init__(**kwargs)
-        self.num_solutions = 0
-        self.current_index = 0
-        self.bind(pos=self._draw, size=self._draw)
-
-    def set_solutions(self, num_solutions: int, current_index: int = 0) -> None:
-        self.num_solutions = num_solutions
-        self.current_index = current_index
-        self._draw()
-
-    def set_current(self, index: int) -> None:
-        self.current_index = index
-        self._draw()
-
-    def _draw(self, *args: Any) -> None:
-        self.canvas.clear()
-        if self.num_solutions <= 1:
-            return
-
-        with self.canvas:
-            # Calculate circle positions (centered)
-            circle_size = dp(INDICATOR_CIRCLE_SIZE)
-            spacing = dp(INDICATOR_SPACING)
-            total_width = self.num_solutions * circle_size + (self.num_solutions - 1) * (spacing - circle_size)
-            start_x = self.center_x - total_width / 2
-
-            for i in range(self.num_solutions):
-                cx = start_x + i * spacing
-                cy = self.center_y - circle_size / 2
-
-                if i == self.current_index:
-                    Color(*INDICATOR_CURRENT)
-                    Ellipse(pos=(cx, cy), size=(circle_size, circle_size))
-                else:
-                    Color(*INDICATOR_OTHER)
-                    Ellipse(pos=(cx, cy), size=(circle_size, circle_size))
-
-
-class IconButton(ButtonBehavior, BoxLayout):
-    """A clickable image button with optional label."""
-    def __init__(self, icon_name: str, size_dp: int = ICON_BTN_SIZE, label: str | None = None, **kwargs: Any) -> None:
-        super().__init__(orientation='vertical', **kwargs)
-        self.icon_name = icon_name
-        self.size_hint = (None, None)
-
-        # Icon
-        self.icon = Image(
-            source=os.path.join(ICONS_DIR, f'{icon_name}.png'),
-            size_hint=(None, None),
-            size=(dp(size_dp), dp(size_dp)),
-            fit_mode='contain'
-        )
-        self.add_widget(self.icon)
-
-        # Optional label
-        if label:
-            self.label = IconLabel(
-                label,
-                size_hint=(None, None),
-                size=(dp(size_dp), dp(ICON_LABEL_HEIGHT)),
-                halign='center'
-            )
-            self.label.bind(size=self.label.setter('text_size'))
-            self.add_widget(self.label)
-            self.size = (dp(size_dp), dp(size_dp + ICON_LABEL_TOTAL))
-        else:
-            self.size = (dp(size_dp), dp(size_dp))
-
-    def set_icon(self, icon_name: str, label: str | None = None) -> None:
-        """Change the icon and optionally the label."""
-        self.icon_name = icon_name
-        self.icon.source = os.path.join(ICONS_DIR, f'{icon_name}.png')
-        if label and hasattr(self, 'label'):
-            self.label.text = label
 
 
 class GameScreen(Screen):
@@ -126,23 +39,19 @@ class GameScreen(Screen):
         super().__init__(**kwargs)
         self.app = app
 
-        layout = BoxLayout(orientation='vertical', padding=dp(SPACING_LG), spacing=dp(SPACING_SM))
+        layout = styled(BoxLayout, 'game_layout')
 
         # Game title (Daily puzzle: date / Random)
         self.title_label = TitleSmLabel('')
         layout.add_widget(self.title_label)
 
         # Subtitle - shows "Unique solution!" as label or "X solutions" as clickable button
-        self.subtitle_label = CaptionLabel('', size_hint_y=None, height=dp(SUBTITLE_HEIGHT))
+        self.subtitle_label = CaptionLabel('', **STYLES['subtitle_area'])
         layout.add_widget(self.subtitle_label)
 
         # Solutions button (replaces subtitle when multiple solutions)
-        solutions_btn_anchor = AnchorLayout(size_hint_y=None, height=dp(SOLUTIONS_BTN_AREA_HEIGHT), anchor_x='center')
-        self.solutions_text_btn = GrayRoundedButton(
-            text='',
-            size_hint=(None, None),
-            size=(dp(SOLUTIONS_BTN_WIDTH), dp(SOLUTIONS_BTN_HEIGHT))
-        )
+        solutions_btn_anchor = styled(AnchorLayout, 'solutions_btn_area')
+        self.solutions_text_btn = GrayRoundedButton(text='', **STYLES['solutions_btn'])
         self.solutions_text_btn.bind(on_press=lambda x: self.toggle_solutions(x))
         self.solutions_text_btn.opacity = 0
         self.solutions_text_btn.disabled = True
@@ -155,13 +64,13 @@ class GameScreen(Screen):
         self.showing_solutions = False
 
         # Clock
-        top_bar = BoxLayout(size_hint_y=None, height=dp(HEADER_HEIGHT))
+        top_bar = styled(BoxLayout, 'header_bar')
         self.clock_label = ClockLabel()
         top_bar.add_widget(self.clock_label)
         layout.add_widget(top_bar)
 
         # Solution indicator (gray circles with golden indicator)
-        self.solution_indicator = SolutionIndicator(size_hint_y=None, height=dp(INDICATOR_HEIGHT))
+        self.solution_indicator = SolutionIndicator(**STYLES['indicator_area'])
         self.solution_indicator.opacity = 0  # Hidden until solutions shown
         layout.add_widget(self.solution_indicator)
 
@@ -177,12 +86,12 @@ class GameScreen(Screen):
         # Play/Pause button - attached below the board
         self.play_btn = IconButton('play', size_dp=ICON_BTN_SIZE_LG, label='Play')
         self.play_btn.bind(on_press=self.toggle_play_pause)
-        play_anchor = AnchorLayout(size_hint_y=None, height=dp(PLAY_AREA_HEIGHT), anchor_x='center')
+        play_anchor = styled(AnchorLayout, 'play_area')
         play_anchor.add_widget(self.play_btn)
         layout.add_widget(play_anchor)
 
         # Game control buttons (undo, redo, reset)
-        control_bar = BoxLayout(size_hint=(None, None), height=dp(CONTROL_BAR_HEIGHT), spacing=dp(SPACING_XL))
+        control_bar = styled(BoxLayout, 'control_bar')
         control_bar.bind(minimum_width=control_bar.setter('width'))
 
         undo_btn = IconButton('undo', label='Undo')
@@ -208,7 +117,7 @@ class GameScreen(Screen):
         control_bar.add_widget(self.rate_btn)
 
         # Wrap in anchor layout to center
-        control_anchor = AnchorLayout(size_hint_y=None, height=dp(CONTROL_BAR_HEIGHT), anchor_x='center')
+        control_anchor = styled(AnchorLayout, 'control_anchor')
         control_anchor.add_widget(control_bar)
         layout.add_widget(control_anchor)
 
@@ -621,9 +530,9 @@ class GameScreen(Screen):
 
     def show_rating(self, instance: Any) -> None:
         """Show a simple rating popup."""
-        from kivy.uix.modalview import ModalView
         from kivy.uix.boxlayout import BoxLayout
         from kivy.uix.button import Button
+        from kivy.uix.modalview import ModalView
 
         popup = ModalView(size_hint=(0.7, None), height=dp(120), auto_dismiss=True)
         content = BoxLayout(orientation='vertical', padding=dp(15), spacing=dp(10))
@@ -659,17 +568,15 @@ class GameScreen(Screen):
 
     # Swipe from left edge to go back (Android)
     def on_touch_down(self, touch: Any) -> bool:
-        if platform == 'android':
+        if platform == 'android' and touch.x < dp(SWIPE_EDGE_THRESHOLD):
             # Detect touch starting near left edge
-            if touch.x < dp(SWIPE_EDGE_THRESHOLD):
-                touch.ud['swipe_from_edge'] = True
-                touch.ud['start_x'] = touch.x
+            touch.ud['swipe_from_edge'] = True
+            touch.ud['start_x'] = touch.x
         return super().on_touch_down(touch)
 
     def on_touch_up(self, touch: Any) -> bool:
-        if platform == 'android' and touch.ud.get('swipe_from_edge'):
-            # Check if swiped right sufficiently
-            if touch.x - touch.ud.get('start_x', 0) > dp(SWIPE_DISTANCE_THRESHOLD):
-                self.go_back(None)
-                return True
+        if platform == 'android' and touch.ud.get('swipe_from_edge') and touch.x - touch.ud.get('start_x', 0) > dp(SWIPE_DISTANCE_THRESHOLD):
+            # Swiped right from left edge - go back
+            self.go_back(None)
+            return True
         return super().on_touch_up(touch)

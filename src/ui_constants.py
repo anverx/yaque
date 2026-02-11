@@ -159,12 +159,14 @@ INDICATOR_CURRENT = (1.0, 0.85, 0.2, 1)  # Golden for current solution
 INDICATOR_OTHER = (0.7, 0.7, 0.7, 1)     # Gray for other solutions
 
 # =============================================================================
-# Label Styles (CSS-like style definitions)
+# Styles (CSS-like style definitions)
 # =============================================================================
-# Each style defines default properties. 'height' values are raw numbers (converted to dp by factory).
+# Each style is a named set of properties that can be applied to any widget.
+# 'height' and 'spacing' values are raw numbers (converted to dp by factory).
 # Styles can be overridden at call site.
 
-LABEL_STYLES = {
+STYLES = {
+    # Default label style
     'default': {
         'color': TEXT_DARK,
     },
@@ -212,9 +214,6 @@ LABEL_STYLES = {
         'font_size': '22sp',
         'color': TEXT_HEADER,
     },
-    'nav_btn': {
-        'font_size': '24sp',
-    },
     'day': {
         'font_size': '14sp',
     },
@@ -244,14 +243,7 @@ LABEL_STYLES = {
         'size_hint_y': None,
         'height': 25,
     },
-}
-
-# =============================================================================
-# Layout Styles (CSS-like style definitions for containers)
-# =============================================================================
-# height values are raw numbers (converted to dp by factory)
-
-LAYOUT_STYLES = {
+    # Layout styles
     'button_row': {
         'size_hint_y': None,
         'height': BUTTON_HEIGHT,
@@ -261,6 +253,183 @@ LAYOUT_STYLES = {
         'size_hint_y': None,
         'height': ROW_HEIGHT,
         'spacing': SPACING_LG,
+    },
+    'selection_row': {
+        'size_hint_y': None,
+        'height': BUTTON_HEIGHT_SM,
+        'spacing': SPACING_MD,
+    },
+    # Popup feedback areas
+    'status_area': {
+        'size_hint_y': None,
+        'height': CAPTION_HEIGHT,
+    },
+    'timer_area': {
+        'size_hint_y': None,
+        'height': CAPTION_HEIGHT_SM,
+    },
+    # Selection button
+    'selection_btn': {
+        'font_size': '14sp',
+    },
+    # Small centered button (e.g., cancel in loading popup)
+    'small_centered_btn': {
+        'size_hint': (None, None),
+        'width': SMALL_BUTTON_WIDTH,
+        'height': BUTTON_HEIGHT_SM,
+        'pos_hint': {'center_x': 0.5},
+    },
+    # QR code image
+    'qr_image': {
+        'size_hint_y': None,
+        'height': QR_IMAGE_HEIGHT,
+    },
+    # Small vertical spacer
+    'spacer_sm': {
+        'size_hint_y': None,
+        'height': SPACER_SM,
+    },
+    # Popup content layout
+    'popup_content': {
+        'orientation': 'vertical',
+        'padding': [PADDING_POPUP[0], PADDING_POPUP[1]],
+        'spacing': SPACING_LG,
+    },
+    # URL display input (readonly, small font)
+    'url_input': {
+        'font_size': '11sp',
+        'size_hint_y': None,
+        'height': BUTTON_HEIGHT_SM,
+        'padding': [SPACING_MD, SPACING_LG],
+        'readonly': True,
+        'multiline': False,
+        'background_color': INPUT_BACKGROUND,
+        'foreground_color': TEXT_DARK,
+    },
+    # Code entry input
+    'code_input': {
+        'font_size': '16sp',
+        'size_hint_y': None,
+        'height': BUTTON_HEIGHT,
+        'padding': [SPACING_LG, SPACING_XL],
+        'multiline': False,
+        'background_color': INPUT_BACKGROUND,
+        'foreground_color': TEXT_HEADER,
+        'cursor_color': TEXT_DARK,
+        'hint_text_color': INPUT_HINT_COLOR,
+    },
+    # Link-style button (transparent background)
+    'link_btn': {
+        'font_size': '12sp',
+        'size_hint_y': None,
+        'height': LINK_HEIGHT,
+        'background_color': (0, 0, 0, 0),
+        'color': LINK_COLOR,
+    },
+    # Back button
+    'back_btn': {
+        'font_size': '18sp',
+    },
+    # Status label (centered, for loading popups)
+    'status_label': {
+        'font_size': '16sp',
+        'halign': 'center',
+        'valign': 'middle',
+        'size_hint_y': None,
+        'height': 45,
+    },
+    # Screen layouts
+    'top_spacer': {
+        'size_hint_y': None,
+        'height': TOP_SPACER_HEIGHT,
+    },
+    'header_bar': {
+        'size_hint_y': None,
+        'height': HEADER_HEIGHT,
+        'spacing': SPACING_LG,
+    },
+    # Calendar styles
+    'nav_btn': {
+        'size_hint_x': None,
+        'width': NAV_BUTTON_WIDTH,
+    },
+    'days_header': {
+        'cols': 7,
+        'size_hint_y': None,
+        'height': DAYS_HEADER_HEIGHT,
+        'spacing': SPACING_XS,
+    },
+    'calendar_grid': {
+        'cols': 7,
+        'size_hint_y': None,
+        'spacing': SPACING_SM,
+    },
+    'cell': {
+        'size_hint_y': None,
+        'height': CELL_HEIGHT,
+    },
+    # Logbook styles
+    'logbook_row': {
+        'size_hint_y': None,
+        'height': ROW_HEIGHT,
+        'padding': [PADDING_ROW[0], PADDING_ROW[1]],
+        'spacing': SPACING_MD,
+    },
+    'date_separator': {
+        'size_hint_y': None,
+        'height': DATE_SEPARATOR_HEIGHT,
+        'padding': [PADDING_ROW[0], PADDING_ROW[1]],
+    },
+    'table_header_row': {
+        'size_hint_y': None,
+        'height': TABLE_HEADER_HEIGHT,
+        'padding': [PADDING_ROW[0], 0],
+        'spacing': SPACING_MD,
+    },
+    'list_layout': {
+        'orientation': 'vertical',
+        'size_hint_y': None,
+        'spacing': SPACING_XS,
+        'padding': [0, PADDING_ROW[1]],
+    },
+    # Game screen styles
+    'game_layout': {
+        'orientation': 'vertical',
+        'padding': SPACING_LG,
+        'spacing': SPACING_SM,
+    },
+    'subtitle_area': {
+        'size_hint_y': None,
+        'height': SUBTITLE_HEIGHT,
+    },
+    'indicator_area': {
+        'size_hint_y': None,
+        'height': INDICATOR_HEIGHT,
+    },
+    'control_bar': {
+        'size_hint': (None, None),
+        'height': CONTROL_BAR_HEIGHT,
+        'spacing': SPACING_XL,
+    },
+    'control_anchor': {
+        'size_hint_y': None,
+        'height': CONTROL_BAR_HEIGHT,
+        'anchor_x': 'center',
+    },
+    'play_area': {
+        'size_hint_y': None,
+        'height': PLAY_AREA_HEIGHT,
+        'anchor_x': 'center',
+    },
+    'solutions_btn': {
+        'size_hint': (None, None),
+        'width': SOLUTIONS_BTN_WIDTH,
+        'height': SOLUTIONS_BTN_HEIGHT,
+    },
+    'solutions_btn_area': {
+        'size_hint_y': None,
+        'height': SOLUTIONS_BTN_AREA_HEIGHT,
+        'anchor_x': 'center',
     },
 }
 

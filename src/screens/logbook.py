@@ -1,32 +1,45 @@
 from __future__ import annotations
 
 import os
+from collections.abc import Callable
 from datetime import datetime
-from typing import Any, Callable
+from typing import Any
 
-from kivy.uix.boxlayout import BoxLayout
-from kivy.uix.scrollview import ScrollView
-from kivy.uix.label import Label
-from kivy.uix.image import Image
-from kivy.uix.behaviors import ButtonBehavior
 from kivy.graphics import Color, RoundedRectangle
 from kivy.metrics import dp
+from kivy.uix.behaviors import ButtonBehavior
+from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.image import Image
+from kivy.uix.label import Label
+from kivy.uix.scrollview import ScrollView
 
 import database
-from screens.base import BackgroundedScreen
-from ui_constants import ROW_BACKGROUND, ROW_PRESSED, QUEEN_GRAY, QUEEN_GOLD, QUEEN_SILVER
 from game import Game
-from widgets import (
-    RoundedButton, FixedGrayRoundedButton,
-    TitleLgLabel, CaptionLabel, SubtitleLabel,
-    TableHeaderLabel, TableCellLabel,
-    SelectableButton, SelectableButtonGroup,
-)
+from screens.base import BackgroundedScreen
 from ui_constants import (
-    TEXT_LIGHT, ROW_HEIGHT, BUTTON_HEIGHT_SM,
-    PADDING_ROW, SPACING_XS, SPACING_MD, RADIUS_SM,
-    DATE_SEPARATOR_HEIGHT, TABLE_HEADER_HEIGHT,
-    SPACING_SM,
+    BUTTON_HEIGHT_SM,
+    QUEEN_GOLD,
+    QUEEN_GRAY,
+    QUEEN_SILVER,
+    RADIUS_SM,
+    ROW_BACKGROUND,
+    ROW_HEIGHT,
+    ROW_PRESSED,
+    STYLES,
+    TEXT_LIGHT,
+)
+from widgets import (
+    CaptionLabel,
+    FixedGrayRoundedButton,
+    GrayRoundedButton,
+    RoundedButton,
+    SelectableButton,
+    SelectableButtonGroup,
+    SubtitleLabel,
+    TableCellLabel,
+    TableHeaderLabel,
+    TitleLgLabel,
+    styled,
 )
 
 # Path to icons
@@ -39,13 +52,20 @@ class LogbookRow(ButtonBehavior, BoxLayout):
     """A tappable row in the logbook."""
 
     def __init__(self, play_data: dict[str, Any], on_select: Callable[[dict[str, Any]], None], **kwargs: Any) -> None:
+        # Apply style properties
+        style_props = STYLES.get('logbook_row', {})
+        for key in ('size_hint_y', 'height', 'padding', 'spacing'):
+            if key in style_props:
+                val = style_props[key]
+                if key in ('height', 'spacing'):
+                    kwargs.setdefault(key, dp(val))
+                elif key == 'padding' and isinstance(val, list):
+                    kwargs.setdefault(key, [dp(v) for v in val])
+                else:
+                    kwargs.setdefault(key, val)
         super().__init__(orientation='horizontal', **kwargs)
         self.play_data = play_data
         self.on_select = on_select
-        self.size_hint_y = None
-        self.height = dp(ROW_HEIGHT)
-        self.padding = [dp(PADDING_ROW[0]), dp(PADDING_ROW[1])]
-        self.spacing = dp(SPACING_MD)
 
         self._bg_color = ROW_BACKGROUND
         self._update_bg()
@@ -64,7 +84,7 @@ class LogbookRow(ButtonBehavior, BoxLayout):
         try:
             dt = datetime.fromisoformat(started_at)
             time_str = dt.strftime('%H:%M')
-        except:
+        except (ValueError, TypeError):
             time_str = '?'
 
         # Format duration
@@ -140,11 +160,18 @@ class DateSeparator(BoxLayout):
     """A date separator row."""
 
     def __init__(self, date_str: str, **kwargs: Any) -> None:
+        # Apply style properties
+        style_props = STYLES.get('date_separator', {})
+        for key in ('size_hint_y', 'height', 'padding'):
+            if key in style_props:
+                val = style_props[key]
+                if key == 'height':
+                    kwargs.setdefault(key, dp(val))
+                elif key == 'padding' and isinstance(val, list):
+                    kwargs.setdefault(key, [dp(v) for v in val])
+                else:
+                    kwargs.setdefault(key, val)
         super().__init__(**kwargs)
-        self.size_hint_y = None
-        self.height = dp(DATE_SEPARATOR_HEIGHT)
-        self.padding = [dp(PADDING_ROW[0]), dp(PADDING_ROW[1])]
-
         self.add_widget(CaptionLabel(date_str, halign='left', valign='middle'))
 
 
@@ -162,12 +189,7 @@ class LogbookScreen(BackgroundedScreen):
         layout.add_widget(TitleLgLabel('Logbook'))
 
         # Sort selector row
-        sort_row = BoxLayout(
-            size_hint_y=None,
-            height=dp(BUTTON_HEIGHT_SM),
-            spacing=dp(SPACING_SM),
-            padding=[dp(PADDING_ROW[0]), 0]
-        )
+        sort_row = styled(BoxLayout, 'selection_row')
 
         sort_label = CaptionLabel('Sort:', size_hint_x=None, width=dp(40))
         sort_row.add_widget(sort_label)
@@ -177,8 +199,8 @@ class LogbookScreen(BackgroundedScreen):
         for sort_key, label in [('time', 'When'), ('size', 'Size'), ('duration', 'Time'), ('rating', 'Rating')]:
             btn = SelectableButton(
                 text=label,
-                font_size='12sp',
-                selected=(sort_key == 'time')
+                selected=(sort_key == 'time'),
+                **STYLES['selection_btn']
             )
             self.sort_group.add(sort_key, btn)
             sort_row.add_widget(btn)
@@ -188,12 +210,7 @@ class LogbookScreen(BackgroundedScreen):
         layout.add_widget(sort_row)
 
         # Header row
-        header = BoxLayout(
-            size_hint_y=None,
-            height=dp(TABLE_HEADER_HEIGHT),
-            padding=[dp(PADDING_ROW[0]), 0],
-            spacing=dp(SPACING_MD)
-        )
+        header = styled(BoxLayout, 'table_header_row')
         header.add_widget(Label(text='', size_hint_x=0.1))  # Type icon column
         header.add_widget(TableHeaderLabel('Size', size_hint_x=0.12, halign='center'))
         header.add_widget(TableHeaderLabel('Time', size_hint_x=0.18, halign='center'))
@@ -204,12 +221,7 @@ class LogbookScreen(BackgroundedScreen):
 
         # Scrollable list
         scroll = ScrollView(size_hint=(1, 1))
-        self.list_layout = BoxLayout(
-            orientation='vertical',
-            size_hint_y=None,
-            spacing=dp(SPACING_XS),
-            padding=[0, dp(PADDING_ROW[1])]
-        )
+        self.list_layout = styled(BoxLayout, 'list_layout')
         self.list_layout.bind(minimum_height=self.list_layout.setter('height'))
         scroll.add_widget(self.list_layout)
         layout.add_widget(scroll)
@@ -281,7 +293,7 @@ class LogbookScreen(BackgroundedScreen):
         # Remove old "Load More" button if appending
         if append and self.list_layout.children:
             last = self.list_layout.children[0]  # Children are in reverse order
-            if isinstance(last, RoundedButton) or isinstance(last, GrayRoundedButton):
+            if isinstance(last, (RoundedButton, GrayRoundedButton)):
                 self.list_layout.remove_widget(last)
 
         # Get last date shown (if appending)

@@ -126,7 +126,7 @@ def analyze_queen_distribution(size: int, num_samples: int = 1000) -> None:
         print(f"{row:2d} |" + "".join(f"{c:6d}" for c in counts))
 
     # Min/max per row
-    print(f"\nMin/Max frequency per row:")
+    print("\nMin/Max frequency per row:")
     for row in range(size):
         counts = [cell_counts[(row, col)] for col in range(size)]
         min_c, max_c = min(counts), max(counts)
@@ -139,12 +139,12 @@ def analyze_queen_distribution(size: int, num_samples: int = 1000) -> None:
     print("  " + "  ".join(f"c{c}:{t}" for c, t in enumerate(col_totals)))
 
     # Diagonal analysis
-    print(f"\nDiagonal analysis:")
+    print("\nDiagonal analysis:")
     print(f"  Main diagonal (row==col): {main_diag_count} ({100*main_diag_count/total_queens:.1f}%)")
     print(f"  Anti-diagonal: {anti_diag_count} ({100*anti_diag_count/total_queens:.1f}%)")
     print(f"  Expected if uniform: {100/size:.1f}%")
 
-    print(f"\nNear-diagonal (within 1 cell of diagonal):")
+    print("\nNear-diagonal (within 1 cell of diagonal):")
     # Calculate expected: for each row, how many cells are within 1 of main diagonal?
     # Row 0: cols 0,1 (2 cells); Row 1: cols 0,1,2 (3 cells); ...; Row n-1: cols n-2,n-1 (2 cells)
     near_diag_cells_per_row = [min(3, row + 2, size - row + 1) for row in range(size)]

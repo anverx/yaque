@@ -1,12 +1,12 @@
 from __future__ import annotations
 
-from kivy.uix.boxlayout import BoxLayout
 from kivy.metrics import dp
+from kivy.uix.boxlayout import BoxLayout
 
 import database
 from screens.base import BackgroundedScreen
-from ui_constants import BUTTON_HEIGHT, BUTTON_HEIGHT_LG, SPACING_LG
-from widgets import RoundedButton, FixedRoundedButton, FixedGrayRoundedButton, TitleMdLabel, ButtonRow
+from ui_constants import BUTTON_HEIGHT_LG
+from widgets import ButtonRow, FixedGrayRoundedButton, FixedRoundedButton, RoundedButton, TitleMdLabel
 
 
 class MainMenuScreen(BackgroundedScreen):

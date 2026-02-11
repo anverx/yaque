@@ -1,10 +1,11 @@
 from __future__ import annotations
 
-import random
 import hashlib
+import random
 from datetime import date
 
-from game_encoding import encode_game, encode_game_b64, decode_game_b64
+from game_encoding import decode_game_b64, encode_game_b64
+
 
 class GenerationCancelled(Exception):
     """Raised when puzzle generation is cancelled."""
@@ -15,7 +16,7 @@ class Game:
 
     def __init__(self, size: int, max_solutions: int = 1, max_attempts: int = 50000,
                  seed: int | None = None, kingdom_strategy: str = 'mixed',
-                 cancel_check: callable = None) -> None:
+                 cancel_check: callable | None = None) -> None:
         """Create a new puzzle.
 
         Args:
@@ -268,7 +269,7 @@ class Game:
             for col in range(self.size):
                 k = self.kingdoms[row][col]
                 if (row, col) in queen_set:
-                    line += f"Q "
+                    line += "Q "
                 else:
                     line += f"{k} "
             print(line)
@@ -286,7 +287,6 @@ class Game:
         directions = [(-1, 0), (1, 0), (0, -1), (0, 1)]
 
         # Build attack map: for each cell, which queens attack it
-        queen_set = set(queens)
         attacked_by: dict[tuple[int, int], set[int]] = {(r, c): set() for r in range(no) for c in range(no)}
 
         for k, (qr, qc) in enumerate(queens):
@@ -542,7 +542,7 @@ class Game:
         return encode_game_b64(self.kingdoms, self.queens)
 
     @classmethod
-    def from_code(cls, code: str) -> 'Game':
+    def from_code(cls, code: str) -> Game:
         """Create a Game from an encoded string."""
         kingdoms, queens = decode_game_b64(code)
         game = object.__new__(cls)
@@ -570,7 +570,7 @@ def get_daily_seed(day: date, size: int, secret: str = SECRET, offset: int = 0) 
 
 def get_daily_game(day: date, size: int, secret: str = SECRET,
                    max_solutions: int = 1, max_seed_attempts: int = 100,
-                   kingdom_strategy: str = 'jagged', cancel_check: callable = None) -> Game:
+                   kingdom_strategy: str = 'jagged', cancel_check: callable | None = None) -> Game:
     """Generate a daily puzzle for a given date and size, trying multiple seeds if needed.
 
     First tries to find a puzzle with max_solutions, then falls back to higher limits.
@@ -592,7 +592,7 @@ def get_daily_game(day: date, size: int, secret: str = SECRET,
                 return game
             except (ValueError, GenerationCancelled):
                 if cancel_check and cancel_check():
-                    raise GenerationCancelled()
+                    raise GenerationCancelled() from None
                 continue
 
     raise ValueError(f"Could not generate puzzle for {day} size {size} after all attempts")
@@ -608,30 +608,3 @@ def get_daily_games(day: date | None = None, secret: str = SECRET, max_solutions
         games[size] = get_daily_game(day, size, secret, max_solutions=max_solutions)
 
     return games
-
-
-def main() -> None:
-    for size in [6, 7, 8]:
-        print(f"\n{'='*40}")
-        print(f"Testing {size}x{size} board:")
-        print('='*40)
-
-        game = Game(size, max_solutions=4)
-        game.print_kingdoms()
-
-        # Encode
-        code = game.encode()
-        raw_bytes = encode_game(game.kingdoms, game.queens)
-        print(f"\nEncoded: {code}")
-        print(f"Length: {len(code)} chars, {len(raw_bytes)} bytes")
-
-        # Decode and verify
-        decoded = Game.from_code(code)
-        assert decoded.kingdoms == game.kingdoms, "Kingdoms mismatch!"
-        assert decoded.queens == game.queens, "Queens mismatch!"
-        print("Decode verified OK")
-
-
-if __name__ == "__main__":
-    main()
-

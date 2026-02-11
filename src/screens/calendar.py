@@ -5,26 +5,32 @@ import os
 from datetime import date
 from typing import Any
 
-from kivy.uix.boxlayout import BoxLayout
-from kivy.uix.gridlayout import GridLayout
-from kivy.uix.label import Label
-from kivy.uix.image import Image
-from kivy.uix.behaviors import ButtonBehavior
 from kivy.graphics import Color, RoundedRectangle
 from kivy.metrics import dp
-from kivy.utils import platform
+from kivy.uix.behaviors import ButtonBehavior
+from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.gridlayout import GridLayout
+from kivy.uix.image import Image
+from kivy.uix.label import Label
 
 import database
-from screens.base import BackgroundedScreen
-from ui_constants import TEXT_WHITE, QUEEN_GRAY, QUEEN_GOLD, QUEEN_SILVER, TODAY_HIGHLIGHT
-from ui_constants import (
-    DEFAULT_BUTTON_COLOR, DEFAULT_BUTTON_COLOR_DOWN,
-    HEADER_HEIGHT, CELL_HEIGHT, NAV_BUTTON_WIDTH, RADIUS_SM,
-    SPACING_MIN, SPACING_XS, SPACING_SM, PADDING_CELL, SPACING_LG,
-    SWIPE_EDGE_THRESHOLD, SWIPE_DISTANCE_THRESHOLD, DAYS_HEADER_HEIGHT,
-)
 from popups import show_date_puzzles_popup
-from widgets import RoundedButton, DayLabel, MonthLabel, TitleSmLabel
+from screens.base import BackgroundedScreen
+from ui_constants import (
+    DEFAULT_BUTTON_COLOR,
+    DEFAULT_BUTTON_COLOR_DOWN,
+    PADDING_CELL,
+    QUEEN_GOLD,
+    QUEEN_GRAY,
+    QUEEN_SILVER,
+    RADIUS_SM,
+    SPACING_MIN,
+    STYLES,
+    SWIPE_DISTANCE_THRESHOLD,
+    TEXT_WHITE,
+    TODAY_HIGHLIGHT,
+)
+from widgets import DayLabel, MonthLabel, RoundedButton, TitleSmLabel, styled
 
 # Path to icons
 ICONS_DIR = os.path.join(os.path.dirname(__file__), '..', 'assets', 'icons')
@@ -87,29 +93,29 @@ class CalendarScreen(BackgroundedScreen):
         layout = self.content_layout
 
         # Header with month/year and navigation
-        header = BoxLayout(size_hint_y=None, height=dp(HEADER_HEIGHT), spacing=dp(SPACING_LG))
+        header = styled(BoxLayout, 'header_bar')
 
-        prev_btn = RoundedButton(text='<', size_hint_x=None, width=dp(NAV_BUTTON_WIDTH))
+        prev_btn = RoundedButton(text='<', **STYLES['nav_btn'])
         prev_btn.bind(on_press=self.prev_month)
         header.add_widget(prev_btn)
 
         self.month_label = MonthLabel('')
         header.add_widget(self.month_label)
 
-        next_btn = RoundedButton(text='>', size_hint_x=None, width=dp(NAV_BUTTON_WIDTH))
+        next_btn = RoundedButton(text='>', **STYLES['nav_btn'])
         next_btn.bind(on_press=self.next_month)
         header.add_widget(next_btn)
 
         layout.add_widget(header)
 
         # Day labels
-        days_header = GridLayout(cols=7, size_hint_y=None, height=dp(DAYS_HEADER_HEIGHT), spacing=dp(SPACING_XS))
+        days_header = styled(GridLayout, 'days_header')
         for day_name in ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su']:
             days_header.add_widget(DayLabel(day_name))
         layout.add_widget(days_header)
 
         # Calendar grid
-        self.calendar_grid = GridLayout(cols=7, spacing=dp(SPACING_SM), size_hint_y=None)
+        self.calendar_grid = styled(GridLayout, 'calendar_grid')
         self.calendar_grid.bind(minimum_height=self.calendar_grid.setter('height'))
         layout.add_widget(self.calendar_grid)
 
@@ -165,7 +171,7 @@ class CalendarScreen(BackgroundedScreen):
         for day in cal.itermonthdays(self.current_year, self.current_month):
             if day == 0:
                 # Empty cell
-                self.calendar_grid.add_widget(Label(text='', size_hint_y=None, height=dp(CELL_HEIGHT)))
+                self.calendar_grid.add_widget(styled(Label, 'cell', text=''))
             else:
                 day_date = date(self.current_year, self.current_month, day)
                 date_str = day_date.isoformat()
@@ -174,8 +180,7 @@ class CalendarScreen(BackgroundedScreen):
                 cell = DayCell(
                     day=day,
                     completion_status=completion_status,
-                    size_hint_y=None,
-                    height=dp(CELL_HEIGHT)
+                    **STYLES['cell']
                 )
 
                 # Disable future dates
@@ -199,16 +204,26 @@ class CalendarScreen(BackgroundedScreen):
         """Refresh calendar when screen is shown to reflect completion changes."""
         self.refresh_calendar()
 
-    # Swipe from left edge to go back to menu
+    # Swipe gestures for month navigation
     def on_touch_down(self, touch: Any) -> bool:
-        if platform == 'android' and touch.x < dp(SWIPE_EDGE_THRESHOLD):
-            touch.ud['swipe_from_edge'] = True
-            touch.ud['start_x'] = touch.x
+        touch.ud['start_x'] = touch.x
+        touch.ud['start_y'] = touch.y
         return super().on_touch_down(touch)
 
     def on_touch_up(self, touch: Any) -> bool:
-        if platform == 'android' and touch.ud.get('swipe_from_edge'):
-            if touch.x - touch.ud.get('start_x', 0) > dp(SWIPE_DISTANCE_THRESHOLD):
-                self.app.sm.current = 'menu'
+        start_x = touch.ud.get('start_x', touch.x)
+        start_y = touch.ud.get('start_y', touch.y)
+        dx = touch.x - start_x
+        dy = abs(touch.y - start_y)
+
+        # Only trigger if horizontal swipe (dx > dy) and sufficient distance
+        if abs(dx) > dp(SWIPE_DISTANCE_THRESHOLD) and abs(dx) > dy:
+            if dx < 0:
+                # Swipe left → next month
+                self.next_month(None)
+                return True
+            else:
+                # Swipe right → previous month
+                self.prev_month(None)
                 return True
         return super().on_touch_up(touch)

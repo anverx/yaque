@@ -1,33 +1,48 @@
 from __future__ import annotations
 
 import io
+from collections.abc import Callable
 from datetime import date
-from typing import Any, Callable
+from typing import Any
 
+from kivy.clock import Clock
+from kivy.core.clipboard import Clipboard
+from kivy.core.image import Image as CoreImage
+from kivy.metrics import dp
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.image import Image
 from kivy.uix.modalview import ModalView
 from kivy.uix.widget import Widget
-from kivy.core.image import Image as CoreImage
-from kivy.core.clipboard import Clipboard
-from kivy.clock import Clock
-from kivy.metrics import dp
 
 from game import Game
 from ui_constants import (
     POPUP_BACKGROUND,
-    STATUS_SUCCESS, STATUS_ERROR,
-    POPUP_WIDTH_NARROW, SPACING_MD, SPACING_XL, SPACING_XXL,
-    BUTTON_HEIGHT_SM,
-    QR_IMAGE_HEIGHT, CAPTION_HEIGHT, CAPTION_HEIGHT_SM,
-    SMALL_BUTTON_WIDTH, SPACER_SM,
+    POPUP_WIDTH_NARROW,
+    SPACING_XL,
+    SPACING_XXL,
+    STATUS_ERROR,
+    STATUS_SUCCESS,
+    STYLES,
 )
 from widgets import (
-    RoundedButton, GrayRoundedButton, FixedRoundedButton, FixedGrayRoundedButton, SmallRoundedButton,
-    SelectableButton, SelectableButtonGroup,
-    TitleLabel, SubtitleLabel, CaptionLabel, StatusLabel,
-    PopupContent, ButtonRow, SizeButtonRow, Popup,
-    UrlInput, CodeInput, QueenSpinner,
+    ButtonRow,
+    CaptionLabel,
+    CodeInput,
+    FixedGrayRoundedButton,
+    FixedRoundedButton,
+    GrayRoundedButton,
+    Popup,
+    PopupContent,
+    QueenSpinner,
+    RoundedButton,
+    SelectableButton,
+    SelectableButtonGroup,
+    SizeButtonRow,
+    StatusLabel,
+    SubtitleLabel,
+    TitleLabel,
+    UrlInput,
+    styled,
 )
 
 
@@ -57,7 +72,7 @@ def show_share_popup(share_url: str, code: str) -> None:
     content.add_widget(TitleLabel('Share Puzzle'))
 
     # QR code image
-    qr_widget = Image(texture=core_img.texture, size_hint_y=None, height=dp(QR_IMAGE_HEIGHT))
+    qr_widget = styled(Image, 'qr_image', texture=core_img.texture)
     content.add_widget(qr_widget)
 
     # URL label (selectable via TextInput)
@@ -65,7 +80,7 @@ def show_share_popup(share_url: str, code: str) -> None:
     content.add_widget(url_input)
 
     # Status label for copy feedback
-    status_label = CaptionLabel('', color=STATUS_SUCCESS, size_hint_y=None, height=dp(CAPTION_HEIGHT))
+    status_label = CaptionLabel('', color=STATUS_SUCCESS, **STYLES['status_area'])
     content.add_widget(status_label)
 
     def copy_url(btn: Any) -> None:
@@ -113,7 +128,7 @@ def show_load_popup(on_game_loaded: Callable[[Game], None]) -> None:
     content.add_widget(text_input)
 
     # Error label
-    error_label = CaptionLabel('', color=STATUS_ERROR, size_hint_y=None, height=dp(CAPTION_HEIGHT))
+    error_label = CaptionLabel('', color=STATUS_ERROR, **STYLES['status_area'])
     content.add_widget(error_label)
 
     popup = None  # Will be set after popup creation
@@ -186,16 +201,11 @@ class LoadingPopup(ModalView):
         layout.add_widget(self.spinner)
 
         # Stopwatch label (small, subtle)
-        self.timer_label = CaptionLabel('0:00', size_hint_y=None, height=dp(CAPTION_HEIGHT_SM))
+        self.timer_label = CaptionLabel('0:00', **STYLES['timer_area'])
         layout.add_widget(self.timer_label)
 
         # Cancel button
-        cancel_btn = GrayRoundedButton(
-            text='Cancel',
-            size_hint=(None, None),
-            size=(dp(SMALL_BUTTON_WIDTH), dp(BUTTON_HEIGHT_SM)),
-            pos_hint={'center_x': 0.5}
-        )
+        cancel_btn = GrayRoundedButton(text='Cancel', **STYLES['small_centered_btn'])
         cancel_btn.bind(on_press=self._on_cancel)
         layout.add_widget(cancel_btn)
 
@@ -277,7 +287,7 @@ def _show_size_selection_popup(
         content.add_widget(row)
 
     # Spacer
-    content.add_widget(Widget(size_hint_y=None, height=dp(SPACER_SM)))
+    content.add_widget(styled(Widget, 'spacer_sm'))
 
     # Cancel button
     cancel_btn = FixedGrayRoundedButton(text='Cancel')
@@ -324,7 +334,7 @@ def show_game_size_popup(on_game_options_selected: Callable[[int, str, int], Non
 
     # Size selection
     content.add_widget(SubtitleLabel('Size'))
-    size_row = ButtonRow(height=dp(BUTTON_HEIGHT_SM), spacing=dp(SPACING_MD))
+    size_row = styled(BoxLayout, 'selection_row')
     size_group = SelectableButtonGroup(
         on_select=lambda value: selected_size.__setitem__(0, value)
     )
@@ -332,8 +342,8 @@ def show_game_size_popup(on_game_options_selected: Callable[[int, str, int], Non
     for size in [6, 7, 8, 9]:
         btn = SelectableButton(
             text=f'{size}x{size}',
-            font_size='14sp',
-            selected=(size == 8)
+            selected=(size == 8),
+            **STYLES['selection_btn']
         )
         size_group.add(size, btn)
         size_row.add_widget(btn)
@@ -342,7 +352,7 @@ def show_game_size_popup(on_game_options_selected: Callable[[int, str, int], Non
 
     # Strategy selection
     content.add_widget(SubtitleLabel('Kingdom Style'))
-    strategy_row = ButtonRow(height=dp(BUTTON_HEIGHT_SM), spacing=dp(SPACING_MD))
+    strategy_row = styled(BoxLayout, 'selection_row')
     strategy_group = SelectableButtonGroup(
         on_select=lambda value: selected_strategy.__setitem__(0, value)
     )
@@ -356,8 +366,8 @@ def show_game_size_popup(on_game_options_selected: Callable[[int, str, int], Non
     for strategy, label in strategies:
         btn = SelectableButton(
             text=label,
-            font_size='14sp',
-            selected=(strategy == 'mixed')
+            selected=(strategy == 'mixed'),
+            **STYLES['selection_btn']
         )
         strategy_group.add(strategy, btn)
         strategy_row.add_widget(btn)
@@ -366,7 +376,7 @@ def show_game_size_popup(on_game_options_selected: Callable[[int, str, int], Non
 
     # Solution count selection
     content.add_widget(SubtitleLabel('Solutions'))
-    solutions_row = ButtonRow(height=dp(BUTTON_HEIGHT_SM), spacing=dp(SPACING_MD))
+    solutions_row = styled(BoxLayout, 'selection_row')
     solutions_group = SelectableButtonGroup(
         on_select=lambda value: selected_max_solutions.__setitem__(0, value)
     )
@@ -380,8 +390,8 @@ def show_game_size_popup(on_game_options_selected: Callable[[int, str, int], Non
     for max_sol, label in solution_options:
         btn = SelectableButton(
             text=label,
-            font_size='14sp',
-            selected=(max_sol == 1)
+            selected=(max_sol == 1),
+            **STYLES['selection_btn']
         )
         solutions_group.add(max_sol, btn)
         solutions_row.add_widget(btn)
@@ -389,7 +399,7 @@ def show_game_size_popup(on_game_options_selected: Callable[[int, str, int], Non
     content.add_widget(solutions_row)
 
     # Spacer
-    content.add_widget(Widget(size_hint_y=None, height=dp(SPACER_SM)))
+    content.add_widget(styled(Widget, 'spacer_sm'))
 
     # Play button
     def on_play(btn: Any) -> None:

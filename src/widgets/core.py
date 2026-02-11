@@ -2,28 +2,46 @@
 
 from __future__ import annotations
 
-from typing import Any, Callable
+import os
+from collections.abc import Callable
+from typing import Any
 
-from kivy.uix.label import Label
-from kivy.uix.button import Button
+from kivy.graphics import Color, Ellipse, RoundedRectangle
+from kivy.metrics import dp
+from kivy.uix.behaviors import ButtonBehavior
 from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.button import Button
+from kivy.uix.image import Image
+from kivy.uix.label import Label
 from kivy.uix.modalview import ModalView
 from kivy.uix.textinput import TextInput
 from kivy.uix.widget import Widget
-from kivy.uix.behaviors import ButtonBehavior
-from kivy.graphics import Color, RoundedRectangle
-from kivy.metrics import dp
 
 from ui_constants import (
-    FONT_NAME, TEXT_WHITE, TEXT_DARK, TEXT_HEADER,
-    DEFAULT_BUTTON_COLOR, DEFAULT_BUTTON_COLOR_DOWN,
-    GRAY_BUTTON_COLOR, GRAY_BUTTON_COLOR_DOWN,
-    INPUT_BACKGROUND, INPUT_HINT_COLOR, LINK_COLOR,
-    LABEL_STYLES, LAYOUT_STYLES,
-    POPUP_BACKGROUND, POPUP_WIDTH,
-    PADDING_POPUP, SPACING_LG, SPACING_MD, SPACING_XL,
-    BUTTON_HEIGHT, BUTTON_HEIGHT_SM, BUTTON_FONT_SIZE, RADIUS_MD, LINK_HEIGHT,
+    BUTTON_FONT_SIZE,
+    BUTTON_HEIGHT,
+    DEFAULT_BUTTON_COLOR,
+    DEFAULT_BUTTON_COLOR_DOWN,
+    FONT_NAME,
+    GRAY_BUTTON_COLOR,
+    GRAY_BUTTON_COLOR_DOWN,
+    ICON_BTN_SIZE,
+    ICON_LABEL_HEIGHT,
+    ICON_LABEL_TOTAL,
+    INDICATOR_CIRCLE_SIZE,
+    INDICATOR_CURRENT,
+    INDICATOR_OTHER,
+    INDICATOR_SPACING,
+    POPUP_BACKGROUND,
+    POPUP_WIDTH,
+    RADIUS_MD,
+    STYLES,
+    TEXT_DARK,
+    TEXT_WHITE,
 )
+
+# Path to icons directory
+ICONS_DIR = os.path.join(os.path.dirname(__file__), '..', 'assets', 'icons')
 
 BUTTON_RADIUS = dp(RADIUS_MD)
 
@@ -90,13 +108,54 @@ def FixedGrayRoundedButton(**kwargs: Any) -> RoundedButton:
 
 
 # -----------------------------------------------------------------------------
-# Label Factory (CSS-like: styles defined in ui_constants.LABEL_STYLES)
+# Generic Style Factory
+# -----------------------------------------------------------------------------
+
+def _convert_dp_props(props: dict[str, Any]) -> dict[str, Any]:
+    """Convert dimension values to dp units."""
+    result = props.copy()
+    # Single value dimensions
+    for key in ('height', 'width', 'spacing'):
+        if key in result and isinstance(result[key], (int, float)):
+            result[key] = dp(result[key])
+    # Padding can be a list [horizontal, vertical] or [left, top, right, bottom]
+    if 'padding' in result and isinstance(result['padding'], (list, tuple)):
+        result['padding'] = [dp(v) if isinstance(v, (int, float)) else v for v in result['padding']]
+    return result
+
+
+def styled(widget_class: type, style: str, **overrides: Any) -> Any:
+    """Create a widget with the specified style.
+
+    Styles are defined in ui_constants.STYLES.
+    Any kwargs override the style defaults.
+
+    Args:
+        widget_class: The widget class to instantiate (Label, BoxLayout, etc.)
+        style: Style name from STYLES dict
+        **overrides: Properties to override style defaults
+    """
+    # Get style properties and convert dp values
+    props = _convert_dp_props(STYLES.get(style, {}))
+
+    # Apply font_name default for text widgets
+    if hasattr(widget_class, 'font_name'):
+        props.setdefault('font_name', FONT_NAME)
+
+    # Apply overrides (also convert dp values)
+    props.update(_convert_dp_props(overrides))
+
+    return widget_class(**props)
+
+
+# -----------------------------------------------------------------------------
+# Label Factory
 # -----------------------------------------------------------------------------
 
 def styled_label(style: str = 'default', text: str = '', **overrides: Any) -> Label:
     """Create a label with the specified style.
 
-    Styles are defined in ui_constants.LABEL_STYLES (CSS-like separation).
+    Styles are defined in ui_constants.STYLES.
     Any kwargs override the style defaults.
 
     Args:
@@ -104,20 +163,7 @@ def styled_label(style: str = 'default', text: str = '', **overrides: Any) -> La
         text: Label text
         **overrides: Properties to override style defaults
     """
-    # Get style properties (copy to avoid mutation)
-    props = LABEL_STYLES.get(style, LABEL_STYLES['default']).copy()
-
-    # Convert height to dp if present
-    if 'height' in props:
-        props['height'] = dp(props['height'])
-
-    # Apply font_name default
-    props.setdefault('font_name', FONT_NAME)
-
-    # Apply overrides
-    props.update(overrides)
-
-    return Label(text=text, **props)
+    return styled(Label, style, text=text, **overrides)
 
 
 # Convenience wrappers (content-only calls)
@@ -202,27 +248,15 @@ def AboutSubtitleLabel(text: str, **kwargs: Any) -> Label:
 
 def PopupContent(**kwargs: Any) -> BoxLayout:
     """Vertical BoxLayout with popup padding/spacing defaults."""
-    kwargs.setdefault('orientation', 'vertical')
-    kwargs.setdefault('padding', [dp(PADDING_POPUP[0]), dp(PADDING_POPUP[1])])
-    kwargs.setdefault('spacing', dp(SPACING_LG))
-    return BoxLayout(**kwargs)
+    return styled(BoxLayout, 'popup_content', **kwargs)
 
 
 def styled_layout(style: str = 'button_row', **overrides: Any) -> BoxLayout:
     """Create a BoxLayout with the specified style.
 
-    Styles are defined in ui_constants.LAYOUT_STYLES.
+    Styles are defined in ui_constants.STYLES.
     """
-    props = LAYOUT_STYLES.get(style, LAYOUT_STYLES['button_row']).copy()
-
-    # Convert height and spacing to dp
-    if 'height' in props:
-        props['height'] = dp(props['height'])
-    if 'spacing' in props:
-        props['spacing'] = dp(props['spacing'])
-
-    props.update(overrides)
-    return BoxLayout(**props)
+    return styled(BoxLayout, style, **overrides)
 
 
 def ButtonRow(**kwargs: Any) -> BoxLayout:
@@ -260,43 +294,18 @@ def Popup(content: Widget, height: float, width_hint: float = POPUP_WIDTH, auto_
 
 def UrlInput(text: str, **kwargs: Any) -> TextInput:
     """Readonly text input for displaying URLs (small font, selectable)."""
-    kwargs.setdefault('font_name', FONT_NAME)
-    kwargs.setdefault('font_size', '11sp')
-    kwargs.setdefault('size_hint_y', None)
-    kwargs.setdefault('height', dp(BUTTON_HEIGHT_SM))
-    kwargs.setdefault('padding', [dp(SPACING_MD), dp(SPACING_LG)])
-    kwargs.setdefault('readonly', True)
-    kwargs.setdefault('multiline', False)
-    kwargs.setdefault('background_color', INPUT_BACKGROUND)
-    kwargs.setdefault('foreground_color', TEXT_DARK)
-    return TextInput(text=text, **kwargs)
+    return styled(TextInput, 'url_input', text=text, **kwargs)
 
 
 def CodeInput(**kwargs: Any) -> TextInput:
     """Text input for entering puzzle codes."""
-    kwargs.setdefault('multiline', False)
-    kwargs.setdefault('font_name', FONT_NAME)
-    kwargs.setdefault('font_size', '16sp')
-    kwargs.setdefault('size_hint_y', None)
-    kwargs.setdefault('height', dp(BUTTON_HEIGHT))
-    kwargs.setdefault('padding', [dp(SPACING_LG), dp(SPACING_XL)])
-    kwargs.setdefault('background_color', INPUT_BACKGROUND)
-    kwargs.setdefault('foreground_color', TEXT_HEADER)
-    kwargs.setdefault('cursor_color', TEXT_DARK)
     kwargs.setdefault('hint_text', 'Enter code here...')
-    kwargs.setdefault('hint_text_color', INPUT_HINT_COLOR)
-    return TextInput(**kwargs)
+    return styled(TextInput, 'code_input', **kwargs)
 
 
 def LinkButton(text: str, **kwargs: Any) -> Button:
     """Transparent button styled as a link."""
-    kwargs.setdefault('font_name', FONT_NAME)
-    kwargs.setdefault('font_size', '12sp')
-    kwargs.setdefault('size_hint_y', None)
-    kwargs.setdefault('height', dp(LINK_HEIGHT))
-    kwargs.setdefault('background_color', (0, 0, 0, 0))
-    kwargs.setdefault('color', LINK_COLOR)
-    return Button(text=text, **kwargs)
+    return styled(Button, 'link_btn', text=text, **kwargs)
 
 
 def SmallRoundedButton(**kwargs: Any) -> RoundedButton:
@@ -361,15 +370,100 @@ class SelectableButtonGroup:
 def BackButton(**kwargs: Any) -> RoundedButton:
     """Standard back button with fixed height."""
     kwargs.setdefault('text', 'Back')
-    kwargs.setdefault('font_size', '18sp')
-    return FixedGrayRoundedButton(**kwargs)
+    return FixedGrayRoundedButton(**STYLES['back_btn'], **kwargs)
 
 
 def StatusLabel(text: str, **kwargs: Any) -> Label:
     """Centered status label for loading popups."""
-    kwargs.setdefault('font_size', '16sp')
-    kwargs.setdefault('halign', 'center')
-    kwargs.setdefault('valign', 'middle')
-    label = styled_label('title_sm', text, height=45, **kwargs)
+    label = styled(Label, 'status_label', text=text, **kwargs)
     label.bind(width=lambda inst, w: setattr(inst, 'text_size', (w, None)))
     return label
+
+
+# -----------------------------------------------------------------------------
+# Solution Indicator
+# -----------------------------------------------------------------------------
+
+class SolutionIndicator(Widget):
+    """Shows gray circles for each solution with a golden indicator for current."""
+
+    def __init__(self, **kwargs: Any) -> None:
+        super().__init__(**kwargs)
+        self.num_solutions = 0
+        self.current_index = 0
+        self.bind(pos=self._draw, size=self._draw)
+
+    def set_solutions(self, num_solutions: int, current_index: int = 0) -> None:
+        self.num_solutions = num_solutions
+        self.current_index = current_index
+        self._draw()
+
+    def set_current(self, index: int) -> None:
+        self.current_index = index
+        self._draw()
+
+    def _draw(self, *args: Any) -> None:
+        self.canvas.clear()
+        if self.num_solutions <= 1:
+            return
+
+        with self.canvas:
+            # Calculate circle positions (centered)
+            circle_size = dp(INDICATOR_CIRCLE_SIZE)
+            spacing = dp(INDICATOR_SPACING)
+            total_width = self.num_solutions * circle_size + (self.num_solutions - 1) * (spacing - circle_size)
+            start_x = self.center_x - total_width / 2
+
+            for i in range(self.num_solutions):
+                cx = start_x + i * spacing
+                cy = self.center_y - circle_size / 2
+
+                if i == self.current_index:
+                    Color(*INDICATOR_CURRENT)
+                    Ellipse(pos=(cx, cy), size=(circle_size, circle_size))
+                else:
+                    Color(*INDICATOR_OTHER)
+                    Ellipse(pos=(cx, cy), size=(circle_size, circle_size))
+
+
+# -----------------------------------------------------------------------------
+# Icon Button
+# -----------------------------------------------------------------------------
+
+class IconButton(ButtonBehavior, BoxLayout):
+    """A clickable image button with optional label."""
+
+    def __init__(self, icon_name: str, size_dp: int = ICON_BTN_SIZE, label: str | None = None, **kwargs: Any) -> None:
+        super().__init__(orientation='vertical', **kwargs)
+        self.icon_name = icon_name
+        self.size_hint = (None, None)
+
+        # Icon
+        self.icon = Image(
+            source=os.path.join(ICONS_DIR, f'{icon_name}.png'),
+            size_hint=(None, None),
+            size=(dp(size_dp), dp(size_dp)),
+            fit_mode='contain'
+        )
+        self.add_widget(self.icon)
+
+        # Optional label
+        if label:
+            self.label_widget = IconLabel(
+                label,
+                size_hint=(None, None),
+                size=(dp(size_dp), dp(ICON_LABEL_HEIGHT)),
+                halign='center'
+            )
+            self.label_widget.bind(size=self.label_widget.setter('text_size'))
+            self.add_widget(self.label_widget)
+            self.size = (dp(size_dp), dp(size_dp + ICON_LABEL_TOTAL))
+        else:
+            self.size = (dp(size_dp), dp(size_dp))
+
+    def set_icon(self, icon_name: str, label: str | None = None) -> None:
+        """Change the icon and optionally the label."""
+        self.icon_name = icon_name
+        self.icon.source = os.path.join(ICONS_DIR, f'{icon_name}.png')
+        if label and hasattr(self, 'label_widget'):
+            self.label_widget.text = label

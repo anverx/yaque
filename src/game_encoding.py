@@ -1,7 +1,6 @@
 """Game encoding/decoding for compact sharing."""
 
 import base64
-from typing import List, Tuple
 
 
 def _bits_needed(n: int) -> int:
@@ -11,7 +10,7 @@ def _bits_needed(n: int) -> int:
     return (n - 1).bit_length()
 
 
-def _pack_bits(values: List[int], bits_per_value: int) -> bytes:
+def _pack_bits(values: list[int], bits_per_value: int) -> bytes:
     """Pack a list of values into bytes, each value using bits_per_value bits."""
     result = []
     current_byte = 0
@@ -45,7 +44,7 @@ def _pack_bits(values: List[int], bits_per_value: int) -> bytes:
     return bytes(result)
 
 
-def _unpack_bits(data: bytes, num_values: int, bits_per_value: int) -> List[int]:
+def _unpack_bits(data: bytes, num_values: int, bits_per_value: int) -> list[int]:
     """Unpack values from bytes."""
     values = []
     bit_index = 0
@@ -64,7 +63,7 @@ def _unpack_bits(data: bytes, num_values: int, bits_per_value: int) -> List[int]
     return values
 
 
-def encode_game(kingdoms: List[List[int]], queens: List[Tuple[int, int]]) -> bytes:
+def encode_game(kingdoms: list[list[int]], queens: list[tuple[int, int]]) -> bytes:
     """
     Encode a game (kingdoms + queens) to bytes.
 
@@ -105,7 +104,7 @@ def encode_game(kingdoms: List[List[int]], queens: List[Tuple[int, int]]) -> byt
     return result
 
 
-def decode_game(data: bytes) -> Tuple[List[List[int]], List[Tuple[int, int]]]:
+def decode_game(data: bytes) -> tuple[list[list[int]], list[tuple[int, int]]]:
     """
     Decode bytes to (kingdoms, queens).
 
@@ -180,14 +179,14 @@ def decode_game(data: bytes) -> Tuple[List[List[int]], List[Tuple[int, int]]]:
     return kingdoms, queens
 
 
-def encode_game_b64(kingdoms: List[List[int]], queens: List[Tuple[int, int]]) -> str:
+def encode_game_b64(kingdoms: list[list[int]], queens: list[tuple[int, int]]) -> str:
     """Encode a game to a URL-safe base64 string for sharing."""
     data = encode_game(kingdoms, queens)
     # Use URL-safe base64 and strip padding for shorter strings
     return base64.urlsafe_b64encode(data).decode('ascii').rstrip('=')
 
 
-def decode_game_b64(code: str) -> Tuple[List[List[int]], List[Tuple[int, int]]]:
+def decode_game_b64(code: str) -> tuple[list[list[int]], list[tuple[int, int]]]:
     """Decode a base64 string to (kingdoms, queens)."""
     # Add back padding if needed
     padding = 4 - (len(code) % 4)
@@ -201,7 +200,7 @@ def decode_game_b64(code: str) -> Tuple[List[List[int]], List[Tuple[int, int]]]:
 # Board state encoding (for saving/restoring play progress)
 # -----------------------------------------------------------------------------
 
-def encode_board_state(cell_marks: List[List[int]]) -> str:
+def encode_board_state(cell_marks: list[list[int]]) -> str:
     """
     Encode board state to a compact base64 string.
 
@@ -221,7 +220,7 @@ def encode_board_state(cell_marks: List[List[int]]) -> str:
     return base64.urlsafe_b64encode(data).decode('ascii').rstrip('=')
 
 
-def decode_board_state(encoded: str) -> List[List[int]]:
+def decode_board_state(encoded: str) -> list[list[int]]:
     """
     Decode a base64 string back to 2D cell_marks array.
 

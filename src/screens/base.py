@@ -4,15 +4,15 @@ from __future__ import annotations
 
 from typing import Any
 
+from kivy.graphics import Color, Rectangle
+from kivy.metrics import dp
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.image import Image
 from kivy.uix.screenmanager import Screen
-from kivy.graphics import Color, Rectangle
-from kivy.metrics import dp
 
-from ui_constants import OVERLAY_WHITE, BACKGROUND_IMAGE, TOP_SPACER_HEIGHT
-from widgets import BackButton
+from ui_constants import BACKGROUND_IMAGE, OVERLAY_WHITE
+from widgets import BackButton, styled
 
 
 class BackgroundedScreen(Screen):
@@ -52,9 +52,7 @@ class BackgroundedScreen(Screen):
         )
 
         # Top spacer (pushes content below the splash image title)
-        self.content_layout.add_widget(
-            BoxLayout(size_hint_y=None, height=dp(TOP_SPACER_HEIGHT))
-        )
+        self.content_layout.add_widget(styled(BoxLayout, 'top_spacer'))
 
         # Let subclass build its content
         self.build_content()

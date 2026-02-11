@@ -1,0 +1,42 @@
+# Ruff configuration for Yaque
+
+# Target Python 3.12
+target-version = "py312"
+
+# Line length (match common editors)
+line-length = 120
+
+[lint]
+# Enable useful rule sets
+select = [
+    "E",      # pycodestyle errors
+    "W",      # pycodestyle warnings
+    "F",      # Pyflakes (unused imports, undefined names, etc.)
+    "I",      # isort (import sorting)
+    "UP",     # pyupgrade (modernize Python syntax)
+    "B",      # flake8-bugbear (common bugs and design problems)
+    "SIM",    # flake8-simplify (simplify code)
+    "RUF",    # Ruff-specific rules
+]
+
+# Ignore some overly strict rules
+ignore = [
+    "E501",   # line too long (handled by formatter if needed)
+    "E731",   # don't assign lambda expression
+    "B008",   # function call in default argument (common in Kivy)
+    "SIM108", # use ternary operator (can reduce readability)
+    "RUF022", # __all__ not sorted (we organize by category)
+]
+
+[lint.per-file-ignores]
+# Kivy requires window config before imports
+"src/app.py" = ["E402"]
+# Analysis scripts are not production code
+"src/analyze_*.py" = ["B007", "F541"]
+
+# Allow autofix for all enabled rules
+fixable = ["ALL"]
+
+[lint.isort]
+# Keep imports organized
+combine-as-imports = true

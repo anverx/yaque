@@ -5,10 +5,10 @@ from __future__ import annotations
 import os
 from typing import Any
 
-from kivy.uix.widget import Widget
-from kivy.graphics import Color, Ellipse, Rectangle, Line, PushMatrix, PopMatrix, Rotate
 from kivy.core.image import Image as CoreImage
+from kivy.graphics import Color, Ellipse, Line, PopMatrix, PushMatrix, Rectangle, Rotate
 from kivy.metrics import dp
+from kivy.uix.widget import Widget
 
 from ui_constants import COLOR_WHITE, SPINNER_BORDER, SPINNER_LINE_WIDTH
 
