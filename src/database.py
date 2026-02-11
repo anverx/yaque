@@ -46,7 +46,12 @@ def _create_tables() -> None:
             size INTEGER NOT NULL,
             daily_date TEXT,
             seed INTEGER,
-            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            generation_time_ms INTEGER,
+            num_solutions INTEGER,
+            kingdom_strategy TEXT,
+            generation_attempts INTEGER,
+            difficulty_score INTEGER
         )
     ''')
 
