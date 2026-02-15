@@ -135,14 +135,14 @@ def styled(widget_class: type, style: str, **overrides: Any) -> Any:
         style: Style name from STYLES dict
         **overrides: Properties to override style defaults
     """
-    # Get style properties and convert dp values
-    props = _convert_dp_props(STYLES.get(style, {}))
+    # Style values are already dp-converted at import time
+    props = STYLES.get(style, {}).copy()
 
     # Apply font_name default for text widgets
     if hasattr(widget_class, 'font_name'):
         props.setdefault('font_name', FONT_NAME)
 
-    # Apply overrides (also convert dp values)
+    # Apply overrides (convert dp values for caller-provided dimensions)
     props.update(_convert_dp_props(overrides))
 
     return widget_class(**props)

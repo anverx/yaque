@@ -1,5 +1,7 @@
 # UI Constants - centralized colors, dimensions, and fonts
 
+from kivy.metrics import dp
+
 # Window settings
 WINDOW_SIZE = (360, 640)  # Logical phone resolution for desktop testing
 WINDOW_CLEARCOLOR = (0.95, 0.95, 0.95, 1)  # Light background
@@ -104,8 +106,8 @@ INDICATOR_SPACING = 14
 INDICATOR_DOT_HEIGHT = 12
 SUBTITLE_HEIGHT = 24
 SOLUTIONS_BTN_WIDTH = 120
-SOLUTIONS_BTN_HEIGHT = 28
-SOLUTIONS_BTN_AREA_HEIGHT = 32
+SOLUTIONS_BTN_HEIGHT = 40
+SOLUTIONS_BTN_AREA_HEIGHT = 44
 ICON_LABEL_HEIGHT = 12
 ICON_LABEL_TOTAL = 14  # Height + padding
 
@@ -432,6 +434,16 @@ STYLES = {
         'anchor_x': 'center',
     },
 }
+
+# Pre-convert all dimension values in STYLES to dp units so that both
+# styled() and direct **STYLES[...] unpacking produce correct sizing
+# on all screen densities (especially Android).
+for _style in STYLES.values():
+    for _key in ('height', 'width', 'spacing'):
+        if _key in _style and isinstance(_style[_key], (int, float)):
+            _style[_key] = dp(_style[_key])
+    if 'padding' in _style and isinstance(_style['padding'], (list, tuple)):
+        _style['padding'] = [dp(_v) if isinstance(_v, (int, float)) else _v for _v in _style['padding']]
 
 # Kingdom colors (RGB, 0-1 range)
 KINGDOM_COLORS = [
