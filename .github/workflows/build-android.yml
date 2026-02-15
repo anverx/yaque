@@ -85,10 +85,12 @@ jobs:
           if [ -n "$DEBUG_KEYSTORE" ]; then
             echo "$DEBUG_KEYSTORE" | base64 -d > debug.keystore
             echo "Debug keystore restored from secrets"
-            # Also place it where gradle/buildozer actually looks for debug keystores
-            mkdir -p ~/.android
+            # Place it where gradle actually looks for debug keystores
+            # Gradle may use ~/.android/ or ~/.config/.android/ (XDG path)
+            mkdir -p ~/.android ~/.config/.android
             cp debug.keystore ~/.android/debug.keystore
-            echo "Copied to ~/.android/debug.keystore"
+            cp debug.keystore ~/.config/.android/debug.keystore
+            echo "Copied to ~/.android/ and ~/.config/.android/"
             # Verify the keystore
             keytool -list -keystore debug.keystore -storepass android -alias androiddebugkey
           else
@@ -123,6 +125,7 @@ jobs:
 
           # Overwrite any cached keystore that buildozer/gradle may have stored
           cp debug.keystore ~/.android/debug.keystore 2>/dev/null || true
+          cp debug.keystore ~/.config/.android/debug.keystore 2>/dev/null || true
 
           yes | buildozer android debug 2>&1 | tee build.log || true
           # Check if APK was created
