@@ -121,6 +121,9 @@ jobs:
           echo "Setting android.numeric_version to $VERSION_CODE"
           sed -i "s/^android.numeric_version = .*/android.numeric_version = $VERSION_CODE/" buildozer.spec
 
+          # Overwrite any cached keystore that buildozer/gradle may have stored
+          cp debug.keystore ~/.android/debug.keystore 2>/dev/null || true
+
           yes | buildozer android debug 2>&1 | tee build.log || true
           # Check if APK was created
           if [ -f bin/*.apk ]; then
@@ -130,6 +133,13 @@ jobs:
             tail -100 build.log
             exit 1
           fi
+
+          # Debug: find all keystore files and print their fingerprints
+          echo "=== All keystore files on system ==="
+          find / -name "*.keystore" -o -name "debug.keystore" 2>/dev/null | while read ks; do
+            echo "--- $ks ---"
+            keytool -list -keystore "$ks" -storepass android 2>/dev/null | head -5 || echo "(could not read)"
+          done
 
       - name: Verify APK signing
         run: |
