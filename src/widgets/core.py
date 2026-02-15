@@ -233,13 +233,13 @@ def IconLabel(text: str, **kwargs: Any) -> Label:
 
 
 def AboutTitleLabel(text: str, **kwargs: Any) -> Label:
-    """Large title for About popup (28sp)."""
-    return styled_label('about_title', text, **kwargs)
+    """Large title for About popup (28sp). Uses title_lg with larger font."""
+    return styled_label('title_lg', text, font_size='28sp', **kwargs)
 
 
 def AboutSubtitleLabel(text: str, **kwargs: Any) -> Label:
-    """Subtitle for About popup (16sp)."""
-    return styled_label('about_subtitle', text, **kwargs)
+    """Subtitle for About popup (16sp). Uses subtitle with larger font."""
+    return styled_label('subtitle', text, font_size='16sp', **kwargs)
 
 
 # -----------------------------------------------------------------------------
@@ -265,8 +265,8 @@ def ButtonRow(**kwargs: Any) -> BoxLayout:
 
 
 def SizeButtonRow(**kwargs: Any) -> BoxLayout:
-    """Horizontal BoxLayout for size selection buttons (taller)."""
-    return styled_layout('size_button_row', **kwargs)
+    """Horizontal BoxLayout for size selection buttons."""
+    return styled_layout('button_row', **kwargs)
 
 
 def Popup(content: Widget, height: float, width_hint: float = POPUP_WIDTH, auto_dismiss: bool = True) -> ModalView:

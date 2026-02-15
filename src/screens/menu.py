@@ -6,7 +6,7 @@ from kivy.uix.boxlayout import BoxLayout
 import database
 from screens.base import BackgroundedScreen
 from ui_constants import BUTTON_HEIGHT_LG
-from widgets import ButtonRow, FixedGrayRoundedButton, FixedRoundedButton, RoundedButton, TitleMdLabel
+from widgets import BackButton, ButtonRow, FixedRoundedButton, RoundedButton, TitleMdLabel
 
 
 class MainMenuScreen(BackgroundedScreen):
@@ -63,7 +63,7 @@ class MainMenuScreen(BackgroundedScreen):
         layout.add_widget(BoxLayout(size_hint_y=0.1))
 
         # Exit button
-        exit_btn = FixedGrayRoundedButton(text='Exit')
+        exit_btn = BackButton(text='Exit')
         exit_btn.bind(on_press=self.app.exit_app)
         layout.add_widget(exit_btn)
 

@@ -127,6 +127,37 @@ jobs:
             exit 1
           fi
 
+      - name: Verify APK signing
+        run: |
+          APK=$(ls bin/*.apk | head -1)
+          echo "=== APK: $APK ==="
+
+          # Print signing certificate fingerprint
+          # This MUST match between builds for updates to work
+          if command -v apksigner &> /dev/null; then
+            apksigner verify --print-certs "$APK"
+          else
+            # Fall back to build-tools apksigner
+            APKSIGNER=$(find ~/.buildozer $ANDROID_HOME -name "apksigner" -type f 2>/dev/null | head -1)
+            if [ -n "$APKSIGNER" ]; then
+              "$APKSIGNER" verify --print-certs "$APK"
+            else
+              echo "apksigner not found, using keytool on debug.keystore instead:"
+              keytool -list -v -keystore debug.keystore -storepass android -alias androiddebugkey 2>/dev/null | grep -A1 "Certificate fingerprints" || true
+              keytool -list -v -keystore debug.keystore -storepass android -alias androiddebugkey 2>/dev/null | grep "SHA256:" || true
+            fi
+          fi
+
+          # Also show version info from the APK
+          if command -v aapt &> /dev/null; then
+            aapt dump badging "$APK" | grep -E "versionCode|versionName|package:" || true
+          else
+            AAPT=$(find ~/.buildozer $ANDROID_HOME -name "aapt" -type f 2>/dev/null | head -1)
+            if [ -n "$AAPT" ]; then
+              "$AAPT" dump badging "$APK" | grep -E "versionCode|versionName|package:" || true
+            fi
+          fi
+
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:

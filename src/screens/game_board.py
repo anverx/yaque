@@ -25,7 +25,7 @@ from widgets import (
     BoardWidget,
     CaptionLabel,
     ClockLabel,
-    FixedGrayRoundedButton,
+    BackButton,
     GrayRoundedButton,
     IconButton,
     SolutionIndicator,
@@ -122,7 +122,7 @@ class GameScreen(Screen):
         layout.add_widget(control_anchor)
 
         # Back button
-        back_btn = FixedGrayRoundedButton(text='Back')
+        back_btn = BackButton()
         back_btn.bind(on_press=self.go_back)
         layout.add_widget(back_btn)
 

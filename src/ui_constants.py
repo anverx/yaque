@@ -232,28 +232,10 @@ STYLES = {
         'font_size': '9sp',
         'color': TEXT_MEDIUM,
     },
-    # About popup styles
-    'about_title': {
-        'font_size': '28sp',
-        'color': TEXT_DARK,
-        'size_hint_y': None,
-        'height': 40,
-    },
-    'about_subtitle': {
-        'font_size': '16sp',
-        'color': TEXT_LIGHT,
-        'size_hint_y': None,
-        'height': 25,
-    },
     # Layout styles
     'button_row': {
         'size_hint_y': None,
         'height': BUTTON_HEIGHT,
-        'spacing': SPACING_LG,
-    },
-    'size_button_row': {
-        'size_hint_y': None,
-        'height': ROW_HEIGHT,
         'spacing': SPACING_LG,
     },
     'selection_row': {
