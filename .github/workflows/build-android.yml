@@ -85,6 +85,10 @@ jobs:
           if [ -n "$DEBUG_KEYSTORE" ]; then
             echo "$DEBUG_KEYSTORE" | base64 -d > debug.keystore
             echo "Debug keystore restored from secrets"
+            # Also place it where gradle/buildozer actually looks for debug keystores
+            mkdir -p ~/.android
+            cp debug.keystore ~/.android/debug.keystore
+            echo "Copied to ~/.android/debug.keystore"
             # Verify the keystore
             keytool -list -keystore debug.keystore -storepass android -alias androiddebugkey
           else
