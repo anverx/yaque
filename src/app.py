@@ -6,7 +6,7 @@ import time
 from datetime import date
 from typing import Any
 
-__version__ = "1.0.4"
+__version__ = "1.0.5"
 __author__ = "Yaque Contributors"
 
 from kivy.app import App

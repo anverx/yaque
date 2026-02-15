@@ -16,7 +16,7 @@ source.dir = src
 source.include_exts = py,png,jpg,kv,atlas,json,ttf
 
 # Application versioning
-version = 1.0.4
+version = 1.0.5
 # Numeric version code for Android (must increment for updates!)
 android.numeric_version = 6
 
