@@ -224,7 +224,8 @@ class YaqueApp(App):
         """Show options popup, then generate random game."""
         show_game_size_popup(self._start_random_game_with_options)
 
-    def _start_random_game_with_options(self, size: int, strategy: str, max_solutions: int) -> None:
+    def _start_random_game_with_options(self, size: int, strategy: str, max_solutions: int,
+                                          queen_placement: str = 'backtrack') -> None:
         """Generate a random game with the selected options."""
         # Expected generation times based on board size and solution requirement
         if max_solutions == 1:
@@ -245,7 +246,8 @@ class YaqueApp(App):
         def generate() -> None:
             try:
                 start_time = time.time()
-                game = Game(size, max_solutions=max_solutions, kingdom_strategy=strategy, cancel_check=cancel_check)
+                game = Game(size, max_solutions=max_solutions, kingdom_strategy=strategy,
+                           cancel_check=cancel_check, queen_placement=queen_placement)
                 game.generation_time_ms = int((time.time() - start_time) * 1000)
                 if not cancel_check():
                     Clock.schedule_once(lambda dt: self._on_game_ready(game, strategy=strategy))
