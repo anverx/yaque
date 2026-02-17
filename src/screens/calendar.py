@@ -21,6 +21,7 @@ from ui_constants import (
     DEFAULT_BUTTON_COLOR,
     DEFAULT_BUTTON_COLOR_DOWN,
     PADDING_CELL,
+    PANEL_BACKGROUND,
     QUEEN_GOLD,
     QUEEN_GRAY,
     QUEEN_SILVER,
@@ -31,7 +32,7 @@ from ui_constants import (
     TEXT_WHITE,
     TODAY_HIGHLIGHT,
 )
-from widgets import DayLabel, MonthLabel, RoundedButton, TitleSmLabel, styled
+from widgets import DayLabel, MonthLabel, RoundedButton, TitleSmLabel, disable_widget, styled
 
 # Path to icons
 ICONS_DIR = os.path.join(os.path.dirname(__file__), '..', 'assets', 'icons')
@@ -159,7 +160,7 @@ class CalendarScreen(BackgroundedScreen):
     def _update_panel_bg(self, *args: Any) -> None:
         self.calendar_panel.canvas.before.clear()
         with self.calendar_panel.canvas.before:
-            Color(0, 0, 0, 0.3)
+            Color(*PANEL_BACKGROUND)
             RoundedRectangle(
                 pos=self.calendar_panel.pos,
                 size=self.calendar_panel.size,
@@ -220,8 +221,7 @@ class CalendarScreen(BackgroundedScreen):
 
                 # Disable future dates
                 if day_date > today:
-                    cell.disabled = True
-                    cell.opacity = 0.4
+                    disable_widget(cell)
                 else:
                     cell.bind(on_press=lambda x, d=day_date: self.select_date(d))
                     # Highlight today with slightly different color

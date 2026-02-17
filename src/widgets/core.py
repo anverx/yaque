@@ -22,6 +22,7 @@ from ui_constants import (
     BUTTON_HEIGHT,
     DEFAULT_BUTTON_COLOR,
     DEFAULT_BUTTON_COLOR_DOWN,
+    DISABLED_OPACITY,
     FONT_NAME,
     GRAY_BUTTON_COLOR,
     GRAY_BUTTON_COLOR_DOWN,
@@ -124,9 +125,12 @@ def _convert_dp_props(props: dict[str, Any]) -> dict[str, Any]:
     for key in ('height', 'width', 'spacing'):
         if key in result and isinstance(result[key], (int, float)):
             result[key] = dp(result[key])
-    # Padding can be a list [horizontal, vertical] or [left, top, right, bottom]
-    if 'padding' in result and isinstance(result['padding'], (list, tuple)):
-        result['padding'] = [dp(v) if isinstance(v, (int, float)) else v for v in result['padding']]
+    # Padding can be a single number or a list
+    if 'padding' in result:
+        if isinstance(result['padding'], (list, tuple)):
+            result['padding'] = [dp(v) if isinstance(v, (int, float)) else v for v in result['padding']]
+        elif isinstance(result['padding'], (int, float)):
+            result['padding'] = dp(result['padding'])
     return result
 
 
@@ -226,6 +230,11 @@ def TableHeaderLabel(text: str, **kwargs: Any) -> Label:
 def TableCellLabel(text: str, **kwargs: Any) -> Label:
     """Table cell data label (13sp)."""
     return styled_label('table_cell', text, **kwargs)
+
+
+def RatingLabel(text: str, **kwargs: Any) -> Label:
+    """Star rating display label (gold, markup-enabled for font fallback)."""
+    return styled_label('rating_cell', text, **kwargs)
 
 
 def ClockLabel(text: str = '00:00', **kwargs: Any) -> Label:
@@ -377,6 +386,12 @@ def BackButton(**kwargs: Any) -> RoundedButton:
     """Standard back button with fixed height."""
     kwargs.setdefault('text', 'Back')
     return FixedGrayRoundedButton(**STYLES['back_btn'], **kwargs)
+
+
+def disable_widget(widget: Widget) -> None:
+    """Disable a widget with standard disabled styling."""
+    widget.disabled = True
+    widget.opacity = DISABLED_OPACITY
 
 
 def StatusLabel(text: str, **kwargs: Any) -> Label:

@@ -4,13 +4,11 @@ from kivy.uix.boxlayout import BoxLayout
 
 import database
 from screens.base import BackgroundedScreen
+from ui_constants import STYLES
 from widgets import BackButton, ButtonRow, FixedRoundedButton, RoundedButton, TallRoundedButton, TitleMdLabel
 
 
 class MainMenuScreen(BackgroundedScreen):
-    def get_spacing(self) -> int:
-        return 12
-
     def build_content(self) -> None:
         layout = self.content_layout
 
@@ -72,4 +70,5 @@ class MainMenuScreen(BackgroundedScreen):
             streak_text = f"Streak: {streak} day{'s' if streak != 1 else ''}"
         else:
             streak_text = "Start a streak!"
-        self.calendar_btn.text = f"Calendar\n[size=12sp]{streak_text}[/size]"
+        caption_size = STYLES['caption']['font_size']
+        self.calendar_btn.text = f"Calendar\n[size={caption_size}]{streak_text}[/size]"

@@ -6,7 +6,7 @@ from typing import Any
 
 from kivy.clock import Clock
 from kivy.core.image import Image as CoreImage
-from kivy.metrics import dp, sp
+from kivy.metrics import dp
 from kivy.uix.anchorlayout import AnchorLayout
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.image import Image
@@ -16,6 +16,8 @@ from kivy.utils import platform
 import database
 import game_encoding
 from ui_constants import (
+    GRAY_BUTTON_COLOR,
+    GRAY_BUTTON_COLOR_DOWN,
     ICON_BTN_SIZE_LG,
     STYLES,
     SWIPE_DISTANCE_THRESHOLD,
@@ -530,21 +532,14 @@ class GameScreen(Screen):
 
     def show_rating(self, instance: Any) -> None:
         """Show a simple rating popup."""
-        from kivy.uix.boxlayout import BoxLayout
-        from kivy.uix.button import Button
-        from kivy.uix.modalview import ModalView
+        from widgets import ButtonRow, Popup, PopupContent, SmallRoundedButton, TitleLabel
 
-        popup = ModalView(size_hint=(0.7, None), height=dp(120), auto_dismiss=True)
-        content = BoxLayout(orientation='vertical', padding=dp(15), spacing=dp(10))
+        content = PopupContent()
+        content.add_widget(TitleLabel('Rate this puzzle'))
 
-        # Title
-        title = CaptionLabel('Rate this puzzle', size_hint_y=None, height=dp(30))
-        content.add_widget(title)
+        stars_row = ButtonRow()
 
-        # Star buttons row
-        stars_row = BoxLayout(size_hint_y=None, height=dp(45), spacing=dp(5))
-
-        def make_rate_callback(rating: int):
+        def make_rate_callback(rating: int) -> Any:
             def callback(btn: Any) -> None:
                 if self.play_id:
                     database.rate_play(self.play_id, rating)
@@ -552,18 +547,17 @@ class GameScreen(Screen):
             return callback
 
         for i in range(1, 6):
-            star_btn = Button(
-                text='★' * i,
-                font_size=sp(14),
-                background_color=(0.3, 0.3, 0.3, 1),
-                color=(1, 0.8, 0, 1) if i <= 3 else (1, 0.6, 0, 1),
-                size_hint_x=1
+            star_btn = SmallRoundedButton(
+                text='[font=Roboto]' + '★' * i + '[/font]',
+                bg_color=GRAY_BUTTON_COLOR,
+                bg_color_down=GRAY_BUTTON_COLOR_DOWN,
+                color=STYLES['rating_cell']['color'],
             )
             star_btn.bind(on_press=make_rate_callback(i))
             stars_row.add_widget(star_btn)
 
         content.add_widget(stars_row)
-        popup.add_widget(content)
+        popup = Popup(content, height=140)
         popup.open()
 
     # Swipe from left edge to go back (Android)

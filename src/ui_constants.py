@@ -20,6 +20,8 @@ TEXT_WHITE = (1, 1, 1, 1)
 OVERLAY_WHITE = (1, 1, 1, 0.7)
 ROW_BACKGROUND = (1, 1, 1, 0.7)
 ROW_PRESSED = (0.9, 0.9, 0.9, 1)
+PANEL_BACKGROUND = (0, 0, 0, 0.3)
+DISABLED_OPACITY = 0.4
 
 # Crown/queen icon colors (for calendar, logbook)
 QUEEN_GRAY = (0.5, 0.5, 0.5, 0.3)  # Not completed / random
@@ -228,6 +230,12 @@ STYLES = {
         'font_size': '13sp',
         'color': TEXT_DARK,
     },
+    'rating_cell': {
+        'font_size': '13sp',
+        'color': (1, 0.8, 0, 1),
+        'halign': 'center',
+        'markup': True,
+    },
     'icon_label': {
         'font_size': '9sp',
         'color': TEXT_MEDIUM,
@@ -429,8 +437,11 @@ for _style in STYLES.values():
     for _key in ('height', 'width', 'spacing'):
         if _key in _style and isinstance(_style[_key], (int, float)):
             _style[_key] = dp(_style[_key])
-    if 'padding' in _style and isinstance(_style['padding'], (list, tuple)):
-        _style['padding'] = [dp(_v) if isinstance(_v, (int, float)) else _v for _v in _style['padding']]
+    if 'padding' in _style:
+        if isinstance(_style['padding'], (list, tuple)):
+            _style['padding'] = [dp(_v) if isinstance(_v, (int, float)) else _v for _v in _style['padding']]
+        elif isinstance(_style['padding'], (int, float)):
+            _style['padding'] = dp(_style['padding'])
 
 # Kingdom colors (RGB, 0-1 range)
 KINGDOM_COLORS = [

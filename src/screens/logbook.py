@@ -25,13 +25,16 @@ from ui_constants import (
     ROW_BACKGROUND,
     ROW_HEIGHT,
     ROW_PRESSED,
+    SPACING_XL,
     STYLES,
     TEXT_LIGHT,
+    TEXT_MEDIUM,
 )
 from widgets import (
     CaptionLabel,
     FixedGrayRoundedButton,
     GrayRoundedButton,
+    RatingLabel,
     RoundedButton,
     SelectableButton,
     SelectableButtonGroup,
@@ -52,17 +55,11 @@ class LogbookRow(ButtonBehavior, BoxLayout):
     """A tappable row in the logbook."""
 
     def __init__(self, play_data: dict[str, Any], on_select: Callable[[dict[str, Any]], None], **kwargs: Any) -> None:
-        # Apply style properties
+        # Apply pre-converted style properties (already in dp units)
         style_props = STYLES.get('logbook_row', {})
         for key in ('size_hint_y', 'height', 'padding', 'spacing'):
             if key in style_props:
-                val = style_props[key]
-                if key in ('height', 'spacing'):
-                    kwargs.setdefault(key, dp(val))
-                elif key == 'padding' and isinstance(val, list):
-                    kwargs.setdefault(key, [dp(v) for v in val])
-                else:
-                    kwargs.setdefault(key, val)
+                kwargs.setdefault(key, style_props[key])
         super().__init__(orientation='horizontal', **kwargs)
         self.play_data = play_data
         self.on_select = on_select
@@ -97,7 +94,7 @@ class LogbookRow(ButtonBehavior, BoxLayout):
             duration_str = '-'
 
         # Format rating
-        rating_str = '★' * fun_rating if fun_rating else '-'
+        rating_str = '[font=Roboto]' + '★' * fun_rating + '[/font]' if fun_rating else '-'
 
         # Determine crown color
         crown_color = QUEEN_GRAY  # Gray/faded for random or incomplete
@@ -115,7 +112,7 @@ class LogbookRow(ButtonBehavior, BoxLayout):
         type_icon = 'calendar' if daily_date else 'dice'
         type_img = Image(
             source=os.path.join(ICONS_DIR, f'{type_icon}.png'),
-            color=(0.5, 0.5, 0.5, 1),
+            color=TEXT_MEDIUM,
             size_hint_x=0.1,
             fit_mode='contain'
         )
@@ -128,7 +125,7 @@ class LogbookRow(ButtonBehavior, BoxLayout):
         self.add_widget(TableCellLabel(duration_str, size_hint_x=0.18, halign='center'))
 
         # Rating column
-        self.add_widget(TableCellLabel(rating_str, color=(1, 0.8, 0, 1), size_hint_x=0.2, halign='center'))
+        self.add_widget(RatingLabel(rating_str, size_hint_x=0.2))
 
         # Time column
         self.add_widget(TableCellLabel(time_str, size_hint_x=0.2, halign='center', valign='middle'))
@@ -160,24 +157,18 @@ class DateSeparator(BoxLayout):
     """A date separator row."""
 
     def __init__(self, date_str: str, **kwargs: Any) -> None:
-        # Apply style properties
+        # Apply pre-converted style properties (already in dp units)
         style_props = STYLES.get('date_separator', {})
         for key in ('size_hint_y', 'height', 'padding'):
             if key in style_props:
-                val = style_props[key]
-                if key == 'height':
-                    kwargs.setdefault(key, dp(val))
-                elif key == 'padding' and isinstance(val, list):
-                    kwargs.setdefault(key, [dp(v) for v in val])
-                else:
-                    kwargs.setdefault(key, val)
+                kwargs.setdefault(key, style_props[key])
         super().__init__(**kwargs)
         self.add_widget(CaptionLabel(date_str, halign='left', valign='middle'))
 
 
 class LogbookScreen(BackgroundedScreen):
     def get_padding(self) -> int:
-        return 15
+        return SPACING_XL
 
     def build_content(self) -> None:
         self.current_offset = 0

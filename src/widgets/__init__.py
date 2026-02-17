@@ -21,6 +21,7 @@ from widgets.core import (
     LinkButton,
     MonthLabel,
     Popup,
+    RatingLabel,
     # Layout factories
     PopupContent,
     # Button classes and factories
@@ -47,6 +48,8 @@ from widgets.core import (
     # Label factories
     styled_label,
     styled_layout,
+    # Widget helpers
+    disable_widget,
 )
 from widgets.spinner import QueenSpinner
 
@@ -80,6 +83,7 @@ __all__ = [
     'DayLabel',
     'TableHeaderLabel',
     'TableCellLabel',
+    'RatingLabel',
     'ClockLabel',
     'IconLabel',
     'AboutTitleLabel',
@@ -96,6 +100,8 @@ __all__ = [
     'CodeInput',
     # Indicators
     'SolutionIndicator',
+    # Widget helpers
+    'disable_widget',
     # Spinner
     'QueenSpinner',
     # Board
