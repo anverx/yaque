@@ -6,8 +6,8 @@ import time
 from datetime import date
 from typing import Any
 
-__version__ = "1.0.5"
-__author__ = "Yaque Contributors"
+__version__ = "1.0.6"
+__author__ = "Anatoli V. and Claude C."
 
 from kivy.app import App
 from kivy.clock import Clock
