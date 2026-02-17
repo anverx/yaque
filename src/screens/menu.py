@@ -1,12 +1,10 @@
 from __future__ import annotations
 
-from kivy.metrics import dp
 from kivy.uix.boxlayout import BoxLayout
 
 import database
 from screens.base import BackgroundedScreen
-from ui_constants import BUTTON_HEIGHT_LG
-from widgets import BackButton, ButtonRow, FixedRoundedButton, RoundedButton, TitleMdLabel
+from widgets import BackButton, ButtonRow, FixedRoundedButton, RoundedButton, TallRoundedButton, TitleMdLabel
 
 
 class MainMenuScreen(BackgroundedScreen):
@@ -35,7 +33,7 @@ class MainMenuScreen(BackgroundedScreen):
         layout.add_widget(BoxLayout(size_hint_y=0.25))
 
         # Calendar button with streak display
-        self.calendar_btn = FixedRoundedButton(text='Calendar', height=dp(BUTTON_HEIGHT_LG))
+        self.calendar_btn = TallRoundedButton(text='Calendar')
         self.calendar_btn.bind(on_press=self.app.show_calendar)
         layout.add_widget(self.calendar_btn)
 

@@ -17,6 +17,7 @@ import database
 from popups import show_date_puzzles_popup
 from screens.base import BackgroundedScreen
 from ui_constants import (
+    CELL_HEIGHT,
     DEFAULT_BUTTON_COLOR,
     DEFAULT_BUTTON_COLOR_DOWN,
     PADDING_CELL,
@@ -92,6 +93,9 @@ class CalendarScreen(BackgroundedScreen):
         self.current_month = date.today().month
         layout = self.content_layout
 
+        # Extra spacer to push calendar down
+        layout.add_widget(BoxLayout(size_hint_y=None, height=dp(CELL_HEIGHT)))
+
         # Header with month/year and navigation
         header = styled(BoxLayout, 'header_bar')
 
@@ -108,16 +112,37 @@ class CalendarScreen(BackgroundedScreen):
 
         layout.add_widget(header)
 
+        # Calendar panel with rounded background
+        panel_pad_v = dp(PADDING_CELL[1] * 2)
+        self.calendar_panel = BoxLayout(
+            orientation='vertical',
+            size_hint_y=None,
+            padding=[dp(PADDING_CELL[0] * 2), panel_pad_v],
+            spacing=dp(SPACING_MIN),
+        )
+        self.calendar_panel.bind(pos=self._update_panel_bg, size=self._update_panel_bg)
+
         # Day labels
         days_header = styled(GridLayout, 'days_header')
         for day_name in ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su']:
             days_header.add_widget(DayLabel(day_name))
-        layout.add_widget(days_header)
+        self.calendar_panel.add_widget(days_header)
 
         # Calendar grid
         self.calendar_grid = styled(GridLayout, 'calendar_grid')
         self.calendar_grid.bind(minimum_height=self.calendar_grid.setter('height'))
-        layout.add_widget(self.calendar_grid)
+        self.calendar_panel.add_widget(self.calendar_grid)
+
+        # Panel height = days_header + calendar_grid + padding + spacing
+        def update_panel_height(*args: Any) -> None:
+            self.calendar_panel.height = (
+                days_header.height + self.calendar_grid.height
+                + panel_pad_v * 2 + dp(SPACING_MIN)
+            )
+        self.calendar_grid.bind(height=update_panel_height)
+        days_header.bind(height=update_panel_height)
+
+        layout.add_widget(self.calendar_panel)
 
         # Streak display
         self.streak_label = TitleSmLabel('')
@@ -130,6 +155,16 @@ class CalendarScreen(BackgroundedScreen):
         self.add_back_button()
 
         self.refresh_calendar()
+
+    def _update_panel_bg(self, *args: Any) -> None:
+        self.calendar_panel.canvas.before.clear()
+        with self.calendar_panel.canvas.before:
+            Color(0, 0, 0, 0.3)
+            RoundedRectangle(
+                pos=self.calendar_panel.pos,
+                size=self.calendar_panel.size,
+                radius=[dp(RADIUS_SM)]
+            )
 
     def prev_month(self, instance: Any) -> None:
         if self.current_month == 1:

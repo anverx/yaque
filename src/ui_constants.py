@@ -310,6 +310,11 @@ STYLES = {
         'background_color': (0, 0, 0, 0),
         'color': LINK_COLOR,
     },
+    # Tall button with tight line spacing (e.g., Calendar + streak)
+    'tall_btn': {
+        'height': BUTTON_HEIGHT_LG,
+        'line_height': 0.6,
+    },
     # Back button
     'back_btn': {
         'font_size': '18sp',
@@ -379,7 +384,7 @@ STYLES = {
     # Game screen styles
     'game_layout': {
         'orientation': 'vertical',
-        'padding': SPACING_LG,
+        'padding': SPACING_XXL,
         'spacing': SPACING_SM,
     },
     'subtitle_area': {

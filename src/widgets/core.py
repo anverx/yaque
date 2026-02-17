@@ -101,6 +101,12 @@ def FixedRoundedButton(**kwargs: Any) -> RoundedButton:
     return RoundedButton(**kwargs)
 
 
+def TallRoundedButton(**kwargs: Any) -> RoundedButton:
+    """Factory for tall buttons with tight line spacing (two-line text)."""
+    kwargs.setdefault('size_hint_y', None)
+    return RoundedButton(**STYLES['tall_btn'], **kwargs)
+
+
 def FixedGrayRoundedButton(**kwargs: Any) -> RoundedButton:
     """Factory for standalone gray buttons with fixed height."""
     kwargs.setdefault('size_hint_y', None)
