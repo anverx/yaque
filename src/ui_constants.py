@@ -80,11 +80,11 @@ BUTTON_FONT_SIZE = '22sp'  # 50% larger than default 15sp
 # Layout heights
 TOP_SPACER_HEIGHT = 70
 HEADER_HEIGHT = 50
-ROW_HEIGHT = 50
+ROW_HEIGHT = 36
 CELL_HEIGHT = 52
 NAV_BUTTON_WIDTH = 50
 DAYS_HEADER_HEIGHT = 30
-DATE_SEPARATOR_HEIGHT = 30
+DATE_SEPARATOR_HEIGHT = 22
 TABLE_HEADER_HEIGHT = 20
 CAPTION_HEIGHT = 22
 CAPTION_HEIGHT_SM = 18
@@ -107,7 +107,7 @@ INDICATOR_CIRCLE_SIZE = 8
 INDICATOR_SPACING = 14
 INDICATOR_DOT_HEIGHT = 12
 SUBTITLE_HEIGHT = 24
-SOLUTIONS_BTN_WIDTH = 120
+SOLUTIONS_BTN_WIDTH = 160
 SOLUTIONS_BTN_HEIGHT = 40
 SOLUTIONS_BTN_AREA_HEIGHT = 44
 ICON_LABEL_HEIGHT = 12
@@ -224,11 +224,13 @@ STYLES = {
     # Table styles
     'table_header': {
         'font_size': '11sp',
-        'color': TEXT_MEDIUM,
+        'color': TEXT_WHITE,
+        'halign': 'center',
     },
     'table_cell': {
         'font_size': '13sp',
         'color': TEXT_DARK,
+        'halign': 'center',
     },
     'rating_cell': {
         'font_size': '13sp',

@@ -80,7 +80,8 @@ class BackgroundedScreen(Screen):
         pass
 
     def add_back_button(self) -> BackButton:
-        """Add a standard back button that returns to menu."""
+        """Add a standard back button that returns to menu, pushed to the bottom."""
+        self.content_layout.add_widget(BoxLayout(size_hint_y=0.1))
         back_btn = BackButton()
         back_btn.bind(on_press=lambda x: setattr(self.app.sm, 'current', 'menu'))
         self.content_layout.add_widget(back_btn)

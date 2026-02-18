@@ -33,11 +33,14 @@ from ui_constants import (
     INDICATOR_CURRENT,
     INDICATOR_OTHER,
     INDICATOR_SPACING,
+    PANEL_BACKGROUND,
     POPUP_BACKGROUND,
     POPUP_WIDTH,
     RADIUS_MD,
+    RADIUS_SM,
     STYLES,
     TEXT_DARK,
+    TEXT_MEDIUM,
     TEXT_WHITE,
 )
 
@@ -282,6 +285,35 @@ def ButtonRow(**kwargs: Any) -> BoxLayout:
 def SizeButtonRow(**kwargs: Any) -> BoxLayout:
     """Horizontal BoxLayout for size selection buttons."""
     return styled_layout('button_row', **kwargs)
+
+
+class PanelLayout(BoxLayout):
+    """BoxLayout with a dark rounded background panel."""
+
+    def __init__(self, **kwargs: Any) -> None:
+        super().__init__(**kwargs)
+        self._update_panel_bg()
+        self.bind(pos=self._update_panel_bg, size=self._update_panel_bg)
+
+    def _update_panel_bg(self, *args: Any) -> None:
+        self.canvas.before.clear()
+        with self.canvas.before:
+            Color(*PANEL_BACKGROUND)
+            RoundedRectangle(pos=self.pos, size=self.size, radius=[dp(RADIUS_SM)])
+
+
+def TypeIcon(daily_date: str | None, **kwargs: Any) -> Image:
+    """Calendar/dice icon indicating daily vs random puzzle."""
+    icon_name = 'calendar' if daily_date else 'dice'
+    kwargs.setdefault('color', TEXT_MEDIUM)
+    kwargs.setdefault('fit_mode', 'contain')
+    return Image(source=os.path.join(ICONS_DIR, f'{icon_name}.png'), **kwargs)
+
+
+def CrownIcon(color: tuple[float, ...], **kwargs: Any) -> Image:
+    """Small queen/crown status icon."""
+    kwargs.setdefault('fit_mode', 'contain')
+    return Image(source=os.path.join(ICONS_DIR, 'queen-small.png'), color=color, **kwargs)
 
 
 def Popup(content: Widget, height: float, width_hint: float = POPUP_WIDTH, auto_dismiss: bool = True) -> ModalView:

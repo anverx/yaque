@@ -21,7 +21,6 @@ from ui_constants import (
     DEFAULT_BUTTON_COLOR,
     DEFAULT_BUTTON_COLOR_DOWN,
     PADDING_CELL,
-    PANEL_BACKGROUND,
     QUEEN_GOLD,
     QUEEN_GRAY,
     QUEEN_SILVER,
@@ -33,7 +32,7 @@ from ui_constants import (
     TODAY_HIGHLIGHT,
     TOP_SPACER_HEIGHT,
 )
-from widgets import DayLabel, MonthLabel, RoundedButton, TitleSmLabel, disable_widget, styled
+from widgets import DayLabel, MonthLabel, PanelLayout, RoundedButton, TitleSmLabel, disable_widget, styled
 
 # Path to icons
 ICONS_DIR = os.path.join(os.path.dirname(__file__), '..', 'assets', 'icons')
@@ -116,13 +115,12 @@ class CalendarScreen(BackgroundedScreen):
 
         # Calendar panel with rounded background
         panel_pad_v = dp(PADDING_CELL[1] * 2)
-        self.calendar_panel = BoxLayout(
+        self.calendar_panel = PanelLayout(
             orientation='vertical',
             size_hint_y=None,
             padding=[dp(PADDING_CELL[0] * 2), panel_pad_v],
             spacing=dp(SPACING_MIN),
         )
-        self.calendar_panel.bind(pos=self._update_panel_bg, size=self._update_panel_bg)
 
         # Day labels
         days_header = styled(GridLayout, 'days_header')
@@ -157,16 +155,6 @@ class CalendarScreen(BackgroundedScreen):
         self.add_back_button()
 
         self.refresh_calendar()
-
-    def _update_panel_bg(self, *args: Any) -> None:
-        self.calendar_panel.canvas.before.clear()
-        with self.calendar_panel.canvas.before:
-            Color(*PANEL_BACKGROUND)
-            RoundedRectangle(
-                pos=self.calendar_panel.pos,
-                size=self.calendar_panel.size,
-                radius=[dp(RADIUS_SM)]
-            )
 
     def prev_month(self, instance: Any) -> None:
         if self.current_month == 1:

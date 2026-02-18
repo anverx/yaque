@@ -23,7 +23,11 @@ from widgets.core import (
     Popup,
     RatingLabel,
     # Layout factories
+    PanelLayout,
     PopupContent,
+    # Icon factories
+    CrownIcon,
+    TypeIcon,
     # Button classes and factories
     RoundedButton,
     SelectableButton,
@@ -90,11 +94,15 @@ __all__ = [
     'AboutSubtitleLabel',
     'StatusLabel',
     # Layout factories
+    'PanelLayout',
     'PopupContent',
     'styled_layout',
     'ButtonRow',
     'SizeButtonRow',
     'Popup',
+    # Icon factories
+    'CrownIcon',
+    'TypeIcon',
     # Input factories
     'UrlInput',
     'CodeInput',
