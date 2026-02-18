@@ -31,6 +31,7 @@ from ui_constants import (
     SWIPE_DISTANCE_THRESHOLD,
     TEXT_WHITE,
     TODAY_HIGHLIGHT,
+    TOP_SPACER_HEIGHT,
 )
 from widgets import DayLabel, MonthLabel, RoundedButton, TitleSmLabel, disable_widget, styled
 
@@ -94,8 +95,8 @@ class CalendarScreen(BackgroundedScreen):
         self.current_month = date.today().month
         layout = self.content_layout
 
-        # Extra spacer to push calendar down
-        layout.add_widget(BoxLayout(size_hint_y=None, height=dp(CELL_HEIGHT)))
+        # Extra spacer to push calendar below the banner
+        layout.add_widget(BoxLayout(size_hint_y=None, height=dp(TOP_SPACER_HEIGHT)))
 
         # Header with month/year and navigation
         header = styled(BoxLayout, 'header_bar')

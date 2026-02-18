@@ -29,6 +29,10 @@ LabelBase.register(
     name='DMSansBlack',
     fn_regular=os.path.join(FONTS_DIR, 'DMSans-Black.ttf')
 )
+LabelBase.register(
+    name='Stars',
+    fn_regular=os.path.join(FONTS_DIR, 'NotoSans-Stars.ttf')
+)
 
 from game import Game, GenerationCancelled, get_daily_game
 from popups import LoadingPopup, show_game_size_popup, show_load_popup, show_share_popup

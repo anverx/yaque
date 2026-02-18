@@ -548,7 +548,7 @@ class GameScreen(Screen):
 
         for i in range(1, 6):
             star_btn = SmallRoundedButton(
-                text='[font=Roboto]' + '★' * i + '[/font]',
+                text='[font=Stars]' + '★' * i + '[/font]',
                 bg_color=GRAY_BUTTON_COLOR,
                 bg_color_down=GRAY_BUTTON_COLOR_DOWN,
                 color=STYLES['rating_cell']['color'],

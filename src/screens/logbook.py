@@ -94,7 +94,7 @@ class LogbookRow(ButtonBehavior, BoxLayout):
             duration_str = '-'
 
         # Format rating
-        rating_str = '[font=Roboto]' + '★' * fun_rating + '[/font]' if fun_rating else '-'
+        rating_str = '[font=Stars]' + '★' * fun_rating + '[/font]' if fun_rating else '-'
 
         # Determine crown color
         crown_color = QUEEN_GRAY  # Gray/faded for random or incomplete
