@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import os
 from collections.abc import Callable
 from datetime import datetime
 from typing import Any
@@ -9,7 +8,6 @@ from kivy.graphics import Color, RoundedRectangle
 from kivy.metrics import dp
 from kivy.uix.behaviors import ButtonBehavior
 from kivy.uix.boxlayout import BoxLayout
-from kivy.uix.image import Image
 from kivy.uix.label import Label
 from kivy.uix.scrollview import ScrollView
 
@@ -18,6 +16,7 @@ from game import Game
 from screens.base import BackgroundedScreen
 from ui_constants import (
     BUTTON_HEIGHT_SM,
+    PADDING_CELL,
     QUEEN_GOLD,
     QUEEN_GRAY,
     QUEEN_SILVER,
@@ -27,11 +26,16 @@ from ui_constants import (
     ROW_PRESSED,
     STYLES,
     TEXT_LIGHT,
+    TEXT_WHITE,
+    TOP_SPACER_HEIGHT,
 )
 from widgets import (
     CaptionLabel,
+    CrownIcon,
     FixedGrayRoundedButton,
     GrayRoundedButton,
+    PanelLayout,
+    RatingLabel,
     RoundedButton,
     SelectableButton,
     SelectableButtonGroup,
@@ -39,11 +43,9 @@ from widgets import (
     TableCellLabel,
     TableHeaderLabel,
     TitleLgLabel,
+    TypeIcon,
     styled,
 )
-
-# Path to icons
-ICONS_DIR = os.path.join(os.path.dirname(__file__), '..', 'assets', 'icons')
 
 PAGE_SIZE = 20
 
@@ -52,17 +54,11 @@ class LogbookRow(ButtonBehavior, BoxLayout):
     """A tappable row in the logbook."""
 
     def __init__(self, play_data: dict[str, Any], on_select: Callable[[dict[str, Any]], None], **kwargs: Any) -> None:
-        # Apply style properties
+        # Apply pre-converted style properties (already in dp units)
         style_props = STYLES.get('logbook_row', {})
         for key in ('size_hint_y', 'height', 'padding', 'spacing'):
             if key in style_props:
-                val = style_props[key]
-                if key in ('height', 'spacing'):
-                    kwargs.setdefault(key, dp(val))
-                elif key == 'padding' and isinstance(val, list):
-                    kwargs.setdefault(key, [dp(v) for v in val])
-                else:
-                    kwargs.setdefault(key, val)
+                kwargs.setdefault(key, style_props[key])
         super().__init__(orientation='horizontal', **kwargs)
         self.play_data = play_data
         self.on_select = on_select
@@ -97,7 +93,7 @@ class LogbookRow(ButtonBehavior, BoxLayout):
             duration_str = '-'
 
         # Format rating
-        rating_str = '★' * fun_rating if fun_rating else '-'
+        rating_str = '[font=Stars]' + '★' * fun_rating + '[/font]' if fun_rating else '-'
 
         # Determine crown color
         crown_color = QUEEN_GRAY  # Gray/faded for random or incomplete
@@ -112,35 +108,22 @@ class LogbookRow(ButtonBehavior, BoxLayout):
                 crown_color = QUEEN_SILVER  # Old data without completed_at
 
         # Type icon (calendar for daily, dice for random)
-        type_icon = 'calendar' if daily_date else 'dice'
-        type_img = Image(
-            source=os.path.join(ICONS_DIR, f'{type_icon}.png'),
-            color=(0.5, 0.5, 0.5, 1),
-            size_hint_x=0.1,
-            fit_mode='contain'
-        )
-        self.add_widget(type_img)
+        self.add_widget(TypeIcon(daily_date, size_hint_y=0.7))
 
         # Size column
-        self.add_widget(TableCellLabel(f'{size}x{size}', color=TEXT_LIGHT, size_hint_x=0.12, halign='center'))
+        self.add_widget(TableCellLabel(f'{size}x{size}', color=TEXT_LIGHT))
 
         # Duration column
-        self.add_widget(TableCellLabel(duration_str, size_hint_x=0.18, halign='center'))
+        self.add_widget(TableCellLabel(duration_str))
 
         # Rating column
-        self.add_widget(TableCellLabel(rating_str, color=(1, 0.8, 0, 1), size_hint_x=0.2, halign='center'))
+        self.add_widget(RatingLabel(rating_str))
 
         # Time column
-        self.add_widget(TableCellLabel(time_str, size_hint_x=0.2, halign='center', valign='middle'))
+        self.add_widget(TableCellLabel(time_str))
 
         # Crown icon
-        crown = Image(
-            source=os.path.join(ICONS_DIR, 'queen-small.png'),
-            color=crown_color,
-            size_hint_x=0.2,
-            fit_mode='contain'
-        )
-        self.add_widget(crown)
+        self.add_widget(CrownIcon(crown_color, size_hint_y=0.7))
 
     def _update_bg(self, *args: Any) -> None:
         self.canvas.before.clear()
@@ -160,30 +143,24 @@ class DateSeparator(BoxLayout):
     """A date separator row."""
 
     def __init__(self, date_str: str, **kwargs: Any) -> None:
-        # Apply style properties
+        # Apply pre-converted style properties (already in dp units)
         style_props = STYLES.get('date_separator', {})
         for key in ('size_hint_y', 'height', 'padding'):
             if key in style_props:
-                val = style_props[key]
-                if key == 'height':
-                    kwargs.setdefault(key, dp(val))
-                elif key == 'padding' and isinstance(val, list):
-                    kwargs.setdefault(key, [dp(v) for v in val])
-                else:
-                    kwargs.setdefault(key, val)
+                kwargs.setdefault(key, style_props[key])
         super().__init__(**kwargs)
-        self.add_widget(CaptionLabel(date_str, halign='left', valign='middle'))
+        self.add_widget(CaptionLabel(date_str, color=TEXT_WHITE, halign='left', valign='middle'))
 
 
 class LogbookScreen(BackgroundedScreen):
-    def get_padding(self) -> int:
-        return 15
-
     def build_content(self) -> None:
         self.current_offset = 0
         self.has_more = False
         self.current_sort = 'time'
         layout = self.content_layout
+
+        # Extra spacer to push content below the banner
+        layout.add_widget(BoxLayout(size_hint_y=None, height=dp(TOP_SPACER_HEIGHT)))
 
         # Title
         layout.add_widget(TitleLgLabel('Logbook'))
@@ -209,22 +186,30 @@ class LogbookScreen(BackgroundedScreen):
         sort_row.add_widget(Label(size_hint_x=1))
         layout.add_widget(sort_row)
 
+        # Panel with dark background
+        self.logbook_panel = PanelLayout(
+            orientation='vertical',
+            padding=[dp(PADDING_CELL[0]), dp(PADDING_CELL[1])],
+        )
+
         # Header row
         header = styled(BoxLayout, 'table_header_row')
-        header.add_widget(Label(text='', size_hint_x=0.1))  # Type icon column
-        header.add_widget(TableHeaderLabel('Size', size_hint_x=0.12, halign='center'))
-        header.add_widget(TableHeaderLabel('Time', size_hint_x=0.18, halign='center'))
-        header.add_widget(TableHeaderLabel('Rating', size_hint_x=0.2, halign='center'))
-        header.add_widget(TableHeaderLabel('When', size_hint_x=0.2, halign='center'))
-        header.add_widget(Label(text='', size_hint_x=0.2))  # Crown column
-        layout.add_widget(header)
+        header.add_widget(TableHeaderLabel('Type'))
+        header.add_widget(TableHeaderLabel('Size'))
+        header.add_widget(TableHeaderLabel('Time'))
+        header.add_widget(TableHeaderLabel('Rating'))
+        header.add_widget(TableHeaderLabel('When'))
+        header.add_widget(TableHeaderLabel('Daily'))
+        self.logbook_panel.add_widget(header)
 
         # Scrollable list
         scroll = ScrollView(size_hint=(1, 1))
         self.list_layout = styled(BoxLayout, 'list_layout')
         self.list_layout.bind(minimum_height=self.list_layout.setter('height'))
         scroll.add_widget(self.list_layout)
-        layout.add_widget(scroll)
+        self.logbook_panel.add_widget(scroll)
+
+        layout.add_widget(self.logbook_panel)
 
         # Back button
         self.add_back_button()

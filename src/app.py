@@ -6,8 +6,8 @@ import time
 from datetime import date
 from typing import Any
 
-__version__ = "1.0.3"
-__author__ = "Yaque Contributors"
+__version__ = "1.0.7"
+__author__ = "Anatoli V. and Claude C."
 
 from kivy.app import App
 from kivy.clock import Clock
@@ -28,6 +28,10 @@ LabelBase.register(
 LabelBase.register(
     name='DMSansBlack',
     fn_regular=os.path.join(FONTS_DIR, 'DMSans-Black.ttf')
+)
+LabelBase.register(
+    name='Stars',
+    fn_regular=os.path.join(FONTS_DIR, 'NotoSans-Stars.ttf')
 )
 
 from game import Game, GenerationCancelled, get_daily_game
@@ -224,7 +228,8 @@ class YaqueApp(App):
         """Show options popup, then generate random game."""
         show_game_size_popup(self._start_random_game_with_options)
 
-    def _start_random_game_with_options(self, size: int, strategy: str, max_solutions: int) -> None:
+    def _start_random_game_with_options(self, size: int, strategy: str, max_solutions: int,
+                                          queen_placement: str = 'backtrack') -> None:
         """Generate a random game with the selected options."""
         # Expected generation times based on board size and solution requirement
         if max_solutions == 1:
@@ -245,7 +250,8 @@ class YaqueApp(App):
         def generate() -> None:
             try:
                 start_time = time.time()
-                game = Game(size, max_solutions=max_solutions, kingdom_strategy=strategy, cancel_check=cancel_check)
+                game = Game(size, max_solutions=max_solutions, kingdom_strategy=strategy,
+                           cancel_check=cancel_check, queen_placement=queen_placement)
                 game.generation_time_ms = int((time.time() - start_time) * 1000)
                 if not cancel_check():
                     Clock.schedule_once(lambda dt: self._on_game_ready(game, strategy=strategy))
@@ -458,10 +464,38 @@ class YaqueApp(App):
 
         popup = None
 
-        def export_json(btn: Any) -> None:
-            from plyer import filechooser
+        # Android: plyer save_file is not implemented, use ACTION_CREATE_DOCUMENT
+        def _android_save_file(content_bytes: bytes, mime_type: str, filename: str) -> None:
+            from android import activity as android_activity, mActivity
 
-            # Prepare data first
+            request_code = 9001
+
+            def on_result(req_code: int, result_code: int, intent_data: Any) -> None:
+                android_activity.unbind(on_activity_result=on_result)
+                if req_code != request_code:
+                    return
+                if result_code != -1 or intent_data is None:
+                    status_label.text = 'Export cancelled'
+                    return
+                try:
+                    uri = intent_data.getData()
+                    resolver = mActivity.getContentResolver()
+                    stream = resolver.openOutputStream(uri)
+                    stream.write(content_bytes)
+                    stream.flush()
+                    stream.close()
+                    status_label.text = f'Exported {filename}'
+                except Exception as e:
+                    status_label.text = f'Error saving: {e}'
+
+            android_activity.bind(on_activity_result=on_result)
+            save_intent = Intent(Intent.ACTION_CREATE_DOCUMENT)
+            save_intent.addCategory(Intent.CATEGORY_OPENABLE)
+            save_intent.setType(mime_type)
+            save_intent.putExtra(Intent.EXTRA_TITLE, filename)
+            mActivity.startActivityForResult(save_intent, request_code)
+
+        def export_json(btn: Any) -> None:
             try:
                 data = database.export_to_json()
                 json_content = json.dumps(data, indent=2)
@@ -469,56 +503,73 @@ class YaqueApp(App):
                 status_label.text = f'Error: {e}'
                 return
 
-            def handle_selection(selection: list) -> None:
-                if not selection:
-                    status_label.text = 'Export cancelled'
-                    return
+            timestamp = date.today().isoformat()
+            filename = f'yaque_export_{timestamp}.json'
+
+            if platform == 'android':
+                _android_save_file(json_content.encode('utf-8'), 'application/json', filename)
+            else:
+                from plyer import filechooser
+
+                def handle_selection(selection: list) -> None:
+                    if not selection:
+                        status_label.text = 'Export cancelled'
+                        return
+                    try:
+                        export_path = selection[0]
+                        with open(export_path, 'w') as f:
+                            f.write(json_content)
+                        status_label.text = f'Exported to {os.path.basename(export_path)}'
+                    except Exception as e:
+                        status_label.text = f'Error: {e}'
+
                 try:
-                    export_path = selection[0]
-                    with open(export_path, 'w') as f:
-                        f.write(json_content)
-                    status_label.text = f'Exported to {os.path.basename(export_path)}'
+                    filechooser.save_file(
+                        on_selection=handle_selection,
+                        filters=[('JSON files', '*.json')],
+                        path=filename
+                    )
                 except Exception as e:
                     status_label.text = f'Error: {e}'
 
-            timestamp = date.today().isoformat()
-            try:
-                filechooser.save_file(
-                    on_selection=handle_selection,
-                    filters=[('JSON files', '*.json')],
-                    path=f'yaque_export_{timestamp}.json'
-                )
-            except Exception as e:
-                status_label.text = f'Error: {e}'
-
         def export_sqlite(btn: Any) -> None:
-            from plyer import filechooser
-
             db_path = database.get_db_path()
             if not db_path:
                 status_label.text = 'Database not initialized'
                 return
 
-            def handle_selection(selection: list) -> None:
-                if not selection:
-                    status_label.text = 'Export cancelled'
-                    return
+            timestamp = date.today().isoformat()
+            filename = f'yaque_{timestamp}.db'
+
+            if platform == 'android':
                 try:
-                    export_path = selection[0]
-                    shutil.copy2(db_path, export_path)
-                    status_label.text = f'Exported to {os.path.basename(export_path)}'
+                    with open(db_path, 'rb') as f:
+                        db_bytes = f.read()
+                    _android_save_file(db_bytes, 'application/x-sqlite3', filename)
                 except Exception as e:
                     status_label.text = f'Error: {e}'
+            else:
+                from plyer import filechooser
 
-            timestamp = date.today().isoformat()
-            try:
-                filechooser.save_file(
-                    on_selection=handle_selection,
-                    filters=[('SQLite files', '*.db')],
-                    path=f'yaque_{timestamp}.db'
-                )
-            except Exception as e:
-                status_label.text = f'Error: {e}'
+                def handle_selection(selection: list) -> None:
+                    if not selection:
+                        status_label.text = 'Export cancelled'
+                        return
+                    try:
+                        export_path = selection[0]
+                        shutil.copy2(db_path, export_path)
+                        status_label.text = f'Exported to {os.path.basename(export_path)}'
+                    except Exception as e:
+                        status_label.text = f'Error: {e}'
+
+                try:
+                    filechooser.save_file(
+                        on_selection=handle_selection,
+                        filters=[('SQLite files', '*.db')],
+                        path=filename
+                    )
+                except Exception as e:
+                    status_label.text = f'Error: {e}'
 
         def show_stats(btn: Any) -> None:
             try:

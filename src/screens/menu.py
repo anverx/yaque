@@ -2,19 +2,23 @@ from __future__ import annotations
 
 from datetime import date
 
-from kivy.metrics import dp
 from kivy.uix.boxlayout import BoxLayout
 
 import database
 from screens.base import BackgroundedScreen
-from ui_constants import BUTTON_HEIGHT_LG
-from widgets import ButtonRow, CrownBadge, FixedGrayRoundedButton, FixedRoundedButton, RoundedButton, TitleMdLabel
+from ui_constants import STYLES
+from widgets import (
+    BackButton,
+    ButtonRow,
+    CrownBadge,
+    FixedRoundedButton,
+    RoundedButton,
+    TallRoundedButton,
+    TitleMdLabel,
+)
 
 
 class MainMenuScreen(BackgroundedScreen):
-    def get_spacing(self) -> int:
-        return 12
-
     def build_content(self) -> None:
         layout = self.content_layout
 
@@ -37,7 +41,7 @@ class MainMenuScreen(BackgroundedScreen):
         layout.add_widget(BoxLayout(size_hint_y=0.25))
 
         # Calendar button with streak display
-        self.calendar_btn = FixedRoundedButton(text='Calendar', height=dp(BUTTON_HEIGHT_LG))
+        self.calendar_btn = TallRoundedButton(text='Calendar')
         self.calendar_btn.bind(on_press=self.app.show_calendar)
         layout.add_widget(self.calendar_btn)
 
@@ -65,7 +69,7 @@ class MainMenuScreen(BackgroundedScreen):
         layout.add_widget(BoxLayout(size_hint_y=0.1))
 
         # Exit button
-        exit_btn = FixedGrayRoundedButton(text='Exit')
+        exit_btn = BackButton(text='Exit')
         exit_btn.bind(on_press=self.app.exit_app)
         layout.add_widget(exit_btn)
 
@@ -76,7 +80,8 @@ class MainMenuScreen(BackgroundedScreen):
             streak_text = f"Streak: {streak} day{'s' if streak != 1 else ''}"
         else:
             streak_text = "Start a streak!"
-        self.calendar_btn.text = f"Calendar\n[size=12sp]{streak_text}[/size]"
+        caption_size = STYLES['caption']['font_size']
+        self.calendar_btn.text = f"Calendar\n[size={caption_size}]{streak_text}[/size]"
 
         # Update daily button crown badges
         status = database.get_daily_completion_status(date.today().isoformat())

@@ -11,7 +11,7 @@ from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.image import Image
 from kivy.uix.screenmanager import Screen
 
-from ui_constants import BACKGROUND_IMAGE, OVERLAY_WHITE
+from ui_constants import BACKGROUND_IMAGE, OVERLAY_WHITE, SPACING_LG, SPACING_XXL
 from widgets import BackButton, styled
 
 
@@ -65,12 +65,12 @@ class BackgroundedScreen(Screen):
         self._overlay_rect.size = instance.size
 
     def get_padding(self) -> int:
-        """Override to customize padding. Default is 20."""
-        return 20
+        """Override to customize padding. Default is SPACING_XXL."""
+        return SPACING_XXL
 
     def get_spacing(self) -> int:
-        """Override to customize spacing. Default is 10."""
-        return 10
+        """Override to customize spacing. Default is SPACING_LG."""
+        return SPACING_LG
 
     def build_content(self) -> None:
         """Override this method to build the screen's content.
@@ -80,7 +80,8 @@ class BackgroundedScreen(Screen):
         pass
 
     def add_back_button(self) -> BackButton:
-        """Add a standard back button that returns to menu."""
+        """Add a standard back button that returns to menu, pushed to the bottom."""
+        self.content_layout.add_widget(BoxLayout(size_hint_y=0.1))
         back_btn = BackButton()
         back_btn.bind(on_press=lambda x: setattr(self.app.sm, 'current', 'menu'))
         self.content_layout.add_widget(back_btn)

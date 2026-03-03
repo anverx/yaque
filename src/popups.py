@@ -327,11 +327,12 @@ def show_date_puzzles_popup(selected_date: date, on_size_selected: Callable[[int
     )
 
 
-def show_game_size_popup(on_game_options_selected: Callable[[int, str, int], None]) -> None:
+def show_game_size_popup(on_game_options_selected: Callable[[int, str, int, str], None]) -> None:
     """Show popup for selecting game size, kingdom strategy, and max solutions.
 
     Args:
-        on_game_options_selected: Callback receiving (size: int, strategy: str, max_solutions: int)
+        on_game_options_selected: Callback receiving
+            (size: int, strategy: str, max_solutions: int, queen_placement: str)
     """
     content = PopupContent()
     content.add_widget(TitleLabel('Random Puzzle'))
@@ -340,6 +341,7 @@ def show_game_size_popup(on_game_options_selected: Callable[[int, str, int], Non
     selected_size = [8]  # Default size
     selected_strategy = ['mixed']
     selected_max_solutions = [1]  # Default: unique
+    selected_queen_placement = ['backtrack']
 
     # Size selection
     content.add_widget(SubtitleLabel('Size'))
@@ -407,13 +409,39 @@ def show_game_size_popup(on_game_options_selected: Callable[[int, str, int], Non
 
     content.add_widget(solutions_row)
 
+    # Queen placement algorithm
+    content.add_widget(SubtitleLabel('Queens'))
+    queens_row = styled(BoxLayout, 'selection_row')
+    queens_group = SelectableButtonGroup(
+        on_select=lambda value: selected_queen_placement.__setitem__(0, value)
+    )
+
+    queen_options = [
+        ('backtrack', 'Classic'),
+        ('uniform', 'Uniform'),
+    ]
+
+    for placement, label in queen_options:
+        btn = SelectableButton(
+            text=label,
+            selected=(placement == 'backtrack'),
+            **STYLES['selection_btn']
+        )
+        queens_group.add(placement, btn)
+        queens_row.add_widget(btn)
+
+    content.add_widget(queens_row)
+
     # Spacer
     content.add_widget(styled(Widget, 'spacer_sm'))
 
     # Play button
     def on_play(btn: Any) -> None:
         popup.dismiss()
-        on_game_options_selected(selected_size[0], selected_strategy[0], selected_max_solutions[0])
+        on_game_options_selected(
+            selected_size[0], selected_strategy[0],
+            selected_max_solutions[0], selected_queen_placement[0]
+        )
 
     play_btn = FixedRoundedButton(text='Play')
     play_btn.bind(on_press=on_play)
@@ -423,6 +451,6 @@ def show_game_size_popup(on_game_options_selected: Callable[[int, str, int], Non
     cancel_btn = FixedGrayRoundedButton(text='Cancel')
     content.add_widget(cancel_btn)
 
-    popup = Popup(content, height=420)
+    popup = Popup(content, height=490)
     cancel_btn.bind(on_press=popup.dismiss)
     popup.open()

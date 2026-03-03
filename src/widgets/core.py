@@ -23,6 +23,7 @@ from ui_constants import (
     BUTTON_HEIGHT,
     DEFAULT_BUTTON_COLOR,
     DEFAULT_BUTTON_COLOR_DOWN,
+    DISABLED_OPACITY,
     FONT_NAME,
     GRAY_BUTTON_COLOR,
     GRAY_BUTTON_COLOR_DOWN,
@@ -33,12 +34,15 @@ from ui_constants import (
     INDICATOR_CURRENT,
     INDICATOR_OTHER,
     INDICATOR_SPACING,
+    PANEL_BACKGROUND,
     POPUP_BACKGROUND,
     POPUP_WIDTH,
     QUEEN_GOLD,
     RADIUS_MD,
+    RADIUS_SM,
     STYLES,
     TEXT_DARK,
+    TEXT_MEDIUM,
     TEXT_WHITE,
 )
 
@@ -101,6 +105,12 @@ def FixedRoundedButton(**kwargs: Any) -> RoundedButton:
     """Factory for standalone buttons with fixed height."""
     kwargs.setdefault('size_hint_y', None)
     return RoundedButton(**kwargs)
+
+
+def TallRoundedButton(**kwargs: Any) -> RoundedButton:
+    """Factory for tall buttons with tight line spacing (two-line text)."""
+    kwargs.setdefault('size_hint_y', None)
+    return RoundedButton(**STYLES['tall_btn'], **kwargs)
 
 
 def FixedGrayRoundedButton(**kwargs: Any) -> RoundedButton:
@@ -168,9 +178,12 @@ def _convert_dp_props(props: dict[str, Any]) -> dict[str, Any]:
     for key in ('height', 'width', 'spacing'):
         if key in result and isinstance(result[key], (int, float)):
             result[key] = dp(result[key])
-    # Padding can be a list [horizontal, vertical] or [left, top, right, bottom]
-    if 'padding' in result and isinstance(result['padding'], (list, tuple)):
-        result['padding'] = [dp(v) if isinstance(v, (int, float)) else v for v in result['padding']]
+    # Padding can be a single number or a list
+    if 'padding' in result:
+        if isinstance(result['padding'], (list, tuple)):
+            result['padding'] = [dp(v) if isinstance(v, (int, float)) else v for v in result['padding']]
+        elif isinstance(result['padding'], (int, float)):
+            result['padding'] = dp(result['padding'])
     return result
 
 
@@ -185,14 +198,14 @@ def styled(widget_class: type, style: str, **overrides: Any) -> Any:
         style: Style name from STYLES dict
         **overrides: Properties to override style defaults
     """
-    # Get style properties and convert dp values
-    props = _convert_dp_props(STYLES.get(style, {}))
+    # Style values are already dp-converted at import time
+    props = STYLES.get(style, {}).copy()
 
     # Apply font_name default for text widgets
     if hasattr(widget_class, 'font_name'):
         props.setdefault('font_name', FONT_NAME)
 
-    # Apply overrides (also convert dp values)
+    # Apply overrides (convert dp values for caller-provided dimensions)
     props.update(_convert_dp_props(overrides))
 
     return widget_class(**props)
@@ -272,6 +285,11 @@ def TableCellLabel(text: str, **kwargs: Any) -> Label:
     return styled_label('table_cell', text, **kwargs)
 
 
+def RatingLabel(text: str, **kwargs: Any) -> Label:
+    """Star rating display label (gold, markup-enabled for font fallback)."""
+    return styled_label('rating_cell', text, **kwargs)
+
+
 def ClockLabel(text: str = '00:00', **kwargs: Any) -> Label:
     """Large clock/timer display label (36sp)."""
     return styled_label('clock', text, **kwargs)
@@ -283,13 +301,13 @@ def IconLabel(text: str, **kwargs: Any) -> Label:
 
 
 def AboutTitleLabel(text: str, **kwargs: Any) -> Label:
-    """Large title for About popup (28sp)."""
-    return styled_label('about_title', text, **kwargs)
+    """Large title for About popup (28sp). Uses title_lg with larger font."""
+    return styled_label('title_lg', text, font_size='28sp', **kwargs)
 
 
 def AboutSubtitleLabel(text: str, **kwargs: Any) -> Label:
-    """Subtitle for About popup (16sp)."""
-    return styled_label('about_subtitle', text, **kwargs)
+    """Subtitle for About popup (16sp). Uses subtitle with larger font."""
+    return styled_label('subtitle', text, font_size='16sp', **kwargs)
 
 
 # -----------------------------------------------------------------------------
@@ -315,8 +333,37 @@ def ButtonRow(**kwargs: Any) -> BoxLayout:
 
 
 def SizeButtonRow(**kwargs: Any) -> BoxLayout:
-    """Horizontal BoxLayout for size selection buttons (taller)."""
-    return styled_layout('size_button_row', **kwargs)
+    """Horizontal BoxLayout for size selection buttons."""
+    return styled_layout('button_row', **kwargs)
+
+
+class PanelLayout(BoxLayout):
+    """BoxLayout with a dark rounded background panel."""
+
+    def __init__(self, **kwargs: Any) -> None:
+        super().__init__(**kwargs)
+        self._update_panel_bg()
+        self.bind(pos=self._update_panel_bg, size=self._update_panel_bg)
+
+    def _update_panel_bg(self, *args: Any) -> None:
+        self.canvas.before.clear()
+        with self.canvas.before:
+            Color(*PANEL_BACKGROUND)
+            RoundedRectangle(pos=self.pos, size=self.size, radius=[dp(RADIUS_SM)])
+
+
+def TypeIcon(daily_date: str | None, **kwargs: Any) -> Image:
+    """Calendar/dice icon indicating daily vs random puzzle."""
+    icon_name = 'calendar' if daily_date else 'dice'
+    kwargs.setdefault('color', TEXT_MEDIUM)
+    kwargs.setdefault('fit_mode', 'contain')
+    return Image(source=os.path.join(ICONS_DIR, f'{icon_name}.png'), **kwargs)
+
+
+def CrownIcon(color: tuple[float, ...], **kwargs: Any) -> Image:
+    """Small queen/crown status icon."""
+    kwargs.setdefault('fit_mode', 'contain')
+    return Image(source=os.path.join(ICONS_DIR, 'queen-small.png'), color=color, **kwargs)
 
 
 def Popup(content: Widget, height: float, width_hint: float = POPUP_WIDTH, auto_dismiss: bool = True) -> ModalView:
@@ -421,6 +468,12 @@ def BackButton(**kwargs: Any) -> RoundedButton:
     """Standard back button with fixed height."""
     kwargs.setdefault('text', 'Back')
     return FixedGrayRoundedButton(**STYLES['back_btn'], **kwargs)
+
+
+def disable_widget(widget: Widget) -> None:
+    """Disable a widget with standard disabled styling."""
+    widget.disabled = True
+    widget.opacity = DISABLED_OPACITY
 
 
 def StatusLabel(text: str, **kwargs: Any) -> Label:

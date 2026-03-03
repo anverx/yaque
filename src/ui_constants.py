@@ -1,5 +1,7 @@
 # UI Constants - centralized colors, dimensions, and fonts
 
+from kivy.metrics import dp
+
 # Window settings
 WINDOW_SIZE = (360, 640)  # Logical phone resolution for desktop testing
 WINDOW_CLEARCOLOR = (0.95, 0.95, 0.95, 1)  # Light background
@@ -18,6 +20,8 @@ TEXT_WHITE = (1, 1, 1, 1)
 OVERLAY_WHITE = (1, 1, 1, 0.7)
 ROW_BACKGROUND = (1, 1, 1, 0.7)
 ROW_PRESSED = (0.9, 0.9, 0.9, 1)
+PANEL_BACKGROUND = (0, 0, 0, 0.3)
+DISABLED_OPACITY = 0.4
 
 # Crown/queen icon colors (for calendar, logbook)
 QUEEN_GRAY = (0.5, 0.5, 0.5, 0.3)  # Not completed / random
@@ -76,11 +80,11 @@ BUTTON_FONT_SIZE = '22sp'  # 50% larger than default 15sp
 # Layout heights
 TOP_SPACER_HEIGHT = 70
 HEADER_HEIGHT = 50
-ROW_HEIGHT = 50
+ROW_HEIGHT = 36
 CELL_HEIGHT = 52
 NAV_BUTTON_WIDTH = 50
 DAYS_HEADER_HEIGHT = 30
-DATE_SEPARATOR_HEIGHT = 30
+DATE_SEPARATOR_HEIGHT = 22
 TABLE_HEADER_HEIGHT = 20
 CAPTION_HEIGHT = 22
 CAPTION_HEIGHT_SM = 18
@@ -103,9 +107,9 @@ INDICATOR_CIRCLE_SIZE = 8
 INDICATOR_SPACING = 14
 INDICATOR_DOT_HEIGHT = 12
 SUBTITLE_HEIGHT = 24
-SOLUTIONS_BTN_WIDTH = 120
-SOLUTIONS_BTN_HEIGHT = 28
-SOLUTIONS_BTN_AREA_HEIGHT = 32
+SOLUTIONS_BTN_WIDTH = 160
+SOLUTIONS_BTN_HEIGHT = 40
+SOLUTIONS_BTN_AREA_HEIGHT = 44
 ICON_LABEL_HEIGHT = 12
 ICON_LABEL_TOTAL = 14  # Height + padding
 
@@ -220,38 +224,28 @@ STYLES = {
     # Table styles
     'table_header': {
         'font_size': '11sp',
-        'color': TEXT_MEDIUM,
+        'color': TEXT_WHITE,
+        'halign': 'center',
     },
     'table_cell': {
         'font_size': '13sp',
         'color': TEXT_DARK,
+        'halign': 'center',
+    },
+    'rating_cell': {
+        'font_size': '13sp',
+        'color': (1, 0.8, 0, 1),
+        'halign': 'center',
+        'markup': True,
     },
     'icon_label': {
         'font_size': '9sp',
         'color': TEXT_MEDIUM,
     },
-    # About popup styles
-    'about_title': {
-        'font_size': '28sp',
-        'color': TEXT_DARK,
-        'size_hint_y': None,
-        'height': 40,
-    },
-    'about_subtitle': {
-        'font_size': '16sp',
-        'color': TEXT_LIGHT,
-        'size_hint_y': None,
-        'height': 25,
-    },
     # Layout styles
     'button_row': {
         'size_hint_y': None,
         'height': BUTTON_HEIGHT,
-        'spacing': SPACING_LG,
-    },
-    'size_button_row': {
-        'size_hint_y': None,
-        'height': ROW_HEIGHT,
         'spacing': SPACING_LG,
     },
     'selection_row': {
@@ -326,6 +320,11 @@ STYLES = {
         'background_color': (0, 0, 0, 0),
         'color': LINK_COLOR,
     },
+    # Tall button with tight line spacing (e.g., Calendar + streak)
+    'tall_btn': {
+        'height': BUTTON_HEIGHT_LG,
+        'line_height': 0.6,
+    },
     # Back button
     'back_btn': {
         'font_size': '18sp',
@@ -395,7 +394,7 @@ STYLES = {
     # Game screen styles
     'game_layout': {
         'orientation': 'vertical',
-        'padding': SPACING_LG,
+        'padding': SPACING_XXL,
         'spacing': SPACING_SM,
     },
     'subtitle_area': {
@@ -432,6 +431,19 @@ STYLES = {
         'anchor_x': 'center',
     },
 }
+
+# Pre-convert all dimension values in STYLES to dp units so that both
+# styled() and direct **STYLES[...] unpacking produce correct sizing
+# on all screen densities (especially Android).
+for _style in STYLES.values():
+    for _key in ('height', 'width', 'spacing'):
+        if _key in _style and isinstance(_style[_key], (int, float)):
+            _style[_key] = dp(_style[_key])
+    if 'padding' in _style:
+        if isinstance(_style['padding'], (list, tuple)):
+            _style['padding'] = [dp(_v) if isinstance(_v, (int, float)) else _v for _v in _style['padding']]
+        elif isinstance(_style['padding'], (int, float)):
+            _style['padding'] = dp(_style['padding'])
 
 # Kingdom colors (RGB, 0-1 range)
 KINGDOM_COLORS = [

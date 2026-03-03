@@ -21,7 +21,8 @@ class Game:
 
     def __init__(self, size: int, max_solutions: int = 1, max_attempts: int = 50000,
                  seed: int | None = None, kingdom_strategy: str = 'mixed',
-                 cancel_check: callable | None = None) -> None:
+                 cancel_check: callable | None = None,
+                 queen_placement: str = 'backtrack') -> None:
         """Create a new puzzle.
 
         Args:
@@ -34,10 +35,14 @@ class Game:
                 - 'mixed': Each kingdom randomly picks jagged/compact/random
                 - 'jagged': All kingdoms maximize perimeter (snaky shapes)
             cancel_check: Optional callable that returns True if generation should stop
+            queen_placement: Queen placement algorithm:
+                - 'backtrack': Fast backtracking (default, slight diagonal bias)
+                - 'uniform': Rejection sampling (uniform distribution, no diagonal bias)
         """
         self.size = size
         self.max_solutions = max_solutions
         self.kingdom_strategy = kingdom_strategy
+        self.queen_placement = queen_placement
         self._cancel_check = cancel_check
 
         # Set up seed for reproducibility
@@ -56,6 +61,12 @@ class Game:
         """Check if generation has been cancelled."""
         return self._cancel_check is not None and self._cancel_check()
 
+    def _place_queens(self, no: int) -> list[tuple[int, int]]:
+        """Dispatch to the selected queen placement algorithm."""
+        if self.queen_placement == 'uniform':
+            return self.place_queens_uniform(no)
+        return self.place_queens(no)
+
     def _generate_rejection_sampling(self, size: int, kingdom_strategy: str,
                                       max_solutions: int, max_attempts: int) -> None:
         """Traditional approach: generate until we find one with few solutions."""
@@ -64,7 +75,7 @@ class Game:
             if attempt % 100 == 0 and self._is_cancelled():
                 raise GenerationCancelled()
 
-            self.queens = self.place_queens(size)
+            self.queens = self._place_queens(size)
             self.kingdoms = self.create_kingdoms(self.queens, kingdom_strategy)
             solutions = self.count_solutions(max_count=max_solutions + 1)
             if 1 <= solutions <= max_solutions:
@@ -91,7 +102,7 @@ class Game:
             if attempt % 100 == 0 and self._is_cancelled():
                 raise GenerationCancelled()
 
-            self.queens = self.place_queens(size)
+            self.queens = self._place_queens(size)
             self.kingdoms = self.create_kingdoms(self.queens, kingdom_strategy)
 
             solutions = self.count_solutions(max_count=min(best_solutions, comparison_limit))
@@ -224,6 +235,7 @@ class Game:
         return len(visited) == len(kingdom_cells)
 
     def place_queens(self, no: int) -> list[tuple[int, int]]:
+        """Place queens using backtracking with random row/column order."""
         def is_valid(placed: dict[int, int], row: int, col: int) -> bool:
             for placed_row, placed_col in placed.items():
                 if placed_col == col:
@@ -247,7 +259,6 @@ class Game:
                     del placed[row]
             return None
 
-        # Process rows in random order to distribute "freedom" evenly
         rows = list(range(no))
         random.shuffle(rows)
 
@@ -255,6 +266,27 @@ class Game:
         if result is None:
             raise ValueError(f"Cannot place {no} queens on {no}x{no} board")
         return [(row, result[row]) for row in range(no)]
+
+    def place_queens_uniform(self, no: int) -> list[tuple[int, int]]:
+        """Place queens using rejection sampling for uniform distribution.
+
+        Shuffles a random permutation and checks the adjacency constraint.
+        Rejects overly diagonal layouts (|row-col correlation| > 0.5).
+        """
+        mean = (no - 1) / 2.0
+        var = sum((r - mean) ** 2 for r in range(no)) / no
+        max_corr = 0.5
+
+        for _ in range(10000):
+            cols = list(range(no))
+            random.shuffle(cols)
+            if not all(abs(cols[i] - cols[i + 1]) >= 2 for i in range(no - 1)):
+                continue
+            cov = sum((r - mean) * (cols[r] - mean) for r in range(no)) / no
+            if var > 0 and abs(cov / var) > max_corr:
+                continue
+            return [(row, cols[row]) for row in range(no)]
+        raise ValueError(f"Cannot place {no} queens on {no}x{no} board")
 
     def print_queens(self) -> None:
         queen_set = set(self.queens)
