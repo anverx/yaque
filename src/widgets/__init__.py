@@ -11,6 +11,7 @@ from widgets.core import (
     CodeInput,
     # Types
     ColorTuple,
+    CrownBadge,
     DayLabel,
     FixedGrayRoundedButton,
     FixedRoundedButton,
@@ -52,6 +53,8 @@ from widgets.spinner import QueenSpinner
 __all__ = [
     # Types
     'ColorTuple',
+    # Crown badge
+    'CrownBadge',
     # Generic style factory
     'styled',
     # Button classes and factories

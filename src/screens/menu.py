@@ -1,12 +1,14 @@
 from __future__ import annotations
 
+from datetime import date
+
 from kivy.metrics import dp
 from kivy.uix.boxlayout import BoxLayout
 
 import database
 from screens.base import BackgroundedScreen
 from ui_constants import BUTTON_HEIGHT_LG
-from widgets import ButtonRow, FixedGrayRoundedButton, FixedRoundedButton, RoundedButton, TitleMdLabel
+from widgets import ButtonRow, CrownBadge, FixedGrayRoundedButton, FixedRoundedButton, RoundedButton, TitleMdLabel
 
 
 class MainMenuScreen(BackgroundedScreen):
@@ -23,11 +25,11 @@ class MainMenuScreen(BackgroundedScreen):
         layout.add_widget(TitleMdLabel("Today's Puzzles"))
 
         daily_buttons = ButtonRow()
-        self.daily_buttons = {}
+        self.daily_badges: dict[int, CrownBadge] = {}
         for size in [6, 7, 8]:
             btn = RoundedButton(text=f'{size}x{size}')
             btn.bind(on_press=lambda x, s=size: self.app.start_daily_game(s))
-            self.daily_buttons[size] = btn
+            self.daily_badges[size] = CrownBadge(btn)
             daily_buttons.add_widget(btn)
         layout.add_widget(daily_buttons)
 
@@ -68,10 +70,18 @@ class MainMenuScreen(BackgroundedScreen):
         layout.add_widget(exit_btn)
 
     def on_enter(self) -> None:
-        """Called when screen is entered - refresh streak display."""
+        """Called when screen is entered - refresh streak and completion display."""
         streak = database.get_current_streak()
         if streak > 0:
             streak_text = f"Streak: {streak} day{'s' if streak != 1 else ''}"
         else:
             streak_text = "Start a streak!"
         self.calendar_btn.text = f"Calendar\n[size=12sp]{streak_text}[/size]"
+
+        # Update daily button crown badges
+        status = database.get_daily_completion_status(date.today().isoformat())
+        for size, badge in self.daily_badges.items():
+            if status.get(size):
+                badge.show()
+            else:
+                badge.hide()

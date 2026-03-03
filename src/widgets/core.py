@@ -6,7 +6,8 @@ import os
 from collections.abc import Callable
 from typing import Any
 
-from kivy.graphics import Color, Ellipse, RoundedRectangle
+from kivy.core.image import Image as CoreImage
+from kivy.graphics import Color, Ellipse, PopMatrix, PushMatrix, Rectangle, Rotate, RoundedRectangle
 from kivy.metrics import dp
 from kivy.uix.behaviors import ButtonBehavior
 from kivy.uix.boxlayout import BoxLayout
@@ -34,6 +35,7 @@ from ui_constants import (
     INDICATOR_SPACING,
     POPUP_BACKGROUND,
     POPUP_WIDTH,
+    QUEEN_GOLD,
     RADIUS_MD,
     STYLES,
     TEXT_DARK,
@@ -105,6 +107,54 @@ def FixedGrayRoundedButton(**kwargs: Any) -> RoundedButton:
     """Factory for standalone gray buttons with fixed height."""
     kwargs.setdefault('size_hint_y', None)
     return GrayRoundedButton(**kwargs)
+
+
+class CrownBadge:
+    """A tilted gold crown badge drawn on a button's canvas.before.
+
+    Draws between the button background and text so text remains visible.
+    Binds to the button's pos/size/state to redraw automatically.
+    """
+
+    _texture: Any = None
+
+    def __init__(self, btn: RoundedButton, visible: bool = False) -> None:
+        self.btn = btn
+        self.visible = visible
+        if CrownBadge._texture is None:
+            CrownBadge._texture = CoreImage(
+                os.path.join(ICONS_DIR, 'queen-small.png')
+            ).texture
+        btn.bind(pos=self._draw, size=self._draw, state=self._draw)
+
+    def show(self) -> None:
+        """Show the badge and redraw."""
+        self.visible = True
+        self.btn._update_bg()
+        self._draw()
+
+    def hide(self) -> None:
+        """Hide the badge and redraw background."""
+        self.visible = False
+        self.btn._update_bg()
+
+    def _draw(self, *args: Any) -> None:
+        if not self.visible:
+            return
+        btn = self.btn
+        with btn.canvas.before:
+            Color(*QUEEN_GOLD)
+            icon_size = btn.height * 0.4
+            ix = btn.right - icon_size - dp(4)
+            iy = btn.top - icon_size - dp(2)
+            PushMatrix()
+            Rotate(angle=-20, origin=(ix + icon_size / 2, iy + icon_size / 2))
+            Rectangle(
+                texture=CrownBadge._texture,
+                pos=(ix, iy),
+                size=(icon_size, icon_size),
+            )
+            PopMatrix()
 
 
 # -----------------------------------------------------------------------------

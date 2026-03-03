@@ -14,6 +14,7 @@ from kivy.uix.image import Image
 from kivy.uix.modalview import ModalView
 from kivy.uix.widget import Widget
 
+import database
 from game import Game
 from ui_constants import (
     POPUP_BACKGROUND,
@@ -28,6 +29,7 @@ from widgets import (
     ButtonRow,
     CaptionLabel,
     CodeInput,
+    CrownBadge,
     FixedGrayRoundedButton,
     FixedRoundedButton,
     GrayRoundedButton,
@@ -256,7 +258,8 @@ def _show_size_selection_popup(
     title: str,
     sizes: list[list[int]],
     on_size_selected: Callable[[int], None],
-    popup_height: float
+    popup_height: float,
+    completed: dict[int, bool] | None = None
 ) -> None:
     """Generic size selection popup.
 
@@ -265,6 +268,7 @@ def _show_size_selection_popup(
         sizes: List of sizes to show, grouped by row (e.g., [[6,7,8]] or [[6,7],[8,9]])
         on_size_selected: Callback receiving the selected size
         popup_height: Height of the popup in dp
+        completed: Optional dict mapping size to completion status
     """
     content = PopupContent()
     content.add_widget(TitleLabel(title, height=40))
@@ -283,6 +287,8 @@ def _show_size_selection_popup(
         for size in row_sizes:
             btn = RoundedButton(text=f'{size}x{size}')
             btn.bind(on_press=make_callback(size))
+            if completed and completed.get(size):
+                btn._crown_badge = CrownBadge(btn, visible=True)
             row.add_widget(btn)
         content.add_widget(row)
 
@@ -310,11 +316,14 @@ def show_date_puzzles_popup(selected_date: date, on_size_selected: Callable[[int
     else:
         title = selected_date.strftime('%B %d, %Y')
 
+    status = database.get_daily_completion_status(selected_date.isoformat())
+
     _show_size_selection_popup(
         title=title,
         sizes=[[6, 7, 8]],
         on_size_selected=on_size_selected,
-        popup_height=200
+        popup_height=200,
+        completed=status
     )
 
 
