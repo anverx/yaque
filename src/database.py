@@ -604,6 +604,34 @@ def get_logbook_stats() -> dict[str, Any]:
     }
 
 
+def get_time_stats_by_size() -> dict[int, dict[str, Any]]:
+    """Get best and average solve times grouped by puzzle size.
+
+    Returns:
+        Dict mapping size to {'best_time': ms, 'avg_time': ms, 'play_count': int}
+    """
+    cursor = _connection.cursor()
+    cursor.execute('''
+        SELECT pz.size,
+               MIN(p.duration_ms) as best_time,
+               AVG(p.duration_ms) as avg_time,
+               COUNT(*) as play_count
+        FROM plays p
+        JOIN puzzles pz ON p.puzzle_id = pz.id
+        WHERE p.completed = 1
+        GROUP BY pz.size
+        ORDER BY pz.size
+    ''')
+    return {
+        row['size']: {
+            'best_time': row['best_time'],
+            'avg_time': int(row['avg_time']) if row['avg_time'] else None,
+            'play_count': row['play_count'],
+        }
+        for row in cursor.fetchall()
+    }
+
+
 def get_daily_completion_status(daily_date: str) -> dict[int, bool]:
     """Get completion status for all sizes on a given date (single query)."""
     cursor = _connection.cursor()
