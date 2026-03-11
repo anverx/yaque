@@ -327,6 +327,14 @@ def show_date_puzzles_popup(selected_date: date, on_size_selected: Callable[[int
     )
 
 
+_last_random_options: dict[str, Any] = {
+    'size': 8,
+    'strategy': 'mixed',
+    'max_solutions': 1,
+    'queen_placement': 'backtrack',
+}
+
+
 def show_game_size_popup(on_game_options_selected: Callable[[int, str, int, str], None]) -> None:
     """Show popup for selecting game size, kingdom strategy, and max solutions.
 
@@ -338,10 +346,10 @@ def show_game_size_popup(on_game_options_selected: Callable[[int, str, int, str]
     content.add_widget(TitleLabel('Random Puzzle'))
 
     popup = None
-    selected_size = [8]  # Default size
-    selected_strategy = ['mixed']
-    selected_max_solutions = [1]  # Default: unique
-    selected_queen_placement = ['backtrack']
+    selected_size = [_last_random_options['size']]
+    selected_strategy = [_last_random_options['strategy']]
+    selected_max_solutions = [_last_random_options['max_solutions']]
+    selected_queen_placement = [_last_random_options['queen_placement']]
 
     # Size selection
     content.add_widget(SubtitleLabel('Size'))
@@ -353,7 +361,7 @@ def show_game_size_popup(on_game_options_selected: Callable[[int, str, int, str]
     for size in [6, 7, 8, 9]:
         btn = SelectableButton(
             text=f'{size}x{size}',
-            selected=(size == 8),
+            selected=(size == selected_size[0]),
             **STYLES['selection_btn']
         )
         size_group.add(size, btn)
@@ -377,7 +385,7 @@ def show_game_size_popup(on_game_options_selected: Callable[[int, str, int, str]
     for strategy, label in strategies:
         btn = SelectableButton(
             text=label,
-            selected=(strategy == 'mixed'),
+            selected=(strategy == selected_strategy[0]),
             **STYLES['selection_btn']
         )
         strategy_group.add(strategy, btn)
@@ -401,7 +409,7 @@ def show_game_size_popup(on_game_options_selected: Callable[[int, str, int, str]
     for max_sol, label in solution_options:
         btn = SelectableButton(
             text=label,
-            selected=(max_sol == 1),
+            selected=(max_sol == selected_max_solutions[0]),
             **STYLES['selection_btn']
         )
         solutions_group.add(max_sol, btn)
@@ -424,7 +432,7 @@ def show_game_size_popup(on_game_options_selected: Callable[[int, str, int, str]
     for placement, label in queen_options:
         btn = SelectableButton(
             text=label,
-            selected=(placement == 'backtrack'),
+            selected=(placement == selected_queen_placement[0]),
             **STYLES['selection_btn']
         )
         queens_group.add(placement, btn)
@@ -437,6 +445,10 @@ def show_game_size_popup(on_game_options_selected: Callable[[int, str, int, str]
 
     # Play button
     def on_play(btn: Any) -> None:
+        _last_random_options['size'] = selected_size[0]
+        _last_random_options['strategy'] = selected_strategy[0]
+        _last_random_options['max_solutions'] = selected_max_solutions[0]
+        _last_random_options['queen_placement'] = selected_queen_placement[0]
         popup.dismiss()
         on_game_options_selected(
             selected_size[0], selected_strategy[0],

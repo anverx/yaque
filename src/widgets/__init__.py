@@ -1,59 +1,69 @@
 """Yaque UI widgets package."""
 
 from widgets.board import BoardWidget
-from widgets.core import (
-    AboutSubtitleLabel,
-    AboutTitleLabel,
+from widgets.buttons import (
     BackButton,
-    ButtonRow,
-    CaptionLabel,
-    ClockLabel,
-    CodeInput,
     # Types
     ColorTuple,
     CrownBadge,
-    # Icon factories
-    CrownIcon,
-    DayLabel,
     FixedGrayRoundedButton,
     FixedRoundedButton,
     GrayRoundedButton,
     IconButton,
-    IconLabel,
     LinkButton,
-    MonthLabel,
-    # Layout factories
-    PanelLayout,
-    Popup,
-    PopupContent,
-    RatingLabel,
     # Button classes and factories
     RoundedButton,
     SelectableButton,
     SelectableButtonGroup,
-    SizeButtonRow,
     SmallRoundedButton,
+    TallRoundedButton,
+    # Widget helpers
+    disable_widget,
+)
+from widgets.core import (
+    CodeInput,
     # Indicators
     SolutionIndicator,
+    # Input factories
+    UrlInput,
+)
+from widgets.labels import (
+    AboutSubtitleLabel,
+    AboutTitleLabel,
+    CaptionLabel,
+    ClockLabel,
+    DayLabel,
+    IconLabel,
+    MonthLabel,
+    RatingLabel,
     StatusLabel,
     StyledLabel,
     SubtitleLabel,
     TableCellLabel,
     TableHeaderLabel,
-    TallRoundedButton,
     TitleLabel,
     TitleLgLabel,
     TitleMdLabel,
     TitleSmLabel,
-    TypeIcon,
-    # Input factories
-    UrlInput,
-    # Widget helpers
-    disable_widget,
     # Generic style factory
     styled,
     # Label factories
     styled_label,
+)
+from widgets.layouts import (
+    # Layout factories
+    ButtonRow,
+    # Icon factories
+    CrownIcon,
+    DateSeparator,
+    DayCell,
+    LogbookRow,
+    PanelLayout,
+    Popup,
+    PopupContent,
+    SizeButtonRow,
+    StatRow,
+    TypeIcon,
     styled_layout,
 )
 from widgets.spinner import QueenSpinner
@@ -63,6 +73,10 @@ __all__ = [
     'ColorTuple',
     # Crown badge
     'CrownBadge',
+    'DateSeparator',
+    'DayCell',
+    'LogbookRow',
+    'StatRow',
     # Generic style factory
     'styled',
     # Button classes and factories

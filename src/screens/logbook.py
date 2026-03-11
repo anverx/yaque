@@ -1,12 +1,9 @@
 from __future__ import annotations
 
-from collections.abc import Callable
 from datetime import datetime
 from typing import Any
 
-from kivy.graphics import Color, RoundedRectangle
 from kivy.metrics import dp
-from kivy.uix.behaviors import ButtonBehavior
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.label import Label
 from kivy.uix.scrollview import ScrollView
@@ -17,13 +14,8 @@ from screens.base import BackgroundedScreen
 from ui_constants import (
     BUTTON_HEIGHT_SM,
     PADDING_CELL,
-    QUEEN_GOLD,
-    QUEEN_GRAY,
-    QUEEN_SILVER,
-    RADIUS_SM,
-    ROW_BACKGROUND,
     ROW_HEIGHT,
-    ROW_PRESSED,
+    SPACING_SM,
     STYLES,
     TEXT_LIGHT,
     TEXT_WHITE,
@@ -31,125 +23,23 @@ from ui_constants import (
 )
 from widgets import (
     CaptionLabel,
-    CrownIcon,
+    DateSeparator,
     FixedGrayRoundedButton,
     GrayRoundedButton,
+    LogbookRow,
     PanelLayout,
-    RatingLabel,
     RoundedButton,
     SelectableButton,
     SelectableButtonGroup,
+    StatRow,
     SubtitleLabel,
     TableCellLabel,
     TableHeaderLabel,
     TitleLgLabel,
-    TypeIcon,
     styled,
 )
 
 PAGE_SIZE = 20
-
-
-class LogbookRow(ButtonBehavior, BoxLayout):
-    """A tappable row in the logbook."""
-
-    def __init__(self, play_data: dict[str, Any], on_select: Callable[[dict[str, Any]], None], **kwargs: Any) -> None:
-        # Apply pre-converted style properties (already in dp units)
-        style_props = STYLES.get('logbook_row', {})
-        for key in ('size_hint_y', 'height', 'padding', 'spacing'):
-            if key in style_props:
-                kwargs.setdefault(key, style_props[key])
-        super().__init__(orientation='horizontal', **kwargs)
-        self.play_data = play_data
-        self.on_select = on_select
-
-        self._bg_color = ROW_BACKGROUND
-        self._update_bg()
-        self.bind(pos=self._update_bg, size=self._update_bg, state=self._update_bg)
-
-        # Parse data
-        started_at = play_data['started_at']
-        duration_ms = play_data['duration_ms']
-        completed = play_data['completed']
-        daily_date = play_data['daily_date']
-        completed_at = play_data['completed_at']
-        size = play_data['size']
-        fun_rating = play_data.get('fun_rating')
-
-        # Format time only (date shown in separator)
-        try:
-            dt = datetime.fromisoformat(started_at)
-            time_str = dt.strftime('%H:%M')
-        except (ValueError, TypeError):
-            time_str = '?'
-
-        # Format duration
-        if duration_ms:
-            secs = duration_ms // 1000
-            mins = secs // 60
-            secs = secs % 60
-            duration_str = f'{mins}:{secs:02d}'
-        else:
-            duration_str = '-'
-
-        # Format rating
-        rating_str = '[font=Stars]' + '★' * fun_rating + '[/font]' if fun_rating else '-'
-
-        # Determine crown color
-        crown_color = QUEEN_GRAY  # Gray/faded for random or incomplete
-        if completed and daily_date:
-            if completed_at:
-                completed_date = completed_at[:10]
-                if completed_date == daily_date:
-                    crown_color = QUEEN_GOLD
-                else:
-                    crown_color = QUEEN_SILVER
-            else:
-                crown_color = QUEEN_SILVER  # Old data without completed_at
-
-        # Type icon (calendar for daily, dice for random)
-        self.add_widget(TypeIcon(daily_date, size_hint_y=0.7))
-
-        # Size column
-        self.add_widget(TableCellLabel(f'{size}x{size}', color=TEXT_LIGHT))
-
-        # Duration column
-        self.add_widget(TableCellLabel(duration_str))
-
-        # Rating column
-        self.add_widget(RatingLabel(rating_str))
-
-        # Time column
-        self.add_widget(TableCellLabel(time_str))
-
-        # Crown icon
-        self.add_widget(CrownIcon(crown_color, size_hint_y=0.7))
-
-    def _update_bg(self, *args: Any) -> None:
-        self.canvas.before.clear()
-        with self.canvas.before:
-            if self.state == 'down':
-                Color(*ROW_PRESSED)
-            else:
-                Color(*self._bg_color)
-            RoundedRectangle(pos=self.pos, size=self.size, radius=[dp(RADIUS_SM)])
-
-    def on_press(self) -> None:
-        if self.on_select:
-            self.on_select(self.play_data)
-
-
-class DateSeparator(BoxLayout):
-    """A date separator row."""
-
-    def __init__(self, date_str: str, **kwargs: Any) -> None:
-        # Apply pre-converted style properties (already in dp units)
-        style_props = STYLES.get('date_separator', {})
-        for key in ('size_hint_y', 'height', 'padding'):
-            if key in style_props:
-                kwargs.setdefault(key, style_props[key])
-        super().__init__(**kwargs)
-        self.add_widget(CaptionLabel(date_str, color=TEXT_WHITE, halign='left', valign='middle'))
 
 
 class LogbookScreen(BackgroundedScreen):
@@ -370,33 +260,32 @@ class LogbookScreen(BackgroundedScreen):
         time_stats = database.get_time_stats_by_size()
         logbook_stats = database.get_logbook_stats()
 
-        # Best times section
-        self.stats_content.add_widget(SubtitleLabel('Best Times', color=TEXT_WHITE))
+        spacer_h = dp(SPACING_SM)
+
+        # Times table header
+        self.stats_content.add_widget(SubtitleLabel('Solve Times', color=TEXT_WHITE))
+        header = StatRow()
+        header.add_widget(TableHeaderLabel('Size'))
+        header.add_widget(TableHeaderLabel('Best'))
+        header.add_widget(TableHeaderLabel('Average'))
+        header.add_widget(TableHeaderLabel('Games'))
+        self.stats_content.add_widget(header)
+
+        # Times table rows
         for size in [6, 7, 8, 9]:
             stats = time_stats.get(size)
             best = self._format_duration(stats['best_time']) if stats else '-'
-            row = BoxLayout(size_hint_y=None, height=dp(ROW_HEIGHT))
-            row.add_widget(TableCellLabel(f'{size}x{size}', color=TEXT_LIGHT))
-            row.add_widget(TableCellLabel(best, color=TEXT_WHITE))
-            self.stats_content.add_widget(row)
-
-        # Spacer
-        self.stats_content.add_widget(BoxLayout(size_hint_y=None, height=dp(8)))
-
-        # Average times section
-        self.stats_content.add_widget(SubtitleLabel('Average Times', color=TEXT_WHITE))
-        for size in [6, 7, 8, 9]:
-            stats = time_stats.get(size)
             avg = self._format_duration(stats['avg_time']) if stats else '-'
-            count = f'({stats["play_count"]} games)' if stats else ''
-            row = BoxLayout(size_hint_y=None, height=dp(ROW_HEIGHT))
+            count = str(stats['play_count']) if stats else '0'
+            row = StatRow()
             row.add_widget(TableCellLabel(f'{size}x{size}', color=TEXT_LIGHT))
-            row.add_widget(TableCellLabel(avg, color=TEXT_WHITE))
-            row.add_widget(CaptionLabel(count, color=TEXT_LIGHT))
+            row.add_widget(TableCellLabel(best))
+            row.add_widget(TableCellLabel(avg))
+            row.add_widget(TableCellLabel(count))
             self.stats_content.add_widget(row)
 
         # Spacer
-        self.stats_content.add_widget(BoxLayout(size_hint_y=None, height=dp(8)))
+        self.stats_content.add_widget(BoxLayout(size_hint_y=None, height=spacer_h))
 
         # Summary section
         self.stats_content.add_widget(SubtitleLabel('Summary', color=TEXT_WHITE))
@@ -404,9 +293,9 @@ class LogbookScreen(BackgroundedScreen):
         total_time = self._format_total_time(logbook_stats['total_time_ms'])
 
         for label, value in [('Completed', str(total)), ('Total Time', total_time)]:
-            row = BoxLayout(size_hint_y=None, height=dp(ROW_HEIGHT))
+            row = StatRow()
             row.add_widget(TableCellLabel(label, color=TEXT_LIGHT))
-            row.add_widget(TableCellLabel(value, color=TEXT_WHITE))
+            row.add_widget(TableCellLabel(value))
             self.stats_content.add_widget(row)
 
     def _on_sort_changed(self, sort_key: str) -> None:

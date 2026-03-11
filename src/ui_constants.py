@@ -30,6 +30,7 @@ QUEEN_SILVER = (0.85, 0.88, 0.95, 1)  # Solved on a later day
 
 # Calendar colors
 TODAY_HIGHLIGHT = (0.4, 0.7, 0.9, 1)
+STREAK_PROTECTED = (0.85, 0.65, 0.3, 1)  # Amber for protected gap days
 
 # Button colors
 DEFAULT_BUTTON_COLOR = (0.55, 0.78, 0.4, 1)       # Salad green
@@ -81,6 +82,7 @@ BUTTON_FONT_SIZE = '22sp'  # 50% larger than default 15sp
 TOP_SPACER_HEIGHT = 70
 HEADER_HEIGHT = 50
 ROW_HEIGHT = 36
+STAT_ROW_HEIGHT = 24
 CELL_HEIGHT = 52
 NAV_BUTTON_WIDTH = 50
 DAYS_HEADER_HEIGHT = 30

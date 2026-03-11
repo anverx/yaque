@@ -3,7 +3,7 @@
 import os
 import sqlite3
 from datetime import date, datetime, timedelta
-from typing import Any
+from typing import Any, NamedTuple
 
 # Current schema version - increment when making schema changes
 SCHEMA_VERSION = 5
@@ -688,58 +688,108 @@ def get_month_completion_status(year: int, month: int) -> dict[str, dict[int, st
     return result
 
 
-def get_current_streak() -> int:
-    """Calculate the current streak of consecutive days with daily puzzles played.
+class StreakInfo(NamedTuple):
+    """Streak calculation result with protection details."""
 
-    A streak day is when at least one daily puzzle was started on its daily_date.
-    The streak continues as long as each consecutive day (going backwards) has
-    at least one such play. If today hasn't been played yet but yesterday was,
-    the streak is still considered active (not broken yet).
+    streak: int                # Total length including protected days
+    protections_available: int # Remaining protection points (0-2)
+    protections_used: int      # Points consumed by gap days
+    protected_dates: list[str] # ISO dates of protected gaps
 
-    Returns:
-        Number of consecutive days in the current streak.
+
+# Streak protection milestones: (consecutive_plays_needed, points_earned)
+_PROTECTION_MILESTONES = [10, 30]
+_MAX_BANKED = 2
+
+
+def get_streak_info() -> StreakInfo:
+    """Calculate the current streak with protection point simulation.
+
+    Protection points are earned by consecutive play days (no gaps):
+    - 10 consecutive → earn 1 point (max 2 banked)
+    - 30 consecutive → earn 2nd point (max 2 banked)
+    After a gap, the consecutive counter resets but points persist.
+    Points can be re-earned after being spent.
+
+    Walks forward from the earliest played date to today, simulating
+    earning and spending. The last surviving streak reaching today
+    (or yesterday via grace period) is the result.
     """
     cursor = _connection.cursor()
-
-    # Get all distinct dates where a daily puzzle was played on its day
-    # (started_at date matches daily_date)
     cursor.execute('''
         SELECT DISTINCT pz.daily_date
         FROM plays p
         JOIN puzzles pz ON p.puzzle_id = pz.id
         WHERE pz.daily_date IS NOT NULL
         AND date(p.started_at) = pz.daily_date
-        ORDER BY pz.daily_date DESC
+        ORDER BY pz.daily_date ASC
     ''')
-
     played_dates = {row['daily_date'] for row in cursor.fetchall()}
 
     if not played_dates:
-        return 0
+        return StreakInfo(0, 0, 0, [])
 
     today = date.today()
+    earliest = date.fromisoformat(min(played_dates))
+
+    # Walk forward from earliest played date to today
+    banked = 0
+    consecutive_plays = 0
+    streak_days: list[str] = []
+    protected_dates: list[str] = []
+
+    check_date = earliest
+    while check_date <= today:
+        date_str = check_date.isoformat()
+
+        if date_str in played_dates:
+            consecutive_plays += 1
+            if not streak_days:
+                # Start a new streak
+                streak_days = [date_str]
+            else:
+                streak_days.append(date_str)
+            # Check earning milestones
+            if banked < _MAX_BANKED and consecutive_plays in _PROTECTION_MILESTONES:
+                banked += 1
+        else:
+            if banked > 0 and streak_days:
+                # Protect this gap
+                banked -= 1
+                consecutive_plays = 0
+                streak_days.append(date_str)
+                protected_dates.append(date_str)
+            else:
+                # Streak breaks — reset
+                banked = 0
+                consecutive_plays = 0
+                streak_days = []
+                protected_dates = []
+
+        check_date += timedelta(days=1)
+
+    # Grace period: streak is valid if it reaches today or yesterday
+    if not streak_days:
+        return StreakInfo(0, 0, 0, [])
+
+    last_day = streak_days[-1]
     today_str = today.isoformat()
     yesterday_str = (today - timedelta(days=1)).isoformat()
 
-    # Determine the starting point for counting
-    if today_str in played_dates:
-        # Today was played, start counting from today
-        check_date = today
-    elif yesterday_str in played_dates:
-        # Today not played yet, but yesterday was - streak is still alive
-        # Start counting from yesterday
-        check_date = today - timedelta(days=1)
-    else:
-        # Neither today nor yesterday was played - streak is broken
-        return 0
+    if last_day != today_str and last_day != yesterday_str:
+        return StreakInfo(0, 0, 0, [])
 
-    # Count consecutive days backwards
-    streak = 0
-    while check_date.isoformat() in played_dates:
-        streak += 1
-        check_date = check_date - timedelta(days=1)
+    return StreakInfo(
+        streak=len(streak_days),
+        protections_available=banked,
+        protections_used=len(protected_dates),
+        protected_dates=protected_dates,
+    )
 
-    return streak
+
+def get_current_streak() -> int:
+    """Return the current streak length (legacy wrapper)."""
+    return get_streak_info().streak
 
 
 # -----------------------------------------------------------------------------

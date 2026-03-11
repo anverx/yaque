@@ -1,91 +1,36 @@
 from __future__ import annotations
 
 import calendar
-import os
 from datetime import date
 from typing import Any
 
-from kivy.graphics import Color, RoundedRectangle
 from kivy.metrics import dp
-from kivy.uix.behaviors import ButtonBehavior
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.gridlayout import GridLayout
-from kivy.uix.image import Image
 from kivy.uix.label import Label
 
 import database
 from popups import show_date_puzzles_popup
 from screens.base import BackgroundedScreen
 from ui_constants import (
-    CELL_HEIGHT,
-    DEFAULT_BUTTON_COLOR,
-    DEFAULT_BUTTON_COLOR_DOWN,
     PADDING_CELL,
-    QUEEN_GOLD,
-    QUEEN_GRAY,
-    QUEEN_SILVER,
-    RADIUS_SM,
     SPACING_MIN,
+    STREAK_PROTECTED,
     STYLES,
     SWIPE_DISTANCE_THRESHOLD,
-    TEXT_WHITE,
     TODAY_HIGHLIGHT,
     TOP_SPACER_HEIGHT,
 )
-from widgets import DayLabel, MonthLabel, PanelLayout, RoundedButton, TitleSmLabel, disable_widget, styled
-
-# Path to icons
-ICONS_DIR = os.path.join(os.path.dirname(__file__), '..', 'assets', 'icons')
-
-
-class DayCell(ButtonBehavior, BoxLayout):
-    """Calendar day cell with day number and 3 queen status icons."""
-    def __init__(self, day: int, completion_status: dict[int, str | None] | None = None, **kwargs: Any) -> None:
-        super().__init__(orientation='vertical', **kwargs)
-        self.day = day
-        self.background_color = DEFAULT_BUTTON_COLOR
-        self._update_bg()
-        self.bind(pos=self._update_bg, size=self._update_bg, state=self._update_bg)
-
-        # Day number
-        self.day_label = DayLabel(str(day), color=TEXT_WHITE, size_hint_y=0.5)
-        self.add_widget(self.day_label)
-
-        # Queen icons row
-        icons_row = BoxLayout(
-            orientation='horizontal',
-            size_hint_y=0.5,
-            spacing=dp(SPACING_MIN),
-            padding=[dp(PADDING_CELL[0]), 0, dp(PADDING_CELL[0]), dp(PADDING_CELL[1])]
-        )
-
-        self.queen_icons: list[Image] = []
-        for size in [6, 7, 8]:
-            status = completion_status.get(size) if completion_status else None
-            if status == 'gold':
-                color = QUEEN_GOLD
-            elif status == 'silver':
-                color = QUEEN_SILVER
-            else:
-                color = QUEEN_GRAY
-            icon = Image(
-                source=os.path.join(ICONS_DIR, 'queen-small.png'),
-                color=color,
-                fit_mode='contain'
-            )
-            self.queen_icons.append(icon)
-            icons_row.add_widget(icon)
-
-        self.add_widget(icons_row)
-
-    def _update_bg(self, *args: Any) -> None:
-        self.canvas.before.clear()
-        with self.canvas.before:
-            if self.state == 'down':
-                Color(*DEFAULT_BUTTON_COLOR_DOWN)
-            else:
-                Color(*self.background_color)
-            RoundedRectangle(pos=self.pos, size=self.size, radius=[dp(RADIUS_SM)])
+from widgets import (
+    DayCell,
+    DayLabel,
+    MonthLabel,
+    PanelLayout,
+    RoundedButton,
+    TitleSmLabel,
+    disable_widget,
+    styled,
+)
 
 
 class CalendarScreen(BackgroundedScreen):
@@ -180,13 +125,19 @@ class CalendarScreen(BackgroundedScreen):
         self.month_label.text = f'{calendar.month_name[self.current_month]} {self.current_year}'
         self.calendar_grid.clear_widgets()
 
-        # Update streak display
-        streak = database.get_current_streak()
-        if streak > 0:
-            self.streak_label.text = f'Current streak: {streak} day{"s" if streak != 1 else ""}'
+        # Update streak display with protection info
+        info = database.get_streak_info()
+        if info.streak > 0:
+            streak_text = f'Current streak: {info.streak} day{"s" if info.streak != 1 else ""}'
+            # Only reveal protection info once streak reaches 10 (easter egg)
+            if info.streak >= 10 and info.protections_available > 0:
+                shield = info.protections_available
+                streak_text += f'  |  {shield} protection{"s" if shield > 1 else ""}'
+            self.streak_label.text = streak_text
         else:
             self.streak_label.text = 'Start a streak by playing today!'
 
+        protected_set = set(info.protected_dates)
         today = date.today()
         cal = calendar.Calendar(firstweekday=0)  # Monday first
 
@@ -213,9 +164,10 @@ class CalendarScreen(BackgroundedScreen):
                     disable_widget(cell)
                 else:
                     cell.bind(on_press=lambda x, d=day_date: self.select_date(d))
-                    # Highlight today with slightly different color
                     if day_date == today:
                         cell.background_color = TODAY_HIGHLIGHT
+                    elif date_str in protected_set:
+                        cell.background_color = STREAK_PROTECTED
 
                 self.calendar_grid.add_widget(cell)
 

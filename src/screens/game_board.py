@@ -24,10 +24,10 @@ from ui_constants import (
     SWIPE_EDGE_THRESHOLD,
 )
 from widgets import (
+    BackButton,
     BoardWidget,
     CaptionLabel,
     ClockLabel,
-    BackButton,
     GrayRoundedButton,
     IconButton,
     SolutionIndicator,
