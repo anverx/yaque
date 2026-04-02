@@ -16,9 +16,9 @@ source.dir = src
 source.include_exts = py,png,jpg,kv,atlas,json,ttf
 
 # Application versioning
-version = 1.0.9
+version = 1.1.0
 # Numeric version code for Android (must increment for updates!)
-android.numeric_version = 11
+android.numeric_version = 12
 
 # Application requirements
 # Note: Cython<3 is required for pyjnius compatibility
