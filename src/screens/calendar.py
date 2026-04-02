@@ -1,9 +1,12 @@
 from __future__ import annotations
 
 import calendar
+import os
 from datetime import date
 from typing import Any
 
+from kivy.core.image import Image as CoreImage
+from kivy.graphics import Color, PopMatrix, PushMatrix, Rectangle, Rotate
 from kivy.metrics import dp
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.gridlayout import GridLayout
@@ -14,6 +17,7 @@ from popups import show_date_puzzles_popup
 from screens.base import BackgroundedScreen
 from ui_constants import (
     PADDING_CELL,
+    QUEEN_GOLD,
     SPACING_MIN,
     STREAK_PROTECTED,
     STYLES,
@@ -121,8 +125,50 @@ class CalendarScreen(BackgroundedScreen):
             self.current_month += 1
         self.refresh_calendar()
 
+    _crown_texture: Any = None
+
+    def _draw_month_crown(self) -> None:
+        """Draw a tilted gold crown on the month label."""
+        if CalendarScreen._crown_texture is None:
+            icons_dir = os.path.join(os.path.dirname(__file__), '..', 'assets', 'icons')
+            CalendarScreen._crown_texture = CoreImage(
+                os.path.join(icons_dir, 'queen-small.png')
+            ).texture
+        lbl = self.month_label
+        icon_size = lbl.height * 0.45
+        ix = lbl.right - icon_size - dp(4)
+        iy = lbl.top - icon_size - dp(2)
+        with lbl.canvas.after:
+            Color(*QUEEN_GOLD)
+            PushMatrix()
+            Rotate(angle=-20, origin=(ix + icon_size / 2, iy + icon_size / 2))
+            Rectangle(
+                texture=CalendarScreen._crown_texture,
+                pos=(ix, iy),
+                size=(icon_size, icon_size),
+            )
+            PopMatrix()
+
+    def _is_month_perfect(self, month_status: dict[str, dict], year: int, month: int) -> bool:
+        """Check if every day in the month (up to today) has at least one win."""
+        today = date.today()
+        if year > today.year or (year == today.year and month > today.month):
+            return False
+        import calendar as cal_mod
+        last_day = cal_mod.monthrange(year, month)[1]
+        # For current month, only check up to today
+        if year == today.year and month == today.month:
+            last_day = today.day
+        for day in range(1, last_day + 1):
+            date_str = f'{year:04d}-{month:02d}-{day:02d}'
+            day_status = month_status.get(date_str, {})
+            if not any(v is not None for v in day_status.values()):
+                return False
+        return True
+
     def refresh_calendar(self) -> None:
         self.month_label.text = f'{calendar.month_name[self.current_month]} {self.current_year}'
+        self.month_label.canvas.after.clear()
         self.calendar_grid.clear_widgets()
 
         # Update streak display with protection info
@@ -143,6 +189,10 @@ class CalendarScreen(BackgroundedScreen):
 
         # Fetch completion status for entire month in one query
         month_status = database.get_month_completion_status(self.current_year, self.current_month)
+
+        # Show crown if every day of the month has at least one win
+        if self._is_month_perfect(month_status, self.current_year, self.current_month):
+            self._draw_month_crown()
 
         for day in cal.itermonthdays(self.current_year, self.current_month):
             if day == 0:

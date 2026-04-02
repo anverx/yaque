@@ -22,6 +22,7 @@ from ui_constants import (
     TOP_SPACER_HEIGHT,
 )
 from widgets import (
+    BarChart,
     CaptionLabel,
     DateSeparator,
     FixedGrayRoundedButton,
@@ -59,7 +60,7 @@ class LogbookScreen(BackgroundedScreen):
         # Tab selector row
         tab_row = styled(BoxLayout, 'selection_row')
         self.tab_group = SelectableButtonGroup(on_select=self._on_tab_changed)
-        for tab_key, label in [('games', 'Games'), ('stats', 'Stats')]:
+        for tab_key, label in [('games', 'Games'), ('stats', 'Stats'), ('activity', 'Activity')]:
             btn = SelectableButton(
                 text=label,
                 selected=(tab_key == 'games'),
@@ -113,6 +114,9 @@ class LogbookScreen(BackgroundedScreen):
         self.stats_content = styled(BoxLayout, 'list_layout', spacing=dp(4))
         self.stats_content.bind(minimum_height=self.stats_content.setter('height'))
         self.stats_scroll.add_widget(self.stats_content)
+
+        # Activity content (rebuilt on each refresh)
+        self.activity_content = BoxLayout(orientation='vertical')
 
         # Start with games content
         self.panel.add_widget(self.games_content)
@@ -224,7 +228,7 @@ class LogbookScreen(BackgroundedScreen):
             self.list_layout.add_widget(load_more_btn)
 
     def _on_tab_changed(self, tab_key: str) -> None:
-        """Switch between Games and Stats tabs."""
+        """Switch between Games, Stats, and Activity tabs."""
         self.current_tab = tab_key
         self.panel.clear_widgets()
         if tab_key == 'games':
@@ -232,11 +236,16 @@ class LogbookScreen(BackgroundedScreen):
             self.sort_row.opacity = 1
             self.panel.add_widget(self.games_content)
             self._load_plays(append=False)
-        else:
+        elif tab_key == 'stats':
             self.sort_row.height = 0
             self.sort_row.opacity = 0
             self._refresh_stats()
             self.panel.add_widget(self.stats_scroll)
+        elif tab_key == 'activity':
+            self.sort_row.height = 0
+            self.sort_row.opacity = 0
+            self._refresh_activity()
+            self.panel.add_widget(self.activity_content)
 
     def _format_duration(self, duration_ms: int | None) -> str:
         """Format milliseconds as M:SS."""
@@ -298,6 +307,18 @@ class LogbookScreen(BackgroundedScreen):
             row.add_widget(TableCellLabel(value))
             self.stats_content.add_widget(row)
 
+    def _refresh_activity(self) -> None:
+        """Refresh the activity chart."""
+        self.activity_content.clear_widgets()
+        self.activity_content.add_widget(SubtitleLabel('Games per Day (30 days)', color=TEXT_WHITE))
+        data = database.get_games_per_day(30)
+        total = sum(v for _, v in data)
+        chart = BarChart(data, bar_color=(1, 1, 1, 0.85))
+        self.activity_content.add_widget(chart)
+        self.activity_content.add_widget(
+            CaptionLabel(f'{total} games in the last 30 days', color=TEXT_LIGHT)
+        )
+
     def _on_sort_changed(self, sort_key: str) -> None:
         """Handle sort option change."""
         self.current_sort = sort_key
@@ -307,5 +328,7 @@ class LogbookScreen(BackgroundedScreen):
         """Refresh current tab when screen is shown."""
         if self.current_tab == 'games':
             self._load_plays(append=False)
-        else:
+        elif self.current_tab == 'stats':
             self._refresh_stats()
+        elif self.current_tab == 'activity':
+            self._refresh_activity()

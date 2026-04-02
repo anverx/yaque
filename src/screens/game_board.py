@@ -16,6 +16,10 @@ from kivy.utils import platform
 import database
 import game_encoding
 from ui_constants import (
+    CLOCK_BEHIND,
+    CLOCK_FAST,
+    CLOCK_NORMAL,
+    CLOCK_SLOW,
     GRAY_BUTTON_COLOR,
     GRAY_BUTTON_COLOR_DOWN,
     ICON_BTN_SIZE_LG,
@@ -70,6 +74,11 @@ class GameScreen(Screen):
         self.clock_label = ClockLabel()
         top_bar.add_widget(self.clock_label)
         layout.add_widget(top_bar)
+
+        # Best/average time stats (shown when 10+ completed games for this size)
+        self.time_stats_label = CaptionLabel('', **STYLES['subtitle_area'])
+        self.time_stats_label.opacity = 0
+        layout.add_widget(self.time_stats_label)
 
         # Solution indicator (gray circles with golden indicator)
         self.solution_indicator = SolutionIndicator(**STYLES['indicator_area'])
@@ -141,6 +150,7 @@ class GameScreen(Screen):
         self.puzzle_id = None
         self.play_id = None
         self.daily_date = None  # Set if this is a daily puzzle
+        self._hit_me_mode = False
 
         # Wake lock to prevent screen sleep during gameplay
         self._screen_on = False
@@ -179,7 +189,8 @@ class GameScreen(Screen):
         self.from_calendar = from_calendar
         self.from_logbook = from_logbook
 
-        # Clear subtitle and solutions (will be set when solved)
+        # Clear state from previous game
+        self._hit_me_mode = False
         self.subtitle_label.text = ''
         self.subtitle_label.opacity = 0
         self.solutions_text_btn.text = ''
@@ -189,6 +200,9 @@ class GameScreen(Screen):
         self.current_solution_index = 0
         self.showing_solutions = False
         self.solution_indicator.opacity = 0
+
+        # Show best/average time stats if 10+ completed games for this size
+        self._update_time_stats(game.size)
 
         # Set title
         if daily_date:
@@ -275,8 +289,9 @@ class GameScreen(Screen):
         # Generate QR code for sharing
         self._generate_qr_code()
 
-        # Update clock display
+        # Update clock display and reset color
         self._update_clock_display()
+        self.clock_label.color = CLOCK_NORMAL
         if self.timer_event:
             self.timer_event.cancel()
             self.timer_event = None
@@ -335,6 +350,18 @@ class GameScreen(Screen):
         if not self.board:
             return
 
+        # "Hit Me" — generate a new random game with same params
+        if self._hit_me_mode:
+            from popups import _last_random_options
+            self._hit_me_mode = False
+            self.app._start_random_game_with_options(
+                size=_last_random_options['size'],
+                strategy=_last_random_options['strategy'],
+                max_solutions=_last_random_options['max_solutions'],
+                queen_placement=_last_random_options['queen_placement'],
+            )
+            return
+
         # Special case: revealing a completed game
         if self.board.solved and self.board.hidden:
             self.board.hidden = False
@@ -372,11 +399,46 @@ class GameScreen(Screen):
     def _tick(self, dt: float) -> None:
         self.elapsed_time += 1
         self._update_clock_display()
+        self._update_clock_color()
 
     def _update_clock_display(self) -> None:
         minutes = self.elapsed_time // 60
         seconds = self.elapsed_time % 60
         self.clock_label.text = f'{minutes:02d}:{seconds:02d}'
+
+    def _update_clock_color(self) -> None:
+        """Update clock color based on elapsed time vs best/average."""
+        if self._best_secs is None:
+            return
+        if self.elapsed_time <= self._best_secs:
+            self.clock_label.color = CLOCK_FAST
+        elif self.elapsed_time <= self._avg_secs:
+            self.clock_label.color = CLOCK_SLOW
+        else:
+            self.clock_label.color = CLOCK_BEHIND
+
+    def _update_time_stats(self, size: int) -> None:
+        """Show best/average times if 10+ completed games for this size."""
+        stats = database.get_time_stats_by_size().get(size)
+        if not stats or stats['play_count'] < 10:
+            self.time_stats_label.text = ''
+            self.time_stats_label.opacity = 0
+            self._best_secs = None
+            self._avg_secs = None
+            return
+        self._best_secs = stats['best_time'] // 1000
+        self._avg_secs = stats['avg_time'] // 1000
+        best = self._format_duration(stats['best_time'])
+        avg = self._format_duration(stats['avg_time'])
+        self.time_stats_label.text = f'Best {best}  ·  Avg {avg}'
+        self.time_stats_label.opacity = 1
+
+    @staticmethod
+    def _format_duration(ms: int | None) -> str:
+        if not ms:
+            return '-'
+        secs = ms // 1000
+        return f'{secs // 60}:{secs % 60:02d}'
 
     def on_puzzle_solved(self) -> None:
         if self.timer_event:
@@ -396,9 +458,16 @@ class GameScreen(Screen):
 
         # Keep board visible when solved
         self.is_playing = False
-        self.play_btn.set_icon('queen', 'Solved!')  # Show queen icon when solved
-        self.play_btn.disabled = True
         self.qr_image.opacity = 0
+
+        if self.daily_date:
+            self.play_btn.set_icon('queen', 'Solved!')
+            self.play_btn.disabled = True
+            self._hit_me_mode = False
+        else:
+            self.play_btn.set_icon('dice', 'Hit Me!')
+            self.play_btn.disabled = False
+            self._hit_me_mode = True
 
         # Show rate button
         self.rate_btn.opacity = 1
@@ -499,12 +568,14 @@ class GameScreen(Screen):
             self.timer_event = None
         self.elapsed_time = 0
         self._update_clock_display()
+        self.clock_label.color = CLOCK_NORMAL
 
         # Reset play tracking (new play will start when user presses play)
         self.play_id = None
 
         # Return to initial paused state
         self._keep_screen_on(False)
+        self._hit_me_mode = False
         self.is_playing = False
         self.board.hidden = True
         self.board.solved = False

@@ -632,6 +632,37 @@ def get_time_stats_by_size() -> dict[int, dict[str, Any]]:
     }
 
 
+def get_games_per_day(days: int = 30) -> list[tuple[str, int]]:
+    """Get completed game counts per day for the last N days.
+
+    Returns:
+        List of (date_str, count) tuples for each day, oldest first.
+        Days with zero games are included.
+    """
+    cursor = _connection.cursor()
+    today = date.today()
+    start = today - timedelta(days=days - 1)
+
+    cursor.execute('''
+        SELECT date(p.completed_at) as day, COUNT(*) as count
+        FROM plays p
+        WHERE p.completed = 1 AND date(p.completed_at) >= ?
+        GROUP BY day
+        ORDER BY day
+    ''', (start.isoformat(),))
+
+    counts = {row['day']: row['count'] for row in cursor.fetchall()}
+
+    # Fill in all days (including zeros)
+    result = []
+    d = start
+    while d <= today:
+        d_str = d.isoformat()
+        result.append((d_str, counts.get(d_str, 0)))
+        d += timedelta(days=1)
+    return result
+
+
 def get_daily_completion_status(daily_date: str) -> dict[int, bool]:
     """Get completion status for all sizes on a given date (single query)."""
     cursor = _connection.cursor()

@@ -1,5 +1,6 @@
 """Yaque UI widgets package."""
 
+from widgets.bar_chart import BarChart
 from widgets.board import BoardWidget
 from widgets.buttons import (
     BackButton,
@@ -69,6 +70,8 @@ from widgets.layouts import (
 from widgets.spinner import QueenSpinner
 
 __all__ = [
+    # Charts
+    'BarChart',
     # Types
     'ColorTuple',
     # Crown badge

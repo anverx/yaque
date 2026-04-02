@@ -50,6 +50,12 @@ INPUT_HINT_COLOR = (0.6, 0.6, 0.6, 1)
 STATUS_SUCCESS = (0.2, 0.6, 0.2, 1)  # Green for success messages
 STATUS_ERROR = (0.8, 0.2, 0.2, 1)    # Red for error messages
 
+# Clock colors (timer feedback based on pace — readable on white background)
+CLOCK_NORMAL = (0.2, 0.2, 0.2, 1)     # Default dark
+CLOCK_FAST = (0.15, 0.5, 0.15, 1)     # Dark green — under best time
+CLOCK_SLOW = (0.7, 0.55, 0.0, 1)      # Dark amber — past best, under average
+CLOCK_BEHIND = (0.75, 0.15, 0.15, 1)  # Dark red — past average
+
 # Spinner colors
 SPINNER_BORDER = (0.8, 0.8, 0.8, 1)
 
