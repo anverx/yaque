@@ -868,6 +868,34 @@ def export_to_json() -> dict[str, Any]:
     }
 
 
+def get_avg_generation_time(size: int, unique: bool) -> int | None:
+    """Get average generation time in ms for a given size and uniqueness.
+
+    Args:
+        size: Board size
+        unique: True for single-solution puzzles, False for multi-solution
+    """
+    cursor = _connection.cursor()
+    if unique:
+        cursor.execute('''
+            SELECT AVG(generation_time_ms) as avg_time, COUNT(*) as cnt
+            FROM puzzles
+            WHERE size = ? AND generation_time_ms IS NOT NULL
+            AND num_solutions = 1
+        ''', (size,))
+    else:
+        cursor.execute('''
+            SELECT AVG(generation_time_ms) as avg_time, COUNT(*) as cnt
+            FROM puzzles
+            WHERE size = ? AND generation_time_ms IS NOT NULL
+            AND num_solutions > 1
+        ''', (size,))
+    row = cursor.fetchone()
+    if row and row['avg_time'] and row['cnt'] >= 10:
+        return int(row['avg_time'])
+    return None
+
+
 def get_generation_stats() -> dict[str, Any]:
     """Get statistics about puzzle generation times."""
     cursor = _connection.cursor()

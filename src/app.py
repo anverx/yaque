@@ -228,16 +228,26 @@ class YaqueApp(App):
         """Show options popup, then generate random game."""
         show_game_size_popup(self._start_random_game_with_options)
 
+    @staticmethod
+    def _format_gen_time_hint(size: int, unique: bool) -> str:
+        """Format generation time hint from DB averages."""
+        avg_ms = database.get_avg_generation_time(size, unique)
+        if avg_ms is not None:
+            secs = avg_ms / 1000
+            if secs < 1:
+                return ' (avg. <1s)'
+            elif secs < 60:
+                return f' (avg. ~{int(secs)}s)'
+            else:
+                return f' (avg. ~{int(secs // 60)}m{int(secs % 60):02d}s)'
+        if size >= 8:
+            return ' (could take some time)'
+        return ''
+
     def _start_random_game_with_options(self, size: int, strategy: str, max_solutions: int,
                                           queen_placement: str = 'backtrack') -> None:
         """Generate a random game with the selected options."""
-        # Expected generation times based on board size and solution requirement
-        if max_solutions == 1:
-            expected_times = {6: '<1s', 7: '~1s', 8: '~10s', 9: '~50s'}
-        else:
-            expected_times = {6: '<1s', 7: '<1s', 8: '~5s', 9: '~20s'}
-        time_hint = expected_times.get(size, '')
-        time_str = f' (avg. {time_hint})' if time_hint else ''
+        time_str = self._format_gen_time_hint(size, max_solutions == 1)
         self._show_loading_popup(f'Finding the perfect {size}x{size} puzzle...{time_str}')
         gen_id = self._generation_id  # Capture current generation ID
 
@@ -287,12 +297,10 @@ class YaqueApp(App):
             popup.open()
             return
 
-        self._dismiss_loading_popup()
-        expected_times = {6: '<1s', 7: '<1s', 8: '~5s', 9: '~20s'}
-        time_hint = expected_times.get(size, '')
-        time_str = f' (avg. {time_hint})' if time_hint else ''
-        self._show_loading_popup(f'Retrying {size}x{size} puzzle...{time_str}')
-        gen_id = self._generation_id  # Capture current generation ID
+        # Update status without dismissing — keeps timer running smoothly
+        if self.loading_popup:
+            self.loading_popup.set_status(f'Relaxing to {next_max} solutions...')
+        gen_id = self._generation_id
 
         def cancel_check() -> bool:
             return self._generation_cancelled or gen_id != self._generation_id

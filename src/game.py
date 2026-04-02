@@ -53,7 +53,7 @@ class Game:
 
         # For larger boards, use best-of-N strategy instead of rejection sampling
         if size >= 8:
-            self._generate_best_of_n(size, kingdom_strategy, max_solutions, max_attempts)
+            self._generate_with_restarts(size, kingdom_strategy, max_solutions, max_attempts)
         else:
             self._generate_rejection_sampling(size, kingdom_strategy, max_solutions, max_attempts)
 
@@ -84,8 +84,33 @@ class Game:
                 return
         raise ValueError(f"Could not generate puzzle with <={max_solutions} solutions after {max_attempts} attempts")
 
+    def _generate_with_restarts(self, size: int, kingdom_strategy: str,
+                                max_solutions: int, max_attempts: int) -> None:
+        """Try best-of-N with restarts on fresh seeds when refinement stalls."""
+        max_rounds = 5
+        total_attempts = 0
+        for round_num in range(max_rounds):
+            if round_num > 0:
+                # Fresh seed for each restart
+                self.seed = random.randint(0, 2**31 - 1)
+                random.seed(self.seed)
+            if self._is_cancelled():
+                raise GenerationCancelled()
+            success = self._generate_best_of_n(
+                size, kingdom_strategy, max_solutions, max_attempts
+            )
+            total_attempts += self.attempts
+            if success:
+                self.attempts = total_attempts
+                return
+        self.attempts = total_attempts
+        raise ValueError(
+            f"Could not generate puzzle with <={max_solutions} solutions "
+            f"after {max_rounds} rounds ({total_attempts} attempts)"
+        )
+
     def _generate_best_of_n(self, size: int, kingdom_strategy: str,
-                            max_solutions: int, max_attempts: int) -> None:
+                            max_solutions: int, max_attempts: int) -> bool:
         """Generate N candidates, pick the best, then refine with local search."""
         # Phase 1: Best-of-N sampling - more samples for larger boards
         batch_size = min(5000 if size <= 8 else 8000, max_attempts)
@@ -110,7 +135,7 @@ class Game:
             if solutions <= max_solutions:
                 self.num_solutions = solutions
                 self.attempts = attempt + 1
-                return
+                return True
 
             if solutions < best_solutions:
                 best_solutions = solutions
@@ -118,7 +143,8 @@ class Game:
                 best_kingdoms = [row[:] for row in self.kingdoms]
 
         if best_queens is None or best_kingdoms is None:
-            raise ValueError(f"Could not generate any puzzle after {batch_size} attempts")
+            self.attempts = batch_size
+            return False
 
         # Phase 2: Local search refinement
         self.queens = best_queens
@@ -147,12 +173,12 @@ class Game:
             else:
                 no_improve += 1
 
-        # Reject if we couldn't meet the max_solutions requirement
+        self.attempts = batch_size
         if current_solutions > max_solutions:
-            raise ValueError(f"Could not generate puzzle with <={max_solutions} solutions (best: {current_solutions})")
+            return False
 
         self.num_solutions = current_solutions
-        self.attempts = batch_size
+        return True
 
     def _try_boundary_swap(self, current_solutions: int) -> int | None:
         """Try swapping a boundary cell between kingdoms. Returns new solution count if improved."""
