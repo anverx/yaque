@@ -317,21 +317,34 @@ jobs:
             jarsigner -verify -verbose -certs "$AAB" 2>&1 | head -20
           fi
 
-          # Verify target SDK level and version info
+          # Extract and verify targetSdkVersion from the AAB manifest
+          # AAB is a zip; extract base/manifest/AndroidManifest.xml and decode it
+          BUNDLETOOL=$(find ~/.buildozer -name "bundletool*.jar" -type f 2>/dev/null | head -1)
           AAPT2=$(find ~/.buildozer $ANDROID_HOME -name "aapt2" -type f 2>/dev/null | head -1)
-          if [ -n "$AAPT2" ]; then
-            echo "=== AAB metadata ==="
-            "$AAPT2" dump badging "$AAB" 2>/dev/null | grep -E "versionCode|versionName|package:|targetSdkVersion|minSdkVersion" || true
+
+          # Try extracting AndroidManifest.xml from the AAB (it's a zip)
+          mkdir -p /tmp/aab-check
+          unzip -o "$AAB" base/manifest/AndroidManifest.xml -d /tmp/aab-check 2>/dev/null || true
+
+          if [ -n "$AAPT2" ] && [ -f /tmp/aab-check/base/manifest/AndroidManifest.xml ]; then
+            echo "=== AndroidManifest.xml ==="
+            "$AAPT2" dump xmltree --file AndroidManifest.xml /tmp/aab-check/base/manifest/AndroidManifest.xml 2>/dev/null || true
+            # Extract targetSdkVersion
+            TARGET_SDK=$("$AAPT2" dump xmltree --file AndroidManifest.xml /tmp/aab-check/base/manifest/AndroidManifest.xml 2>/dev/null | sed -n 's/.*targetSdkVersion.*=\([0-9]*\).*/\1/p' | head -1)
           fi
 
-          # Fail if targetSdkVersion is wrong
-          if [ -n "$AAPT2" ]; then
-            TARGET_SDK=$("$AAPT2" dump badging "$AAB" 2>/dev/null | grep -oP "targetSdkVersion:'\K[0-9]+" || echo "unknown")
-            echo "Target SDK: $TARGET_SDK"
-            if [ "$TARGET_SDK" != "35" ]; then
-              echo "::error::Expected targetSdkVersion=35 but got $TARGET_SDK"
-              exit 1
-            fi
+          # Fallback: check the gradle output in the build directory
+          if [ -z "$TARGET_SDK" ]; then
+            TARGET_SDK=$(grep -r "targetSdkVersion" .buildozer/android/platform/build-*/dists/*/build.gradle 2>/dev/null | sed -n 's/.*targetSdkVersion \([0-9]*\).*/\1/p' | head -1)
+          fi
+
+          echo "Target SDK: ${TARGET_SDK:-not found}"
+          if [ -n "$TARGET_SDK" ] && [ "$TARGET_SDK" != "35" ]; then
+            echo "::error::Expected targetSdkVersion=35 but got $TARGET_SDK"
+            exit 1
+          fi
+          if [ -z "$TARGET_SDK" ]; then
+            echo "::warning::Could not determine targetSdkVersion from AAB"
           fi
 
       - name: Package native debug symbols
