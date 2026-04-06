@@ -275,8 +275,10 @@ jobs:
       - name: Build AAB
         env:
           PIP_CONSTRAINT: ${{ github.workspace }}/pip-constraints.txt
-          RELEASE_KEYSTORE_PASSWD: ${{ secrets.RELEASE_KEYSTORE_PASSWD }}
-          RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
+          P4A_RELEASE_KEYSTORE: ${{ github.workspace }}/release.keystore
+          P4A_RELEASE_KEYALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
+          P4A_RELEASE_KEYSTORE_PASSWD: ${{ secrets.RELEASE_KEYSTORE_PASSWD }}
+          P4A_RELEASE_KEYALIAS_PASSWD: ${{ secrets.RELEASE_KEYSTORE_PASSWD }}
         run: |
           echo "Cython<3" > pip-constraints.txt
           pip install --user 'Cython<3'
@@ -286,22 +288,11 @@ jobs:
           echo "Setting android.numeric_version to $VERSION_CODE"
           sed -i "s/^android.numeric_version = .*/android.numeric_version = $VERSION_CODE/" buildozer.spec
 
-          # Configure for release AAB with signing in buildozer.spec
+          # Configure for release AAB
           sed -i "s/^# *android.release_artifact.*/android.release_artifact = aab/" buildozer.spec
           if ! grep -q "^android.release_artifact" buildozer.spec; then
             echo "android.release_artifact = aab" >> buildozer.spec
           fi
-
-          # Configure release signing in buildozer.spec
-          # Remove debug keystore lines and add release keystore config
-          sed -i '/^android.debug_keystore/d' buildozer.spec
-          sed -i '/^android.debug_keystore_alias/d' buildozer.spec
-          sed -i '/^android.debug_keystore_passwd/d' buildozer.spec
-          sed -i '/^android.debug_keyalias_passwd/d' buildozer.spec
-          echo "android.keystore = %(source.dir)s/../release.keystore" >> buildozer.spec
-          echo "android.keyalias = $RELEASE_KEY_ALIAS" >> buildozer.spec
-          echo "android.keystore_password = $RELEASE_KEYSTORE_PASSWD" >> buildozer.spec
-          echo "android.keyalias_password = $RELEASE_KEYSTORE_PASSWD" >> buildozer.spec
 
           yes | buildozer android release 2>&1 | tee build-release.log || true
 
@@ -319,6 +310,13 @@ jobs:
           AAB=$(ls bin/*.aab | head -1)
           echo "=== AAB: $AAB ==="
           echo "Size: $(du -h "$AAB" | cut -f1)"
+
+          # Verify AAB is signed
+          JARSIGNER=$(which jarsigner 2>/dev/null || echo "")
+          if [ -n "$JARSIGNER" ]; then
+            echo "=== Signature verification ==="
+            jarsigner -verify -verbose -certs "$AAB" 2>&1 | head -20
+          fi
 
           # Show version info via aapt2 if available
           AAPT2=$(find ~/.buildozer $ANDROID_HOME -name "aapt2" -type f 2>/dev/null | head -1)
