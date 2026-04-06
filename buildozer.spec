@@ -31,11 +31,11 @@ orientation = portrait
 fullscreen = 1
 
 # Android permissions
-android.permissions = INTERNET
+android.permissions =
 
 # Android API levels
 android.minapi = 21
-android.api = 33
+android.api = 35
 android.ndk = 25b
 
 # Android architecture

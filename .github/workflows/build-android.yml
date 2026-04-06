@@ -325,11 +325,60 @@ jobs:
             "$AAPT2" dump badging "$AAB" 2>/dev/null | grep -E "versionCode|versionName|package:" || true
           fi
 
+      - name: Package native debug symbols
+        run: |
+          # Find unstripped .so files from the p4a build
+          # They live in the build directory before stripping
+          LIBS_DIR=$(find .buildozer -path "*/build/libs_collections/*/lib" -type d 2>/dev/null | head -1)
+          OBJ_DIR=$(find .buildozer -path "*/python-installs/*" -type d 2>/dev/null | head -1)
+
+          echo "=== Looking for native libraries ==="
+          mkdir -p native-debug-symbols
+
+          # Find all .so files with debug symbols in the build tree
+          for arch in arm64-v8a armeabi-v7a; do
+            mkdir -p "native-debug-symbols/$arch"
+            # p4a keeps unstripped libs in the obj directory
+            find .buildozer -path "*/$arch/*.so" -name "*.so" 2>/dev/null | while read so; do
+              # Check if file has debug info
+              if file "$so" | grep -q "not stripped"; then
+                cp "$so" "native-debug-symbols/$arch/"
+                echo "Found unstripped: $so"
+              fi
+            done
+          done
+
+          # If no unstripped .so found, grab all .so files (stripped is better than nothing)
+          if [ -z "$(find native-debug-symbols -name '*.so' 2>/dev/null)" ]; then
+            echo "No unstripped .so found, collecting all .so files..."
+            for arch in arm64-v8a armeabi-v7a; do
+              mkdir -p "native-debug-symbols/$arch"
+              find .buildozer -path "*/$arch/*.so" -name "*.so" 2>/dev/null | while read so; do
+                cp "$so" "native-debug-symbols/$arch/" 2>/dev/null || true
+              done
+            done
+          fi
+
+          # Create zip in the format Play Console expects
+          cd native-debug-symbols
+          zip -r ../native-debug-symbols.zip . || echo "No symbols to package"
+          cd ..
+          echo "=== Symbols package ==="
+          ls -lh native-debug-symbols.zip 2>/dev/null || echo "No symbols zip created"
+
       - name: Upload AAB artifact
         uses: actions/upload-artifact@v4
         with:
           name: yaque-aab
           path: bin/*.aab
+          retention-days: 90
+
+      - name: Upload native debug symbols
+        if: ${{ hashFiles('native-debug-symbols.zip') != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: yaque-native-debug-symbols
+          path: native-debug-symbols.zip
           retention-days: 90
 
       - name: Upload release build log
@@ -351,6 +400,13 @@ jobs:
         with:
           name: yaque-aab
           path: artifacts
+
+      - name: Download native debug symbols
+        uses: actions/download-artifact@v4
+        with:
+          name: yaque-native-debug-symbols
+          path: artifacts
+        continue-on-error: true
 
       - name: Create Release
         uses: softprops/action-gh-release@v1
