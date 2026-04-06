@@ -6,22 +6,26 @@ from datetime import date
 from typing import Any
 
 from kivy.core.image import Image as CoreImage
-from kivy.graphics import Color, PopMatrix, PushMatrix, Rectangle, Rotate
+from kivy.graphics import Color, PopMatrix, PushMatrix, Rectangle, Rotate, RoundedRectangle
 from kivy.metrics import dp
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.gridlayout import GridLayout
 from kivy.uix.label import Label
 
-import database
+from calendar_logic import CalendarState, CompletionStatus
 from popups import show_date_puzzles_popup
 from screens.base import BackgroundedScreen
 from ui_constants import (
+    DEFAULT_BUTTON_COLOR,
     PADDING_CELL,
     QUEEN_GOLD,
+    QUEEN_SILVER,
+    RADIUS_SM,
     SPACING_MIN,
     STREAK_PROTECTED,
     STYLES,
     SWIPE_DISTANCE_THRESHOLD,
+    TEXT_WHITE,
     TODAY_HIGHLIGHT,
     TOP_SPACER_HEIGHT,
 )
@@ -39,8 +43,7 @@ from widgets import (
 
 class CalendarScreen(BackgroundedScreen):
     def build_content(self) -> None:
-        self.current_year = date.today().year
-        self.current_month = date.today().month
+        self.cal_state = CalendarState()
         layout = self.content_layout
 
         # Extra spacer to push calendar below the banner
@@ -106,29 +109,25 @@ class CalendarScreen(BackgroundedScreen):
         self.refresh_calendar()
 
     def prev_month(self, instance: Any) -> None:
-        if self.current_month == 1:
-            self.current_month = 12
-            self.current_year -= 1
-        else:
-            self.current_month -= 1
+        self.cal_state.prev_month()
         self.refresh_calendar()
 
     def next_month(self, instance: Any) -> None:
-        today = date.today()
-        # Don't allow going past current month
-        if self.current_year == today.year and self.current_month >= today.month:
-            return
-        if self.current_month == 12:
-            self.current_month = 1
-            self.current_year += 1
-        else:
-            self.current_month += 1
-        self.refresh_calendar()
+        if self.cal_state.next_month():
+            self.refresh_calendar()
 
     _crown_texture: Any = None
 
-    def _draw_month_crown(self) -> None:
-        """Draw a tilted gold crown on the month label."""
+    def _style_month_label(self) -> None:
+        """Style month label with green background and white text."""
+        lbl = self.month_label
+        lbl.color = TEXT_WHITE
+        with lbl.canvas.before:
+            Color(*DEFAULT_BUTTON_COLOR)
+            RoundedRectangle(pos=lbl.pos, size=lbl.size, radius=[dp(RADIUS_SM)])
+
+    def _draw_month_crown(self, color: tuple[float, ...]) -> None:
+        """Draw a tilted crown on the month label."""
         if CalendarScreen._crown_texture is None:
             icons_dir = os.path.join(os.path.dirname(__file__), '..', 'assets', 'icons')
             CalendarScreen._crown_texture = CoreImage(
@@ -139,7 +138,7 @@ class CalendarScreen(BackgroundedScreen):
         ix = lbl.right - icon_size - dp(4)
         iy = lbl.top - icon_size - dp(2)
         with lbl.canvas.after:
-            Color(*QUEEN_GOLD)
+            Color(*color)
             PushMatrix()
             Rotate(angle=-20, origin=(ix + icon_size / 2, iy + icon_size / 2))
             Rectangle(
@@ -149,59 +148,36 @@ class CalendarScreen(BackgroundedScreen):
             )
             PopMatrix()
 
-    def _is_month_perfect(self, month_status: dict[str, dict], year: int, month: int) -> bool:
-        """Check if every day in the month (up to today) has at least one win."""
-        today = date.today()
-        if year > today.year or (year == today.year and month > today.month):
-            return False
-        import calendar as cal_mod
-        last_day = cal_mod.monthrange(year, month)[1]
-        # For current month, only check up to today
-        if year == today.year and month == today.month:
-            last_day = today.day
-        for day in range(1, last_day + 1):
-            date_str = f'{year:04d}-{month:02d}-{day:02d}'
-            day_status = month_status.get(date_str, {})
-            if not any(v is not None for v in day_status.values()):
-                return False
-        return True
-
     def refresh_calendar(self) -> None:
-        self.month_label.text = f'{calendar.month_name[self.current_month]} {self.current_year}'
+        st = self.cal_state
+        data = st.fetch_data()
+
+        self.month_label.text = data.month_name
+        self.month_label.canvas.before.clear()
         self.month_label.canvas.after.clear()
         self.calendar_grid.clear_widgets()
 
-        # Update streak display with protection info
-        info = database.get_streak_info()
-        if info.streak > 0:
-            streak_text = f'Current streak: {info.streak} day{"s" if info.streak != 1 else ""}'
-            # Only reveal protection info once streak reaches 10 (easter egg)
-            if info.streak >= 10 and info.protections_available > 0:
-                shield = info.protections_available
-                streak_text += f'  |  {shield} protection{"s" if shield > 1 else ""}'
-            self.streak_label.text = streak_text
-        else:
-            self.streak_label.text = 'Start a streak by playing today!'
+        self.streak_label.text = data.streak_text
 
-        protected_set = set(info.protected_dates)
         today = date.today()
         cal = calendar.Calendar(firstweekday=0)  # Monday first
 
-        # Fetch completion status for entire month in one query
-        month_status = database.get_month_completion_status(self.current_year, self.current_month)
+        # Green background + white text for all months
+        self._style_month_label()
 
-        # Show crown if every day of the month has at least one win
-        if self._is_month_perfect(month_status, self.current_year, self.current_month):
-            self._draw_month_crown()
+        # Month crown for completed past months
+        if data.month_crown == CompletionStatus.GOLD:
+            self._draw_month_crown(QUEEN_GOLD)
+        elif data.month_crown == CompletionStatus.SILVER:
+            self._draw_month_crown(QUEEN_SILVER)
 
-        for day in cal.itermonthdays(self.current_year, self.current_month):
+        for day in cal.itermonthdays(st.year, st.month):
             if day == 0:
-                # Empty cell
                 self.calendar_grid.add_widget(styled(Label, 'cell', text=''))
             else:
-                day_date = date(self.current_year, self.current_month, day)
+                day_date = date(st.year, st.month, day)
                 date_str = day_date.isoformat()
-                completion_status = month_status.get(date_str, {6: None, 7: None, 8: None})
+                completion_status = data.month_status.get(date_str, {6: None, 7: None, 8: None})
 
                 cell = DayCell(
                     day=day,
@@ -209,14 +185,13 @@ class CalendarScreen(BackgroundedScreen):
                     **STYLES['cell']
                 )
 
-                # Disable future dates
                 if day_date > today:
                     disable_widget(cell)
                 else:
                     cell.bind(on_press=lambda x, d=day_date: self.select_date(d))
                     if day_date == today:
                         cell.background_color = TODAY_HIGHLIGHT
-                    elif date_str in protected_set:
+                    elif date_str in data.protected_dates:
                         cell.background_color = STREAK_PROTECTED
 
                 self.calendar_grid.add_widget(cell)
@@ -242,14 +217,11 @@ class CalendarScreen(BackgroundedScreen):
         dx = touch.x - start_x
         dy = abs(touch.y - start_y)
 
-        # Only trigger if horizontal swipe (dx > dy) and sufficient distance
         if abs(dx) > dp(SWIPE_DISTANCE_THRESHOLD) and abs(dx) > dy:
             if dx < 0:
-                # Swipe left → next month
                 self.next_month(None)
                 return True
             else:
-                # Swipe right → previous month
                 self.prev_month(None)
                 return True
         return super().on_touch_up(touch)

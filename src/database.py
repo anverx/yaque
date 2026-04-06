@@ -5,6 +5,8 @@ import sqlite3
 from datetime import date, datetime, timedelta
 from typing import Any, NamedTuple
 
+from calendar_logic import CompletionStatus
+
 # Current schema version - increment when making schema changes
 SCHEMA_VERSION = 5
 
@@ -712,9 +714,9 @@ def get_month_completion_status(year: int, month: int) -> dict[str, dict[int, st
             # Compare just the date part (first 10 chars: YYYY-MM-DD)
             completed_date = completed_at[:10]
             if completed_date == date_str:
-                result[date_str][row['size']] = 'gold'
+                result[date_str][row['size']] = CompletionStatus.GOLD
             else:
-                result[date_str][row['size']] = 'silver'
+                result[date_str][row['size']] = CompletionStatus.SILVER
 
     return result
 

@@ -15,6 +15,7 @@ from kivy.uix.image import Image
 from kivy.uix.modalview import ModalView
 from kivy.uix.widget import Widget
 
+from calendar_logic import CompletionStatus
 from ui_constants import (
     DEFAULT_BUTTON_COLOR,
     DEFAULT_BUTTON_COLOR_DOWN,
@@ -143,9 +144,9 @@ class DayCell(ButtonBehavior, BoxLayout):
         self.queen_icons: list[Image] = []
         for size in [6, 7, 8]:
             status = completion_status.get(size) if completion_status else None
-            if status == 'gold':
+            if status == CompletionStatus.GOLD:
                 color = QUEEN_GOLD
-            elif status == 'silver':
+            elif status == CompletionStatus.SILVER:
                 color = QUEEN_SILVER
             else:
                 color = QUEEN_GRAY
