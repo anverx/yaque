@@ -632,33 +632,39 @@ def get_time_stats_by_size() -> dict[int, dict[str, Any]]:
     }
 
 
-def get_games_per_day(days: int = 30) -> list[tuple[str, int]]:
-    """Get completed game counts per day for the last N days.
+def get_games_per_day(days: int = 30) -> list[tuple[str, dict[int, int]]]:
+    """Get completed game counts per day broken down by board size.
 
     Returns:
-        List of (date_str, count) tuples for each day, oldest first.
-        Days with zero games are included.
+        List of (date_str, {size: count}) tuples for each day, oldest first.
+        Days with zero games are included with empty size dicts.
     """
     cursor = _connection.cursor()
     today = date.today()
     start = today - timedelta(days=days - 1)
 
     cursor.execute('''
-        SELECT date(p.completed_at) as day, COUNT(*) as count
+        SELECT date(p.completed_at) as day, pz.size, COUNT(*) as count
         FROM plays p
+        JOIN puzzles pz ON p.puzzle_id = pz.id
         WHERE p.completed = 1 AND date(p.completed_at) >= ?
-        GROUP BY day
+        GROUP BY day, pz.size
         ORDER BY day
     ''', (start.isoformat(),))
 
-    counts = {row['day']: row['count'] for row in cursor.fetchall()}
+    counts: dict[str, dict[int, int]] = {}
+    for row in cursor.fetchall():
+        day = row['day']
+        if day not in counts:
+            counts[day] = {}
+        counts[day][row['size']] = row['count']
 
     # Fill in all days (including zeros)
     result = []
     d = start
     while d <= today:
         d_str = d.isoformat()
-        result.append((d_str, counts.get(d_str, 0)))
+        result.append((d_str, counts.get(d_str, {})))
         d += timedelta(days=1)
     return result
 

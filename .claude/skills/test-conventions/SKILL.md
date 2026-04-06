@@ -99,6 +99,33 @@ if __name__ == "__main__":
     unittest.main()
 ```
 
+## Keeping Tests Compact
+
+- **Combine tests with the same setup.** If multiple test methods create the same object or state before asserting, merge them into one test with multiple assertions. One test function can verify several properties of the same result.
+
+```python
+# Bad: two tests that both create the same game
+def test_queens_count(self):
+    game = Game(7, max_solutions=10)
+    self.assertEqual(len(game.queens), 7, 'queen count')
+
+def test_queens_one_per_row(self):
+    game = Game(7, max_solutions=10)
+    rows = [r for r, c in game.queens]
+    self.assertEqual(sorted(rows), list(range(7)), 'one per row')
+
+# Good: one test, same setup, multiple assertions
+def test_queen_placement(self):
+    game = Game(7, max_solutions=10)
+    self.assertEqual(len(game.queens), 7, 'queen count')
+    rows = [r for r, c in game.queens]
+    self.assertEqual(sorted(rows), list(range(7)), 'one per row')
+```
+
+- **Avoid overlapping tests.** Don't test the same behavior in multiple places. If `test_encode_decode_roundtrip` already covers all sizes via `subTest`, don't also have individual `test_encode_6x6`, `test_encode_7x7` etc. Each behavior should be tested exactly once.
+
+- **Use `subTest` to compress parametric cases** rather than writing separate methods per input value.
+
 ## Mocking
 
 Use `unittest.mock.patch` for mocking. Prefer `@patch` decorator on individual test methods when the mock is needed during method execution (e.g., `date.today()`). Use `with patch(...)` context manager in helpers when the mock is only needed during setup.

@@ -312,8 +312,8 @@ class LogbookScreen(BackgroundedScreen):
         self.activity_content.clear_widgets()
         self.activity_content.add_widget(SubtitleLabel('Games per Day (30 days)', color=TEXT_WHITE))
         data = database.get_games_per_day(30)
-        total = sum(v for _, v in data)
-        chart = BarChart(data, bar_color=(1, 1, 1, 0.85))
+        total = sum(sum(v.values()) for _, v in data)
+        chart = BarChart(data)
         self.activity_content.add_widget(chart)
         self.activity_content.add_widget(
             CaptionLabel(f'{total} games in the last 30 days', color=TEXT_LIGHT)

@@ -194,9 +194,17 @@ class LoadingPopup(ModalView):
         # Main layout
         layout = PopupContent(padding=[dp(SPACING_XXL), dp(SPACING_XL)])
 
-        # Status label (title at top)
+        # Status + subtitle grouped tightly
+        status_group = BoxLayout(orientation='vertical', size_hint_y=None, spacing=0)
         self.status_label = StatusLabel('Generating puzzle...')
-        layout.add_widget(self.status_label)
+        self.status_label.height = self.status_label.font_size * 1.2
+        status_group.add_widget(self.status_label)
+        self.subtitle_label = CaptionLabel('', size_hint_y=None)
+        self.subtitle_label.halign = 'center'
+        self.subtitle_label.height = self.subtitle_label.font_size * 1.2
+        status_group.add_widget(self.subtitle_label)
+        status_group.height = self.status_label.height + self.subtitle_label.height
+        layout.add_widget(status_group)
 
         # Spinner widget
         self.spinner = QueenSpinner(size_hint=(1, 1))
@@ -224,9 +232,10 @@ class LoadingPopup(ModalView):
         seconds = int(self.elapsed_time) % 60
         self.timer_label.text = f'{minutes}:{seconds:02d}'
 
-    def set_status(self, text: str) -> None:
-        """Update the status text."""
+    def set_status(self, text: str, subtitle: str = '') -> None:
+        """Update the status text and optional subtitle."""
         self.status_label.text = text
+        self.subtitle_label.text = subtitle
 
     def open(self, *args: Any, **kwargs: Any) -> None:
         """Start animation when popup opens."""

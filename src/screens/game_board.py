@@ -51,18 +51,13 @@ class GameScreen(Screen):
         self.title_label = TitleSmLabel('')
         layout.add_widget(self.title_label)
 
-        # Subtitle - shows "Unique solution!" as label or "X solutions" as clickable button
-        self.subtitle_label = CaptionLabel('', **STYLES['subtitle_area'])
-        layout.add_widget(self.subtitle_label)
-
-        # Solutions button (replaces subtitle when multiple solutions)
-        solutions_btn_anchor = styled(AnchorLayout, 'solutions_btn_area')
+        # Solutions button (shows "X solutions" when multiple solutions)
+        self.solutions_btn_anchor = styled(AnchorLayout, 'solutions_btn_area')
         self.solutions_text_btn = GrayRoundedButton(text='', **STYLES['solutions_btn'])
         self.solutions_text_btn.bind(on_press=lambda x: self.toggle_solutions(x))
-        self.solutions_text_btn.opacity = 0
-        self.solutions_text_btn.disabled = True
-        solutions_btn_anchor.add_widget(self.solutions_text_btn)
-        layout.add_widget(solutions_btn_anchor)
+        self._collapse_solutions_btn()
+        self.solutions_btn_anchor.add_widget(self.solutions_text_btn)
+        layout.add_widget(self.solutions_btn_anchor)
 
         # Track solutions for cycling
         self.all_solutions = []
@@ -191,11 +186,8 @@ class GameScreen(Screen):
 
         # Clear state from previous game
         self._hit_me_mode = False
-        self.subtitle_label.text = ''
-        self.subtitle_label.opacity = 0
         self.solutions_text_btn.text = ''
-        self.solutions_text_btn.opacity = 0
-        self.solutions_text_btn.disabled = True
+        self._collapse_solutions_btn()
         self.all_solutions = []
         self.current_solution_index = 0
         self.showing_solutions = False
@@ -353,7 +345,6 @@ class GameScreen(Screen):
         # "Hit Me" — generate a new random game with same params
         if self._hit_me_mode:
             from popups import _last_random_options
-            self._hit_me_mode = False
             self.app._start_random_game_with_options(
                 size=_last_random_options['size'],
                 strategy=_last_random_options['strategy'],
@@ -494,20 +485,26 @@ class GameScreen(Screen):
         qr_size = board_size * 0.85
         self.qr_image.size = (qr_size, qr_size)
 
+    def _collapse_solutions_btn(self) -> None:
+        self.solutions_text_btn.opacity = 0
+        self.solutions_text_btn.disabled = True
+        self.solutions_btn_anchor.height = 0
+        self.solutions_btn_anchor.opacity = 0
+
+    def _expand_solutions_btn(self) -> None:
+        self.solutions_btn_anchor.height = STYLES['solutions_btn_area']['height']
+        self.solutions_btn_anchor.opacity = 1
+        self.solutions_text_btn.opacity = 1
+        self.solutions_text_btn.disabled = False
+
     def _update_solution_subtitle(self) -> None:
-        """Update the subtitle to show solution count."""
+        """Update the solutions button after solving."""
         num_solutions = len(self.all_solutions)
-        if num_solutions == 1:
-            self.subtitle_label.text = "Unique"
-            self.subtitle_label.opacity = 1
-            self.solutions_text_btn.opacity = 0
-            self.solutions_text_btn.disabled = True
+        if num_solutions <= 1:
+            self._collapse_solutions_btn()
         else:
-            self.subtitle_label.text = ''
-            self.subtitle_label.opacity = 0
             self.solutions_text_btn.text = f"{num_solutions} solutions"
-            self.solutions_text_btn.opacity = 1
-            self.solutions_text_btn.disabled = False
+            self._expand_solutions_btn()
 
     def toggle_solutions(self, instance: Any) -> None:
         """Toggle solution display or cycle to next solution."""
@@ -584,10 +581,7 @@ class GameScreen(Screen):
         self.qr_image.opacity = 0
 
         # Hide solutions UI
-        self.subtitle_label.text = ''
-        self.subtitle_label.opacity = 0
-        self.solutions_text_btn.opacity = 0
-        self.solutions_text_btn.disabled = True
+        self._collapse_solutions_btn()
         self.solution_indicator.opacity = 0
         self.all_solutions = []
         self.showing_solutions = False

@@ -174,13 +174,13 @@ class YaqueApp(App):
     # Game generation
     # -------------------------------------------------------------------------
 
-    def _show_loading_popup(self, status_text: str) -> None:
+    def _show_loading_popup(self, status_text: str, subtitle: str = '') -> None:
         """Show the loading popup with spinning queen."""
         self._generation_cancelled = False
         # Increment generation ID to invalidate any previous generation
         self._generation_id = getattr(self, '_generation_id', 0) + 1
         self.loading_popup = LoadingPopup(on_cancel=self.cancel_generation)
-        self.loading_popup.set_status(status_text)
+        self.loading_popup.set_status(status_text, subtitle)
         self.loading_popup.open()
 
     def _dismiss_loading_popup(self) -> None:
@@ -203,7 +203,7 @@ class YaqueApp(App):
             return
 
         # Generate new puzzle
-        self._show_loading_popup(f'Generating {size}x{size} puzzle...')
+        self._show_loading_popup(f'Computing {size}x{size} puzzle...')
         gen_id = self._generation_id  # Capture current generation ID
 
         def cancel_check() -> bool:
@@ -235,20 +235,20 @@ class YaqueApp(App):
         if avg_ms is not None:
             secs = avg_ms / 1000
             if secs < 1:
-                return ' (avg. <1s)'
+                return 'avg. <1s'
             elif secs < 60:
-                return f' (avg. ~{int(secs)}s)'
+                return f'avg. ~{int(secs)}s'
             else:
-                return f' (avg. ~{int(secs // 60)}m{int(secs % 60):02d}s)'
+                return f'avg. ~{int(secs // 60)}m{int(secs % 60):02d}s'
         if size >= 8:
-            return ' (could take some time)'
+            return 'could take some time'
         return ''
 
     def _start_random_game_with_options(self, size: int, strategy: str, max_solutions: int,
                                           queen_placement: str = 'backtrack') -> None:
         """Generate a random game with the selected options."""
-        time_str = self._format_gen_time_hint(size, max_solutions == 1)
-        self._show_loading_popup(f'Finding the perfect {size}x{size} puzzle...{time_str}')
+        hint = self._format_gen_time_hint(size, max_solutions == 1)
+        self._show_loading_popup(f'Computing {size}x{size} puzzle...', hint)
         gen_id = self._generation_id  # Capture current generation ID
 
         # Store the user's requested max_solutions for retry logic
@@ -299,7 +299,7 @@ class YaqueApp(App):
 
         # Update status without dismissing — keeps timer running smoothly
         if self.loading_popup:
-            self.loading_popup.set_status(f'Relaxing to {next_max} solutions...')
+            self.loading_popup.set_status(f'Relaxing to {next_max} solutions...', '')
         gen_id = self._generation_id
 
         def cancel_check() -> bool:
