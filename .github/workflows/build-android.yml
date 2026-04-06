@@ -1,4 +1,4 @@
-name: Build Android APK
+name: Build Android
 
 on:
   push:
@@ -190,8 +190,154 @@ jobs:
           path: build.log
           retention-days: 7
 
+  build-release:
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            python3-pip \
+            build-essential \
+            git \
+            zip \
+            unzip \
+            openjdk-17-jdk \
+            autoconf \
+            libtool \
+            pkg-config \
+            zlib1g-dev \
+            libncurses-dev \
+            libncursesw5-dev \
+            cmake \
+            libffi-dev \
+            libssl-dev \
+            automake \
+            gettext \
+            libltdl-dev \
+            lld \
+            llvm
+          if [ ! -f /usr/lib/x86_64-linux-gnu/libtinfo.so.5 ]; then
+            sudo ln -sf /usr/lib/x86_64-linux-gnu/libtinfo.so.6 /usr/lib/x86_64-linux-gnu/libtinfo.so.5 || true
+          fi
+
+      - name: Install buildozer and dependencies
+        run: |
+          pip install --upgrade pip
+          pip install 'cython<3' buildozer virtualenv
+
+      - name: Cache buildozer
+        uses: actions/cache@v4
+        with:
+          path: |
+            .buildozer
+            ~/.buildozer
+          key: ${{ runner.os }}-buildozer-release-v1-${{ hashFiles('buildozer.spec') }}
+          restore-keys: |
+            ${{ runner.os }}-buildozer-release-v1-
+            ${{ runner.os }}-buildozer-v3-
+
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
+      - name: Restore release keystore
+        env:
+          RELEASE_KEYSTORE: ${{ secrets.RELEASE_KEYSTORE }}
+          RELEASE_KEYSTORE_PASSWD: ${{ secrets.RELEASE_KEYSTORE_PASSWD }}
+          RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
+        run: |
+          if [ -z "$RELEASE_KEYSTORE" ]; then
+            echo "::error::RELEASE_KEYSTORE secret is required for release builds"
+            exit 1
+          fi
+          echo "$RELEASE_KEYSTORE" | base64 -d > release.keystore
+          echo "Release keystore restored"
+          keytool -list -keystore release.keystore -storepass "$RELEASE_KEYSTORE_PASSWD" -alias "$RELEASE_KEY_ALIAS"
+
+      - name: Build AAB
+        env:
+          PIP_CONSTRAINT: ${{ github.workspace }}/pip-constraints.txt
+          RELEASE_KEYSTORE_PASSWD: ${{ secrets.RELEASE_KEYSTORE_PASSWD }}
+          RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
+        run: |
+          echo "Cython<3" > pip-constraints.txt
+          pip install --user 'Cython<3'
+
+          # Set version code from GitHub run number
+          VERSION_CODE=${{ github.run_number }}
+          echo "Setting android.numeric_version to $VERSION_CODE"
+          sed -i "s/^android.numeric_version = .*/android.numeric_version = $VERSION_CODE/" buildozer.spec
+
+          # Configure for release AAB
+          sed -i "s/^# *android.release_artifact.*/android.release_artifact = aab/" buildozer.spec
+          # If the line doesn't exist, add it
+          if ! grep -q "^android.release_artifact" buildozer.spec; then
+            echo "android.release_artifact = aab" >> buildozer.spec
+          fi
+
+          yes | buildozer android release \
+            --keystore release.keystore \
+            --signkey "$RELEASE_KEY_ALIAS" \
+            --keystorepasswd "$RELEASE_KEYSTORE_PASSWD" \
+            --signpasswd "$RELEASE_KEYSTORE_PASSWD" \
+            2>&1 | tee build-release.log || true
+
+          # Check if AAB was created
+          if ls bin/*.aab 1>/dev/null 2>&1; then
+            echo "AAB built successfully"
+          else
+            echo "AAB build failed, showing last 100 lines of log:"
+            tail -100 build-release.log
+            exit 1
+          fi
+
+      - name: Verify AAB
+        run: |
+          AAB=$(ls bin/*.aab | head -1)
+          echo "=== AAB: $AAB ==="
+          echo "Size: $(du -h "$AAB" | cut -f1)"
+
+          # Show version info via aapt2 if available
+          AAPT2=$(find ~/.buildozer $ANDROID_HOME -name "aapt2" -type f 2>/dev/null | head -1)
+          if [ -n "$AAPT2" ]; then
+            "$AAPT2" dump badging "$AAB" 2>/dev/null | grep -E "versionCode|versionName|package:" || true
+          fi
+
+      - name: Upload AAB artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: yaque-aab
+          path: bin/*.aab
+          retention-days: 90
+
+      - name: Upload release build log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-release-log
+          path: build-release.log
+          retention-days: 7
+
   release:
-    needs: build
+    needs: [build, build-release]
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/v')
 
@@ -200,12 +346,18 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: yaque-apk
-          path: apk
+          path: artifacts
+
+      - name: Download AAB
+        uses: actions/download-artifact@v4
+        with:
+          name: yaque-aab
+          path: artifacts
 
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
-          files: apk/*.apk
+          files: artifacts/*
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
