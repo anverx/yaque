@@ -243,10 +243,9 @@ jobs:
           path: |
             .buildozer
             ~/.buildozer
-          key: ${{ runner.os }}-buildozer-release-v1-${{ hashFiles('buildozer.spec') }}
+          key: ${{ runner.os }}-buildozer-release-v2-${{ hashFiles('buildozer.spec') }}
           restore-keys: |
-            ${{ runner.os }}-buildozer-release-v1-
-            ${{ runner.os }}-buildozer-v3-
+            ${{ runner.os }}-buildozer-release-v2-
 
       - name: Cache Gradle
         uses: actions/cache@v4
@@ -318,10 +317,21 @@ jobs:
             jarsigner -verify -verbose -certs "$AAB" 2>&1 | head -20
           fi
 
-          # Show version info via aapt2 if available
+          # Verify target SDK level and version info
           AAPT2=$(find ~/.buildozer $ANDROID_HOME -name "aapt2" -type f 2>/dev/null | head -1)
           if [ -n "$AAPT2" ]; then
-            "$AAPT2" dump badging "$AAB" 2>/dev/null | grep -E "versionCode|versionName|package:" || true
+            echo "=== AAB metadata ==="
+            "$AAPT2" dump badging "$AAB" 2>/dev/null | grep -E "versionCode|versionName|package:|targetSdkVersion|minSdkVersion" || true
+          fi
+
+          # Fail if targetSdkVersion is wrong
+          if [ -n "$AAPT2" ]; then
+            TARGET_SDK=$("$AAPT2" dump badging "$AAB" 2>/dev/null | grep -oP "targetSdkVersion:'\K[0-9]+" || echo "unknown")
+            echo "Target SDK: $TARGET_SDK"
+            if [ "$TARGET_SDK" != "35" ]; then
+              echo "::error::Expected targetSdkVersion=35 but got $TARGET_SDK"
+              exit 1
+            fi
           fi
 
       - name: Package native debug symbols
