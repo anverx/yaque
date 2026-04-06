@@ -298,12 +298,10 @@ jobs:
           sed -i '/^android.debug_keystore_alias/d' buildozer.spec
           sed -i '/^android.debug_keystore_passwd/d' buildozer.spec
           sed -i '/^android.debug_keyalias_passwd/d' buildozer.spec
-          cat >> buildozer.spec <<SPECEOF
-android.keystore = %(source.dir)s/../release.keystore
-android.keyalias = $RELEASE_KEY_ALIAS
-android.keystore_password = $RELEASE_KEYSTORE_PASSWD
-android.keyalias_password = $RELEASE_KEYSTORE_PASSWD
-SPECEOF
+          echo "android.keystore = %(source.dir)s/../release.keystore" >> buildozer.spec
+          echo "android.keyalias = $RELEASE_KEY_ALIAS" >> buildozer.spec
+          echo "android.keystore_password = $RELEASE_KEYSTORE_PASSWD" >> buildozer.spec
+          echo "android.keyalias_password = $RELEASE_KEYSTORE_PASSWD" >> buildozer.spec
 
           yes | buildozer android release 2>&1 | tee build-release.log || true
 
