@@ -333,14 +333,21 @@ class TestPlayerValidation(unittest.TestCase):
             self.assertIn(cell, blocked, f'cell {cell} should be blocked')
 
     def test_row_with_queen_not_blocked(self):
-        """Row with a queen and circles should not be blocked."""
-        game = Game(6, max_solutions=10)
-        queens = [(0, 0)]
-        circles = [(0, c) for c in range(1, 6)]
-        marks = self.make_marks(6, queens=queens, circles=circles)
-        _, blocked = validate_player_marks(game.kingdoms, marks)
-        for c in range(1, 6):
-            self.assertNotIn((0, c), blocked, f'cell (0,{c}) should not be blocked')
+        """Row with a queen and circles should not be row-blocked."""
+        # Use controlled kingdoms so kingdom-blocking doesn't interfere
+        kingdoms = [
+            [0, 0, 0],
+            [1, 1, 1],
+            [2, 2, 2],
+        ]
+        marks = [
+            [MARK_QUEEN, MARK_CIRCLE, MARK_CIRCLE],
+            [MARK_EMPTY, MARK_EMPTY, MARK_EMPTY],
+            [MARK_EMPTY, MARK_EMPTY, MARK_EMPTY],
+        ]
+        _, blocked = validate_player_marks(kingdoms, marks)
+        self.assertNotIn((0, 1), blocked, 'should not be blocked with queen in row')
+        self.assertNotIn((0, 2), blocked, 'should not be blocked with queen in row')
 
     def test_row_with_empty_cell_not_row_blocked(self):
         """Verify row blocking only triggers when ALL cells are circles."""
