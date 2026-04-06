@@ -286,19 +286,26 @@ jobs:
           echo "Setting android.numeric_version to $VERSION_CODE"
           sed -i "s/^android.numeric_version = .*/android.numeric_version = $VERSION_CODE/" buildozer.spec
 
-          # Configure for release AAB
+          # Configure for release AAB with signing in buildozer.spec
           sed -i "s/^# *android.release_artifact.*/android.release_artifact = aab/" buildozer.spec
-          # If the line doesn't exist, add it
           if ! grep -q "^android.release_artifact" buildozer.spec; then
             echo "android.release_artifact = aab" >> buildozer.spec
           fi
 
-          yes | buildozer android release \
-            --keystore release.keystore \
-            --signkey "$RELEASE_KEY_ALIAS" \
-            --keystorepasswd "$RELEASE_KEYSTORE_PASSWD" \
-            --signpasswd "$RELEASE_KEYSTORE_PASSWD" \
-            2>&1 | tee build-release.log || true
+          # Configure release signing in buildozer.spec
+          # Remove debug keystore lines and add release keystore config
+          sed -i '/^android.debug_keystore/d' buildozer.spec
+          sed -i '/^android.debug_keystore_alias/d' buildozer.spec
+          sed -i '/^android.debug_keystore_passwd/d' buildozer.spec
+          sed -i '/^android.debug_keyalias_passwd/d' buildozer.spec
+          cat >> buildozer.spec <<SPECEOF
+android.keystore = %(source.dir)s/../release.keystore
+android.keyalias = $RELEASE_KEY_ALIAS
+android.keystore_password = $RELEASE_KEYSTORE_PASSWD
+android.keyalias_password = $RELEASE_KEYSTORE_PASSWD
+SPECEOF
+
+          yes | buildozer android release 2>&1 | tee build-release.log || true
 
           # Check if AAB was created
           if ls bin/*.aab 1>/dev/null 2>&1; then
