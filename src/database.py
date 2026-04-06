@@ -3,9 +3,7 @@
 import os
 import sqlite3
 from datetime import date, datetime, timedelta
-from typing import Any, NamedTuple
-
-from calendar_logic import CompletionStatus
+from typing import Any
 
 # Current schema version - increment when making schema changes
 SCHEMA_VERSION = 5
@@ -683,7 +681,7 @@ def get_daily_completion_status(daily_date: str) -> dict[int, bool]:
     return status
 
 
-def get_month_completion_status(year: int, month: int) -> dict[str, dict[int, str | None]]:
+def get_month_completion_raw(year: int, month: int) -> dict[str, dict[int, str | None]]:
     """Get completion status for all days in a month (single query).
 
     Returns dict mapping date strings to {size: status} dicts where status is:
@@ -714,110 +712,15 @@ def get_month_completion_status(year: int, month: int) -> dict[str, dict[int, st
             # Compare just the date part (first 10 chars: YYYY-MM-DD)
             completed_date = completed_at[:10]
             if completed_date == date_str:
-                result[date_str][row['size']] = CompletionStatus.GOLD
+                result[date_str][row['size']] = 'gold'
             else:
-                result[date_str][row['size']] = CompletionStatus.SILVER
+                result[date_str][row['size']] = 'silver'
 
     return result
 
 
-class StreakInfo(NamedTuple):
-    """Streak calculation result with protection details."""
-
-    streak: int                # Total length including protected days
-    protections_available: int # Remaining protection points (0-2)
-    protections_used: int      # Points consumed by gap days
-    protected_dates: list[str] # ISO dates of protected gaps
-
-
-# Streak protection milestones and cap
-_PROTECTION_MILESTONES = [10, 30]
-_MAX_BANKED = 2
-
-
-def _is_gap_protected(gap: date, played_dates: set[str]) -> bool:
-    """Check if a gap day is protected by earned points.
-
-    Looks back from the gap for consecutive play days:
-    - 10 consecutive before gap → protected (1 point earned)
-    - If a skip exists in those 10, check 30 before that skip →
-      if all played, both gaps protected (2 points earned)
-    - Otherwise streak is broken
-    """
-    for i in range(1, 11):
-        d_str = (gap - timedelta(days=i)).isoformat()
-        if d_str not in played_dates:
-            # Found inner gap. Check 30 days before it.
-            inner_gap = gap - timedelta(days=i)
-            for j in range(1, 31):
-                d2_str = (inner_gap - timedelta(days=j)).isoformat()
-                if d2_str not in played_dates:
-                    return False
-            return True
-    return True
-
-
-def compute_streak(played_dates: set[str], ref_date: date) -> StreakInfo:
-    """Compute streak info from a set of played dates (pure function).
-
-    Uses a backward walk from ref_date to find streak extent, then a
-    forward pass over the streak to compute banked protection points.
-    """
-    if not played_dates:
-        return StreakInfo(0, 0, 0, [])
-
-    today_str = ref_date.isoformat()
-    yesterday_str = (ref_date - timedelta(days=1)).isoformat()
-
-    # Determine streak end (grace period)
-    if today_str in played_dates:
-        end = ref_date
-    elif yesterday_str in played_dates:
-        end = ref_date - timedelta(days=1)
-    else:
-        return StreakInfo(0, 0, 0, [])
-
-    # Backward walk to find streak start
-    d = end
-    while True:
-        prev = d - timedelta(days=1)
-        prev_str = prev.isoformat()
-        if prev_str in played_dates or _is_gap_protected(prev, played_dates):
-            d = prev
-        else:
-            break
-    start = d
-
-    # Forward pass over the streak to compute details
-    banked = 0
-    consecutive = 0
-    protected_dates: list[str] = []
-
-    d = start
-    streak_len = 0
-    while d <= end:
-        d_str = d.isoformat()
-        streak_len += 1
-        if d_str in played_dates:
-            consecutive += 1
-            if banked < _MAX_BANKED and consecutive in _PROTECTION_MILESTONES:
-                banked += 1
-        else:
-            banked -= 1
-            consecutive = 0
-            protected_dates.append(d_str)
-        d += timedelta(days=1)
-
-    return StreakInfo(
-        streak=streak_len,
-        protections_available=banked,
-        protections_used=len(protected_dates),
-        protected_dates=protected_dates,
-    )
-
-
-def get_streak_info() -> StreakInfo:
-    """Calculate the current streak with protection points."""
+def get_played_dates() -> set[str]:
+    """Return the set of dates where the daily puzzle was played on the day."""
     cursor = _connection.cursor()
     cursor.execute('''
         SELECT DISTINCT pz.daily_date
@@ -827,13 +730,7 @@ def get_streak_info() -> StreakInfo:
         AND date(p.started_at) = pz.daily_date
         ORDER BY pz.daily_date ASC
     ''')
-    played_dates = {row['daily_date'] for row in cursor.fetchall()}
-    return compute_streak(played_dates, date.today())
-
-
-def get_current_streak() -> int:
-    """Return the current streak length (legacy wrapper)."""
-    return get_streak_info().streak
+    return {row['daily_date'] for row in cursor.fetchall()}
 
 
 # -----------------------------------------------------------------------------

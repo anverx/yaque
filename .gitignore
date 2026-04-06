@@ -22,7 +22,8 @@ ENV/
 *.swo
 
 # Claude
-.claude/
+.claude/*
+!.claude/skills/
 
 # Buildozer
 .buildozer/

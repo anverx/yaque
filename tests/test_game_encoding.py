@@ -1,10 +1,9 @@
 """Tests for game encoding/decoding functions."""
 
-import pytest
-import sys
 import os
+import sys
+import unittest
 
-# Add src to path for imports
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 
 from game import Game
@@ -21,18 +20,16 @@ from game_encoding import (
 )
 
 
-class TestBitPacking:
+class TestBitPacking(unittest.TestCase):
     """Test bit packing utilities."""
 
     def test_bits_needed(self):
         """Test _bits_needed function."""
-        assert _bits_needed(1) == 1
-        assert _bits_needed(2) == 1
-        assert _bits_needed(3) == 2
-        assert _bits_needed(4) == 2
-        assert _bits_needed(5) == 3
-        assert _bits_needed(8) == 3
-        assert _bits_needed(9) == 4
+        cases = [(1, 1), (2, 1), (3, 2), (4, 2), (5, 3), (8, 3), (9, 4)]
+        for n, expected in cases:
+            with self.subTest(n=n):
+                self.assertEqual(_bits_needed(n), expected,
+                                 f'bits_needed({n})')
 
     def test_pack_unpack_roundtrip(self):
         """Packing then unpacking should return original values."""
@@ -42,64 +39,66 @@ class TestBitPacking:
         packed = _pack_bits(values, bits)
         unpacked = _unpack_bits(packed, len(values), bits)
 
-        assert unpacked == values
+        self.assertEqual(unpacked, values, 'roundtrip should preserve values')
 
     def test_pack_unpack_various_bit_sizes(self):
         """Test packing with various bit sizes."""
         for bits in [1, 2, 3, 4, 5, 6, 7, 8]:
-            max_val = (1 << bits) - 1
-            values = [i % (max_val + 1) for i in range(10)]
+            with self.subTest(bits=bits):
+                max_val = (1 << bits) - 1
+                values = [i % (max_val + 1) for i in range(10)]
 
-            packed = _pack_bits(values, bits)
-            unpacked = _unpack_bits(packed, len(values), bits)
+                packed = _pack_bits(values, bits)
+                unpacked = _unpack_bits(packed, len(values), bits)
 
-            assert unpacked == values, f"Failed for {bits} bits"
+                self.assertEqual(unpacked, values, f'failed for {bits} bits')
 
 
-class TestEncoding:
+class TestEncoding(unittest.TestCase):
     """Test game encoding and decoding."""
 
-    @pytest.mark.parametrize("size", [6, 7, 8])
-    def test_encode_decode_roundtrip(self, size):
+    def test_encode_decode_roundtrip(self):
         """Encoding then decoding should return the same game."""
-        game = Game(size, max_solutions=100)
+        for size in [6, 7, 8]:
+            with self.subTest(size=size):
+                game = Game(size, max_solutions=100)
 
-        encoded = encode_game(game.kingdoms, game.queens)
-        decoded_kingdoms, decoded_queens = decode_game(encoded)
+                encoded = encode_game(game.kingdoms, game.queens)
+                decoded_kingdoms, decoded_queens = decode_game(encoded)
 
-        assert decoded_kingdoms == game.kingdoms, "Kingdoms mismatch after decode"
-        assert decoded_queens == game.queens, "Queens mismatch after decode"
+                self.assertEqual(decoded_kingdoms, game.kingdoms, 'kingdoms mismatch')
+                self.assertEqual(decoded_queens, game.queens, 'queens mismatch')
 
-    @pytest.mark.parametrize("size", [6, 7, 8])
-    def test_encode_decode_b64_roundtrip(self, size):
+    def test_encode_decode_b64_roundtrip(self):
         """Base64 encoding then decoding should return the same game."""
-        game = Game(size, max_solutions=100)
+        for size in [6, 7, 8]:
+            with self.subTest(size=size):
+                game = Game(size, max_solutions=100)
 
-        code = encode_game_b64(game.kingdoms, game.queens)
-        decoded_kingdoms, decoded_queens = decode_game_b64(code)
+                code = encode_game_b64(game.kingdoms, game.queens)
+                decoded_kingdoms, decoded_queens = decode_game_b64(code)
 
-        assert decoded_kingdoms == game.kingdoms, "Kingdoms mismatch after b64 decode"
-        assert decoded_queens == game.queens, "Queens mismatch after b64 decode"
+                self.assertEqual(decoded_kingdoms, game.kingdoms, 'kingdoms mismatch')
+                self.assertEqual(decoded_queens, game.queens, 'queens mismatch')
 
-    @pytest.mark.parametrize("size", [6, 7, 8])
-    def test_game_from_code(self, size):
+    def test_game_from_code(self):
         """Game.from_code should properly reconstruct a game."""
-        original = Game(size, max_solutions=100)
-        code = original.encode()
+        for size in [6, 7, 8]:
+            with self.subTest(size=size):
+                original = Game(size, max_solutions=100)
+                code = original.encode()
 
-        restored = Game.from_code(code)
+                restored = Game.from_code(code)
 
-        assert restored.size == original.size
-        assert restored.kingdoms == original.kingdoms
-        assert restored.queens == original.queens
+                self.assertEqual(restored.size, original.size, 'size mismatch')
+                self.assertEqual(restored.kingdoms, original.kingdoms, 'kingdoms mismatch')
+                self.assertEqual(restored.queens, original.queens, 'queens mismatch')
 
     def test_encoding_is_compact(self):
         """Encoded games should be reasonably compact."""
         game = Game(8, max_solutions=100)
         code = game.encode()
-
-        # 8x8 should encode to ~18 bytes raw, ~24 chars base64
-        assert len(code) < 30, f"Encoding too long: {len(code)} chars"
+        self.assertLess(len(code), 30, f'encoding too long: {len(code)} chars')
 
     def test_different_games_different_codes(self):
         """Different games should produce different codes."""
@@ -109,27 +108,28 @@ class TestEncoding:
         code1 = game1.encode()
         code2 = game2.encode()
 
-        assert code1 != code2, "Different games should have different codes"
+        self.assertNotEqual(code1, code2, 'different games should have different codes')
 
     def test_invalid_code_raises(self):
         """Invalid code should raise an exception."""
-        with pytest.raises(Exception):
+        with self.assertRaises(Exception, msg='invalid code should raise'):
             Game.from_code("invalid_garbage_code!!!")
 
 
-class TestBoardStateEncoding:
+class TestBoardStateEncoding(unittest.TestCase):
     """Test board state encoding/decoding for save/restore."""
 
-    @pytest.mark.parametrize("size", [6, 7, 8])
-    def test_encode_decode_roundtrip(self, size):
+    def test_encode_decode_roundtrip(self):
         """Encoding then decoding should return original board state."""
-        # Create a board with various cell states
-        cell_marks = [[((r + c) % 3) for c in range(size)] for r in range(size)]
+        for size in [6, 7, 8]:
+            with self.subTest(size=size):
+                cell_marks = [[((r + c) % 3) for c in range(size)]
+                              for r in range(size)]
 
-        encoded = encode_board_state(cell_marks)
-        decoded = decode_board_state(encoded)
+                encoded = encode_board_state(cell_marks)
+                decoded = decode_board_state(encoded)
 
-        assert decoded == cell_marks
+                self.assertEqual(decoded, cell_marks, 'roundtrip should preserve state')
 
     def test_encode_decode_empty_board(self):
         """Empty board should encode/decode correctly."""
@@ -138,7 +138,7 @@ class TestBoardStateEncoding:
         encoded = encode_board_state(cell_marks)
         decoded = decode_board_state(encoded)
 
-        assert decoded == cell_marks
+        self.assertEqual(decoded, cell_marks, 'empty board roundtrip')
 
     def test_encode_decode_full_board(self):
         """Board with all queens should encode/decode correctly."""
@@ -147,7 +147,7 @@ class TestBoardStateEncoding:
         encoded = encode_board_state(cell_marks)
         decoded = decode_board_state(encoded)
 
-        assert decoded == cell_marks
+        self.assertEqual(decoded, cell_marks, 'full board roundtrip')
 
     def test_encode_decode_mixed_board(self):
         """Board with mixed marks should encode/decode correctly."""
@@ -165,24 +165,20 @@ class TestBoardStateEncoding:
         encoded = encode_board_state(cell_marks)
         decoded = decode_board_state(encoded)
 
-        assert decoded == cell_marks
+        self.assertEqual(decoded, cell_marks, 'mixed board roundtrip')
 
     def test_encoding_is_compact(self):
         """Board state encoding should be compact."""
-        # 8x8: 64 cells * 2 bits = 128 bits = 16 bytes + 1 size byte = 17 bytes
-        # Base64: ~24 chars
         cell_marks = [[0] * 8 for _ in range(8)]
         encoded = encode_board_state(cell_marks)
+        self.assertLessEqual(len(encoded), 24,
+                             f'8x8 encoding too long: {len(encoded)} chars')
 
-        assert len(encoded) <= 24, f"8x8 encoding too long: {len(encoded)} chars"
-
-        # 6x6: 36 cells * 2 bits = 72 bits = 9 bytes + 1 size byte = 10 bytes
-        # Base64: ~16 chars
         cell_marks = [[0] * 6 for _ in range(6)]
         encoded = encode_board_state(cell_marks)
-
-        assert len(encoded) <= 16, f"6x6 encoding too long: {len(encoded)} chars"
+        self.assertLessEqual(len(encoded), 16,
+                             f'6x6 encoding too long: {len(encoded)} chars')
 
 
 if __name__ == "__main__":
-    pytest.main([__file__, "-v"])
+    unittest.main()

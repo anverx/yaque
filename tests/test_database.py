@@ -1,32 +1,40 @@
 """Tests for database module."""
 
-import pytest
 import os
+import shutil
 import sys
 import tempfile
-import shutil
+import unittest
 
-# Add src to path for imports
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 
 import database
 import game_encoding
 
 
-@pytest.fixture
-def temp_db():
-    """Create a temporary database for testing."""
+def _make_temp_db():
+    """Create a temporary database directory and initialize."""
     temp_dir = tempfile.mkdtemp()
     database.init_db(temp_dir)
-    yield temp_dir
+    return temp_dir
+
+
+def _cleanup_db(temp_dir):
+    """Close database and remove temp directory."""
     database.close_db()
     shutil.rmtree(temp_dir)
 
 
-class TestPuzzleOperations:
+class TestPuzzleOperations(unittest.TestCase):
     """Test puzzle CRUD operations."""
 
-    def test_save_puzzle(self, temp_db):
+    def setUp(self):
+        self.temp_dir = _make_temp_db()
+
+    def tearDown(self):
+        _cleanup_db(self.temp_dir)
+
+    def test_save_puzzle(self):
         """Should save a puzzle and return its ID."""
         puzzle_id = database.save_puzzle(
             code='ABC123',
@@ -34,42 +42,42 @@ class TestPuzzleOperations:
             daily_date='2025-06-15',
             seed=42
         )
-        assert puzzle_id is not None
-        assert puzzle_id > 0
+        self.assertIsNotNone(puzzle_id, 'should return an ID')
+        self.assertGreater(puzzle_id, 0, 'ID should be positive')
 
-    def test_save_duplicate_puzzle_returns_existing_id(self, temp_db):
+    def test_save_duplicate_puzzle_returns_existing_id(self):
         """Saving same puzzle twice should return existing ID."""
         id1 = database.save_puzzle(code='ABC123', size=7)
         id2 = database.save_puzzle(code='ABC123', size=7)
-        assert id1 == id2
+        self.assertEqual(id1, id2, 'duplicate should return same ID')
 
-    def test_get_puzzle_by_code(self, temp_db):
+    def test_get_puzzle_by_code(self):
         """Should retrieve puzzle by code."""
         database.save_puzzle(code='XYZ789', size=8, daily_date='2025-01-01')
 
         puzzle = database.get_puzzle_by_code('XYZ789')
 
-        assert puzzle is not None
-        assert puzzle['code'] == 'XYZ789'
-        assert puzzle['size'] == 8
-        assert puzzle['daily_date'] == '2025-01-01'
+        self.assertIsNotNone(puzzle, 'puzzle should be found')
+        self.assertEqual(puzzle['code'], 'XYZ789', 'code should match')
+        self.assertEqual(puzzle['size'], 8, 'size should match')
+        self.assertEqual(puzzle['daily_date'], '2025-01-01', 'date should match')
 
-    def test_get_puzzle_by_code_not_found(self, temp_db):
+    def test_get_puzzle_by_code_not_found(self):
         """Should return None for non-existent code."""
         puzzle = database.get_puzzle_by_code('NONEXISTENT')
-        assert puzzle is None
+        self.assertIsNone(puzzle, 'should return None')
 
-    def test_get_puzzle_by_id(self, temp_db):
+    def test_get_puzzle_by_id(self):
         """Should retrieve puzzle by ID."""
         puzzle_id = database.save_puzzle(code='TEST1', size=6)
 
         puzzle = database.get_puzzle_by_id(puzzle_id)
 
-        assert puzzle is not None
-        assert puzzle['id'] == puzzle_id
-        assert puzzle['code'] == 'TEST1'
+        self.assertIsNotNone(puzzle, 'puzzle should be found')
+        self.assertEqual(puzzle['id'], puzzle_id, 'ID should match')
+        self.assertEqual(puzzle['code'], 'TEST1', 'code should match')
 
-    def test_get_daily_puzzles(self, temp_db):
+    def test_get_daily_puzzles(self):
         """Should retrieve all puzzles for a date, ordered by size."""
         database.save_puzzle(code='D1', size=8, daily_date='2025-06-15')
         database.save_puzzle(code='D2', size=6, daily_date='2025-06-15')
@@ -78,25 +86,31 @@ class TestPuzzleOperations:
 
         puzzles = database.get_daily_puzzles('2025-06-15')
 
-        assert len(puzzles) == 3
-        assert puzzles[0]['size'] == 6
-        assert puzzles[1]['size'] == 7
-        assert puzzles[2]['size'] == 8
+        self.assertEqual(len(puzzles), 3, 'should find 3 puzzles')
+        self.assertEqual(puzzles[0]['size'], 6, 'first should be 6')
+        self.assertEqual(puzzles[1]['size'], 7, 'second should be 7')
+        self.assertEqual(puzzles[2]['size'], 8, 'third should be 8')
 
 
-class TestPlayOperations:
+class TestPlayOperations(unittest.TestCase):
     """Test play tracking operations."""
 
-    def test_start_play(self, temp_db):
+    def setUp(self):
+        self.temp_dir = _make_temp_db()
+
+    def tearDown(self):
+        _cleanup_db(self.temp_dir)
+
+    def test_start_play(self):
         """Should start a play session."""
         puzzle_id = database.save_puzzle(code='PLAY1', size=7)
 
         play_id = database.start_play(puzzle_id)
 
-        assert play_id is not None
-        assert play_id > 0
+        self.assertIsNotNone(play_id, 'should return an ID')
+        self.assertGreater(play_id, 0, 'ID should be positive')
 
-    def test_complete_play(self, temp_db):
+    def test_complete_play(self):
         """Should mark play as completed with duration."""
         puzzle_id = database.save_puzzle(code='PLAY2', size=7)
         play_id = database.start_play(puzzle_id)
@@ -104,10 +118,10 @@ class TestPlayOperations:
         database.complete_play(play_id, duration_ms=45000)
 
         play = database.get_play(play_id)
-        assert play['completed'] == 1
-        assert play['duration_ms'] == 45000
+        self.assertEqual(play['completed'], 1, 'should be completed')
+        self.assertEqual(play['duration_ms'], 45000, 'duration should match')
 
-    def test_rate_play(self, temp_db):
+    def test_rate_play(self):
         """Should add rating to play."""
         puzzle_id = database.save_puzzle(code='PLAY3', size=7)
         play_id = database.start_play(puzzle_id)
@@ -116,9 +130,9 @@ class TestPlayOperations:
         database.rate_play(play_id, fun_rating=5)
 
         play = database.get_play(play_id)
-        assert play['fun_rating'] == 5
+        self.assertEqual(play['fun_rating'], 5, 'rating should match')
 
-    def test_get_plays_for_puzzle(self, temp_db):
+    def test_get_plays_for_puzzle(self):
         """Should get all plays for a puzzle."""
         puzzle_id = database.save_puzzle(code='PLAY4', size=7)
         database.start_play(puzzle_id)
@@ -127,13 +141,12 @@ class TestPlayOperations:
 
         plays = database.get_plays_for_puzzle(puzzle_id)
 
-        assert len(plays) == 3
+        self.assertEqual(len(plays), 3, 'should have 3 plays')
 
-    def test_get_best_time_for_puzzle(self, temp_db):
+    def test_get_best_time_for_puzzle(self):
         """Should return best completion time."""
         puzzle_id = database.save_puzzle(code='PLAY5', size=7)
 
-        # Create some completed plays with different times
         play1 = database.start_play(puzzle_id)
         database.complete_play(play1, duration_ms=60000)
 
@@ -143,29 +156,33 @@ class TestPlayOperations:
         play3 = database.start_play(puzzle_id)
         database.complete_play(play3, duration_ms=55000)
 
-        # One incomplete play
-        database.start_play(puzzle_id)
+        database.start_play(puzzle_id)  # Incomplete
 
         best = database.get_best_time_for_puzzle(puzzle_id)
-        assert best == 45000
+        self.assertEqual(best, 45000, 'best time should be 45000')
 
-    def test_get_best_time_no_completions(self, temp_db):
+    def test_get_best_time_no_completions(self):
         """Should return None if no completed plays."""
         puzzle_id = database.save_puzzle(code='PLAY6', size=7)
         database.start_play(puzzle_id)  # Not completed
 
         best = database.get_best_time_for_puzzle(puzzle_id)
-        assert best is None
+        self.assertIsNone(best, 'should return None')
 
 
-class TestStatistics:
+class TestStatistics(unittest.TestCase):
     """Test statistics functions."""
 
-    def test_get_play_stats(self, temp_db):
+    def setUp(self):
+        self.temp_dir = _make_temp_db()
+
+    def tearDown(self):
+        _cleanup_db(self.temp_dir)
+
+    def test_get_play_stats(self):
         """Should return overall statistics."""
         puzzle_id = database.save_puzzle(code='STATS1', size=7)
 
-        # 3 plays, 2 completed
         play1 = database.start_play(puzzle_id)
         database.complete_play(play1, duration_ms=40000)
 
@@ -176,61 +193,79 @@ class TestStatistics:
 
         stats = database.get_play_stats()
 
-        assert stats['total_plays'] == 3
-        assert stats['completed_plays'] == 2
-        assert stats['average_time_ms'] == 50000
+        self.assertEqual(stats['total_plays'], 3, 'total plays')
+        self.assertEqual(stats['completed_plays'], 2, 'completed plays')
+        self.assertEqual(stats['average_time_ms'], 50000, 'average time')
 
-    def test_get_recent_plays(self, temp_db):
+    def test_get_recent_plays(self):
         """Should return recent plays with puzzle info."""
-        puzzle_id = database.save_puzzle(code='RECENT1', size=7, daily_date='2025-06-15')
+        puzzle_id = database.save_puzzle(code='RECENT1', size=7,
+                                         daily_date='2025-06-15')
         play1 = database.start_play(puzzle_id)
         database.complete_play(play1, duration_ms=30000)
 
-        play2 = database.start_play(puzzle_id)
+        database.start_play(puzzle_id)
 
         plays = database.get_recent_plays(limit=10)
 
-        assert len(plays) == 2
-        assert plays[0]['code'] == 'RECENT1'
-        assert plays[0]['size'] == 7
+        self.assertEqual(len(plays), 2, 'should have 2 plays')
+        self.assertEqual(plays[0]['code'], 'RECENT1', 'code should match')
+        self.assertEqual(plays[0]['size'], 7, 'size should match')
 
 
-class TestConfig:
+class TestConfig(unittest.TestCase):
     """Test config key-value store."""
 
-    def test_get_set_config(self, temp_db):
+    def setUp(self):
+        self.temp_dir = _make_temp_db()
+
+    def tearDown(self):
+        _cleanup_db(self.temp_dir)
+
+    def test_get_set_config(self):
         """Should store and retrieve config values."""
         database.set_config('test_key', 'test_value')
-        assert database.get_config('test_key') == 'test_value'
+        self.assertEqual(database.get_config('test_key'), 'test_value',
+                         'should retrieve stored value')
 
-    def test_get_config_default(self, temp_db):
+    def test_get_config_default(self):
         """Should return default for missing keys."""
-        assert database.get_config('missing', 'default') == 'default'
-        assert database.get_config('missing') is None
+        self.assertEqual(database.get_config('missing', 'default'), 'default',
+                         'should return explicit default')
+        self.assertIsNone(database.get_config('missing'),
+                          'should return None by default')
 
-    def test_set_config_overwrites(self, temp_db):
+    def test_set_config_overwrites(self):
         """Should overwrite existing values."""
         database.set_config('key', 'value1')
         database.set_config('key', 'value2')
-        assert database.get_config('key') == 'value2'
+        self.assertEqual(database.get_config('key'), 'value2',
+                         'should overwrite')
 
-    def test_delete_config(self, temp_db):
+    def test_delete_config(self):
         """Should delete config values."""
         database.set_config('to_delete', 'value')
         database.delete_config('to_delete')
-        assert database.get_config('to_delete') is None
+        self.assertIsNone(database.get_config('to_delete'),
+                          'should be deleted')
 
-    def test_schema_version_set(self, temp_db):
+    def test_schema_version_set(self):
         """Schema version should be set after init."""
         version = database.get_config('schema_version')
-        assert version is not None
-        assert int(version) >= 1
+        self.assertIsNotNone(version, 'version should exist')
+        self.assertGreaterEqual(int(version), 1, 'version should be >= 1')
 
 
-class TestGameState:
+class TestGameState(unittest.TestCase):
     """Test game state save/restore operations."""
 
-    def test_save_game_state(self, temp_db):
+    def setUp(self):
+        self.temp_dir = _make_temp_db()
+
+    def tearDown(self):
+        _cleanup_db(self.temp_dir)
+
+    def test_save_game_state(self):
         """Should save board state and elapsed time."""
         puzzle_id = database.save_puzzle(code='STATE1', size=7)
         play_id = database.start_play(puzzle_id)
@@ -240,18 +275,16 @@ class TestGameState:
         database.save_game_state(play_id, elapsed_seconds=45, board_state=encoded)
 
         play = database.get_play(play_id)
-        assert play['elapsed_seconds'] == 45
-        assert play['board_state'] == encoded
+        self.assertEqual(play['elapsed_seconds'], 45, 'elapsed should match')
+        self.assertEqual(play['board_state'], encoded, 'board state should match')
 
-    def test_get_incomplete_play(self, temp_db):
+    def test_get_incomplete_play(self):
         """Should get the most recent incomplete play with board state."""
         puzzle_id = database.save_puzzle(code='STATE2', size=7)
 
-        # Complete play
         play1 = database.start_play(puzzle_id)
         database.complete_play(play1, duration_ms=30000)
 
-        # Incomplete play with state
         play2 = database.start_play(puzzle_id)
         cell_marks = [[0, 1], [2, 0]]
         encoded = game_encoding.encode_board_state(cell_marks)
@@ -259,27 +292,25 @@ class TestGameState:
 
         incomplete = database.get_incomplete_play(puzzle_id)
 
-        assert incomplete is not None
-        assert incomplete['id'] == play2
-        assert incomplete['elapsed_seconds'] == 20
-        # Decode and compare
+        self.assertIsNotNone(incomplete, 'should find incomplete play')
+        self.assertEqual(incomplete['id'], play2, 'should be the right play')
+        self.assertEqual(incomplete['elapsed_seconds'], 20, 'elapsed should match')
         decoded = game_encoding.decode_board_state(incomplete['board_state'])
-        assert decoded == cell_marks
+        self.assertEqual(decoded, cell_marks, 'board state should roundtrip')
 
-    def test_get_incomplete_play_none_when_all_complete(self, temp_db):
+    def test_get_incomplete_play_none_when_all_complete(self):
         """Should return None if all plays are complete."""
         puzzle_id = database.save_puzzle(code='STATE3', size=7)
         play_id = database.start_play(puzzle_id)
         database.complete_play(play_id, duration_ms=30000)
 
         incomplete = database.get_incomplete_play(puzzle_id)
-        assert incomplete is None
+        self.assertIsNone(incomplete, 'should return None')
 
-    def test_get_latest_play_returns_completed(self, temp_db):
+    def test_get_latest_play_returns_completed(self):
         """Should return latest play even if completed."""
         puzzle_id = database.save_puzzle(code='STATE4', size=7)
 
-        # First play - completed
         play1 = database.start_play(puzzle_id)
         cell_marks = [[0, 1], [2, 0]]
         encoded = game_encoding.encode_board_state(cell_marks)
@@ -288,21 +319,19 @@ class TestGameState:
 
         latest = database.get_latest_play(puzzle_id)
 
-        assert latest is not None
-        assert latest['id'] == play1
-        assert latest['completed'] == 1
+        self.assertIsNotNone(latest, 'should find latest play')
+        self.assertEqual(latest['id'], play1, 'should be the right play')
+        self.assertEqual(latest['completed'], 1, 'should be completed')
         decoded = game_encoding.decode_board_state(latest['board_state'])
-        assert decoded == cell_marks
+        self.assertEqual(decoded, cell_marks, 'board state should roundtrip')
 
-    def test_get_latest_play_returns_most_recent(self, temp_db):
+    def test_get_latest_play_returns_most_recent(self):
         """Should return the most recent play regardless of status."""
         puzzle_id = database.save_puzzle(code='STATE5', size=7)
 
-        # First play - completed
         play1 = database.start_play(puzzle_id)
         database.complete_play(play1, duration_ms=30000)
 
-        # Second play - incomplete (most recent)
         play2 = database.start_play(puzzle_id)
         cell_marks = [[1, 0], [0, 1]]
         encoded = game_encoding.encode_board_state(cell_marks)
@@ -310,15 +339,21 @@ class TestGameState:
 
         latest = database.get_latest_play(puzzle_id)
 
-        assert latest is not None
-        assert latest['id'] == play2
-        assert latest['completed'] == 0
+        self.assertIsNotNone(latest, 'should find latest play')
+        self.assertEqual(latest['id'], play2, 'should be most recent')
+        self.assertEqual(latest['completed'], 0, 'should be incomplete')
 
 
-class TestDailyCompletion:
+class TestDailyCompletion(unittest.TestCase):
     """Test daily puzzle completion tracking."""
 
-    def test_is_daily_completed_true(self, temp_db):
+    def setUp(self):
+        self.temp_dir = _make_temp_db()
+
+    def tearDown(self):
+        _cleanup_db(self.temp_dir)
+
+    def test_is_daily_completed_true(self):
         """Should return True when daily puzzle is completed."""
         puzzle_id = database.save_puzzle(
             code='DAILY1', size=7, daily_date='2025-06-15'
@@ -326,17 +361,18 @@ class TestDailyCompletion:
         play_id = database.start_play(puzzle_id)
         database.complete_play(play_id, duration_ms=30000)
 
-        assert database.is_daily_completed('2025-06-15', 7) is True
+        self.assertTrue(database.is_daily_completed('2025-06-15', 7),
+                        'should be completed')
 
-    def test_is_daily_completed_false(self, temp_db):
+    def test_is_daily_completed_false(self):
         """Should return False when daily puzzle is not completed."""
         database.save_puzzle(code='DAILY2', size=7, daily_date='2025-06-15')
 
-        assert database.is_daily_completed('2025-06-15', 7) is False
+        self.assertFalse(database.is_daily_completed('2025-06-15', 7),
+                         'should not be completed')
 
-    def test_get_daily_completion_status(self, temp_db):
+    def test_get_daily_completion_status(self):
         """Should return completion status for all sizes."""
-        # Complete 6x6 and 8x8
         p6 = database.save_puzzle(code='D6', size=6, daily_date='2025-06-15')
         play6 = database.start_play(p6)
         database.complete_play(play6, duration_ms=20000)
@@ -345,42 +381,40 @@ class TestDailyCompletion:
         play8 = database.start_play(p8)
         database.complete_play(play8, duration_ms=40000)
 
-        # 7x7 not played
         status = database.get_daily_completion_status('2025-06-15')
 
-        assert status[6] is True
-        assert status[7] is False
-        assert status[8] is True
+        self.assertTrue(status[6], '6x6 should be completed')
+        self.assertFalse(status[7], '7x7 should not be completed')
+        self.assertTrue(status[8], '8x8 should be completed')
 
-    def test_get_daily_completion_status_started_not_finished(self, temp_db):
+    def test_get_daily_completion_status_started_not_finished(self):
         """Puzzle started but not completed should show as incomplete."""
         p7 = database.save_puzzle(code='D7', size=7, daily_date='2025-06-15')
-        database.start_play(p7)  # Started but not completed
+        database.start_play(p7)
 
         status = database.get_daily_completion_status('2025-06-15')
 
-        assert status[7] is False
+        self.assertFalse(status[7], 'started but not finished')
 
-    def test_get_daily_completion_status_no_puzzles(self, temp_db):
+    def test_get_daily_completion_status_no_puzzles(self):
         """Should return all False when no puzzles exist for date."""
         status = database.get_daily_completion_status('2025-01-01')
 
-        assert status[6] is False
-        assert status[7] is False
-        assert status[8] is False
+        self.assertFalse(status[6], 'no puzzles for 6')
+        self.assertFalse(status[7], 'no puzzles for 7')
+        self.assertFalse(status[8], 'no puzzles for 8')
 
-    def test_get_daily_completion_status_different_dates(self, temp_db):
+    def test_get_daily_completion_status_different_dates(self):
         """Completions on other dates should not affect today's status."""
-        # Complete puzzle on different date
-        p_other = database.save_puzzle(code='OTHER', size=7, daily_date='2025-06-14')
+        p_other = database.save_puzzle(code='OTHER', size=7,
+                                        daily_date='2025-06-14')
         play_other = database.start_play(p_other)
         database.complete_play(play_other, duration_ms=30000)
 
-        # Check today's status (no puzzles)
         status = database.get_daily_completion_status('2025-06-15')
 
-        assert status[7] is False
+        self.assertFalse(status[7], 'other date should not count')
 
 
 if __name__ == "__main__":
-    pytest.main([__file__, "-v"])
+    unittest.main()

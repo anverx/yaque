@@ -4,6 +4,7 @@ from datetime import date
 
 from kivy.uix.boxlayout import BoxLayout
 
+import calendar_logic
 import database
 from screens.base import BackgroundedScreen
 from ui_constants import STYLES
@@ -75,7 +76,7 @@ class MainMenuScreen(BackgroundedScreen):
 
     def on_enter(self) -> None:
         """Called when screen is entered - refresh streak and completion display."""
-        streak = database.get_current_streak()
+        streak = calendar_logic.get_current_streak()
         if streak > 0:
             streak_text = f"Streak: {streak} day{'s' if streak != 1 else ''}"
         else:
