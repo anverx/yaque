@@ -196,14 +196,14 @@ class LoadingPopup(ModalView):
 
         # Status + subtitle grouped tightly
         status_group = BoxLayout(orientation='vertical', size_hint_y=None, spacing=0)
+        status_group.bind(minimum_height=status_group.setter('height'))
         self.status_label = StatusLabel('Generating puzzle...')
-        self.status_label.height = self.status_label.font_size * 1.2
+        self.status_label.bind(texture_size=lambda inst, sz: setattr(inst, 'height', sz[1]))
         status_group.add_widget(self.status_label)
         self.subtitle_label = CaptionLabel('', size_hint_y=None)
         self.subtitle_label.halign = 'center'
-        self.subtitle_label.height = self.subtitle_label.font_size * 1.2
+        self.subtitle_label.bind(texture_size=lambda inst, sz: setattr(inst, 'height', sz[1]))
         status_group.add_widget(self.subtitle_label)
-        status_group.height = self.status_label.height + self.subtitle_label.height
         layout.add_widget(status_group)
 
         # Spinner widget

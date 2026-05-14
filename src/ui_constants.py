@@ -127,7 +127,7 @@ SWIPE_DISTANCE_THRESHOLD = 100
 
 # Popup dimensions (size_hint_x values)
 POPUP_WIDTH = 0.85
-POPUP_WIDTH_NARROW = 0.7
+POPUP_WIDTH_NARROW = 0.78
 
 # Border radius
 RADIUS_SM = 8
