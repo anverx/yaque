@@ -1,6 +1,6 @@
 [project]
 name = "yaque"
-version = "1.0.0"
+version = "1.3.0"
 description = "A Queens puzzle game for mobile"
 readme = "README.md"
 license = {text = "CC-BY-NC-SA-4.0"}
