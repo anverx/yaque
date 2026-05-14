@@ -12,7 +12,7 @@ from pythonforandroid.recipe import CythonRecipe
 
 class YaqueSolverRecipe(CythonRecipe):
     name = 'yaque_solver'
-    version = '1.0.0'
+    version = '1.0.1'  # bump to force rebuild with -O3 flags
     depends = ['setuptools']
     # No external URL — we use local source.
     url = None
