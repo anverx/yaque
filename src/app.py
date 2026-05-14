@@ -579,6 +579,49 @@ class YaqueApp(App):
                 except Exception as e:
                     status_label.text = f'Error: {e}'
 
+        def run_solver_bench(btn: Any) -> None:
+            """Benchmark 8x8 generation with Cython on vs off (5 runs each)."""
+            import time as _time
+            import game as game_module
+            from game import Game
+
+            try:
+                import yaque_solver  # noqa: F401
+            except ImportError:
+                status_label.text = 'yaque_solver not available'
+                return
+
+            original = game_module._cy_solver
+
+            def time_runs(label: str, cy_module: Any, runs: int = 5) -> tuple[float, int]:
+                game_module._cy_solver = cy_module
+                total = 0.0
+                attempts = 0
+                for _ in range(runs):
+                    t = _time.perf_counter()
+                    try:
+                        g = Game(size=8)
+                        total += _time.perf_counter() - t
+                        attempts += g.attempts
+                    except Exception:
+                        total += _time.perf_counter() - t
+                return total, attempts
+
+            status_label.text = 'Benchmarking…'
+
+            try:
+                cy_total, cy_att = time_runs('cython', original, runs=5)
+                py_total, py_att = time_runs('python', None, runs=5)
+            finally:
+                game_module._cy_solver = original
+
+            speedup = py_total / cy_total if cy_total > 0 else 0
+            status_label.text = (
+                f"Cython: {cy_total:.1f}s / 5 ({cy_att} att)\n"
+                f"Python: {py_total:.1f}s / 5 ({py_att} att)\n"
+                f"Speedup: {speedup:.1f}x"
+            )
+
         def show_stats(btn: Any) -> None:
             try:
                 stats = database.get_generation_stats()
@@ -703,6 +746,17 @@ class YaqueApp(App):
         cython_btn.bind(on_press=toggle_cython)
         content.add_widget(cython_btn)
 
+        # Run on-device solver bench
+        bench_btn = GrayRoundedButton(
+            text='Run Bench (8x8 x5)',
+            font_size='12sp',
+            size_hint=(None, None),
+            size=(dp(DEV_BUTTON_WIDTH), dp(DEV_BUTTON_HEIGHT)),
+            pos_hint={'center_x': 0.5}
+        )
+        bench_btn.bind(on_press=run_solver_bench)
+        content.add_widget(bench_btn)
+
         # Close button
         close_btn = GrayRoundedButton(
             text='Close',
@@ -714,7 +768,7 @@ class YaqueApp(App):
         content.add_widget(close_btn)
 
         popup = ModalView(
-            size_hint=(0.85, 0.62),
+            size_hint=(0.85, 0.7),
             auto_dismiss=True,
             background_color=POPUP_BACKGROUND
         )
