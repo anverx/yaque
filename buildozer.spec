@@ -41,8 +41,8 @@ android.ndk = 25b
 # Android architecture
 android.archs = arm64-v8a, armeabi-v7a
 
-# Use stable python-for-android
-p4a.branch = master
+# Pin to stable p4a release (Python 3.11.5) to avoid Python 3.14 incompatibility with Cython 0.29.x
+p4a.branch = v2024.01.21
 
 # Android features
 android.allow_backup = True
