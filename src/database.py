@@ -669,6 +669,46 @@ def get_games_per_day(days: int = 30) -> list[tuple[str, dict[int, int]]]:
     return result
 
 
+def get_minutes_per_day(days: int = 30) -> list[tuple[str, dict[int, int]]]:
+    """Get total play time in minutes per day, broken down by board size.
+
+    Returns:
+        List of (date_str, {size: minutes}) tuples for each day, oldest first.
+        Days with zero games are included with empty size dicts.
+    """
+    cursor = _connection.cursor()
+    today = date.today()
+    start = today - timedelta(days=days - 1)
+
+    cursor.execute('''
+        SELECT date(p.completed_at) as day, pz.size, SUM(p.duration_ms) as total_ms
+        FROM plays p
+        JOIN puzzles pz ON p.puzzle_id = pz.id
+        WHERE p.completed = 1 AND p.duration_ms IS NOT NULL
+              AND date(p.completed_at) >= ?
+        GROUP BY day, pz.size
+        ORDER BY day
+    ''', (start.isoformat(),))
+
+    minutes: dict[str, dict[int, int]] = {}
+    for row in cursor.fetchall():
+        day = row['day']
+        if day not in minutes:
+            minutes[day] = {}
+        # Round up to at least 1 minute if any time was spent
+        mins = max(1, round(row['total_ms'] / 60000)) if row['total_ms'] else 0
+        if mins > 0:
+            minutes[day][row['size']] = mins
+
+    result = []
+    d = start
+    while d <= today:
+        d_str = d.isoformat()
+        result.append((d_str, minutes.get(d_str, {})))
+        d += timedelta(days=1)
+    return result
+
+
 def get_daily_completion_status(daily_date: str) -> dict[int, bool]:
     """Get completion status for all sizes on a given date (single query)."""
     cursor = _connection.cursor()

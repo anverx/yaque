@@ -308,15 +308,28 @@ class LogbookScreen(BackgroundedScreen):
             self.stats_content.add_widget(row)
 
     def _refresh_activity(self) -> None:
-        """Refresh the activity chart."""
+        """Refresh the activity charts."""
         self.activity_content.clear_widgets()
+
+        # Games per day
         self.activity_content.add_widget(SubtitleLabel('Games per Day (30 days)', color=TEXT_WHITE))
-        data = database.get_games_per_day(30)
-        total = sum(sum(v.values()) for _, v in data)
-        chart = BarChart(data)
-        self.activity_content.add_widget(chart)
+        games_data = database.get_games_per_day(30)
+        total_games = sum(sum(v.values()) for _, v in games_data)
+        self.activity_content.add_widget(BarChart(games_data))
         self.activity_content.add_widget(
-            CaptionLabel(f'{total} games in the last 30 days', color=TEXT_LIGHT)
+            CaptionLabel(f'{total_games} games in the last 30 days', color=TEXT_LIGHT)
+        )
+
+        # Spacer between charts
+        self.activity_content.add_widget(BoxLayout(size_hint_y=None, height=dp(SPACING_SM)))
+
+        # Minutes per day
+        self.activity_content.add_widget(SubtitleLabel('Minutes per Day (30 days)', color=TEXT_WHITE))
+        minutes_data = database.get_minutes_per_day(30)
+        total_minutes = sum(sum(v.values()) for _, v in minutes_data)
+        self.activity_content.add_widget(BarChart(minutes_data))
+        self.activity_content.add_widget(
+            CaptionLabel(f'{total_minutes} minutes in the last 30 days', color=TEXT_LIGHT)
         )
 
     def _on_sort_changed(self, sort_key: str) -> None:
