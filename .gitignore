@@ -3,12 +3,18 @@ __pycache__/
 *.py[cod]
 *$py.class
 *.so
+*.pyd
 .Python
 *.egg-info/
 dist/
 build/
 eggs/
 *.egg
+
+# Cython generated
+src/solver.c
+release-log*.txt
+Untitled.png
 
 # Virtual environment
 .venv/

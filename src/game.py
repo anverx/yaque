@@ -6,6 +6,12 @@ from datetime import date
 
 from game_encoding import decode_game_b64, encode_game_b64
 
+# Optional Cython-compiled solver. Falls back to pure Python if not built.
+try:
+    import solver as _cy_solver  # type: ignore
+except ImportError:
+    _cy_solver = None
+
 # Player mark states
 MARK_EMPTY = 0
 MARK_CIRCLE = 1
@@ -345,6 +351,9 @@ class Game:
         with another queen or is adjacent to one. By preferring attacked cells,
         we ensure each kingdom's queen position is one of very few valid spots.
         """
+        if _cy_solver is not None:
+            return _cy_solver.create_kingdoms(queens, self.size, kingdom_strategy)
+
         no = self.size
         kingdoms = [[-1] * no for _ in range(no)]
         directions = [(-1, 0), (1, 0), (0, -1), (0, 1)]
@@ -473,6 +482,9 @@ class Game:
 
     def count_solutions(self, max_count: int = 2) -> int:
         """Count solutions for the puzzle, stopping early if we exceed max_count."""
+        if _cy_solver is not None:
+            return _cy_solver.count_solutions(self.kingdoms, max_count)
+
         no = self.size
         num_kingdoms = no
 
@@ -516,6 +528,9 @@ class Game:
 
     def find_all_solutions(self, max_count: int = 100) -> list[list[tuple[int, int]]]:
         """Find all solutions for the puzzle, up to max_count."""
+        if _cy_solver is not None:
+            return _cy_solver.find_all_solutions(self.kingdoms, max_count)
+
         no = self.size
         num_kingdoms = no
 
@@ -561,6 +576,9 @@ class Game:
         Higher score = more difficult puzzle.
         Returns the number of backtrack steps needed to find the first solution.
         """
+        if _cy_solver is not None:
+            return _cy_solver.calculate_difficulty(self.kingdoms)
+
         no = self.size
         num_kingdoms = no
 

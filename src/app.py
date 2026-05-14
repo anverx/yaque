@@ -671,6 +671,38 @@ class YaqueApp(App):
         stats_btn.bind(on_press=show_stats)
         content.add_widget(stats_btn)
 
+        # Cython solver toggle
+        import game as game_module
+
+        def _cython_label() -> str:
+            return f'Cython: {"ON" if game_module._cy_solver is not None else "OFF"}'
+
+        def toggle_cython(btn: Any) -> None:
+            if game_module._cy_solver is not None:
+                game_module._cy_solver_saved = game_module._cy_solver
+                game_module._cy_solver = None
+            else:
+                game_module._cy_solver = getattr(game_module, '_cy_solver_saved', None)
+                if game_module._cy_solver is None:
+                    try:
+                        import solver as cy_solver
+                        game_module._cy_solver = cy_solver
+                    except ImportError:
+                        status_label.text = 'Cython module not built'
+                        return
+            btn.text = _cython_label()
+            status_label.text = ''
+
+        cython_btn = GrayRoundedButton(
+            text=_cython_label(),
+            font_size='12sp',
+            size_hint=(None, None),
+            size=(dp(DEV_BUTTON_WIDTH), dp(DEV_BUTTON_HEIGHT)),
+            pos_hint={'center_x': 0.5}
+        )
+        cython_btn.bind(on_press=toggle_cython)
+        content.add_widget(cython_btn)
+
         # Close button
         close_btn = GrayRoundedButton(
             text='Close',
@@ -682,7 +714,7 @@ class YaqueApp(App):
         content.add_widget(close_btn)
 
         popup = ModalView(
-            size_hint=(0.85, 0.55),
+            size_hint=(0.85, 0.62),
             auto_dismiss=True,
             background_color=POPUP_BACKGROUND
         )
