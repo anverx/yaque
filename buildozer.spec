@@ -22,7 +22,7 @@ android.numeric_version = 14
 
 # Application requirements
 # Note: Cython<3 is required for pyjnius compatibility
-requirements = python3,kivy,pillow,qrcode,pyjnius,plyer,cython==0.29.36
+requirements = python3,kivy,pillow,qrcode,pyjnius,plyer,cython==3.1.2
 
 # Supported orientations (portrait, landscape, all)
 orientation = portrait
@@ -41,8 +41,8 @@ android.ndk = 25b
 # Android architecture
 android.archs = arm64-v8a, armeabi-v7a
 
-# Pin to stable p4a release (Python 3.11.5) to avoid Python 3.14 incompatibility with Cython 0.29.x
-p4a.branch = v2024.01.21
+# Pin to a tagged p4a release for reproducible builds
+p4a.branch = v2026.05.09
 
 # Android features
 android.allow_backup = True
