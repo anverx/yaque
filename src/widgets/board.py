@@ -351,9 +351,22 @@ class BoardWidget(Widget):
                 return True
             return super().on_touch_down(touch)
         if self.collide_point(*touch.pos):
+            row, col = self._get_cell_at_pos(touch.x, touch.y)
+
+            # Double-tap on a queen: auto-circle all cells the queen blocks.
+            # The first tap of the double-tap already cycled the queen → empty
+            # on its touch_up, so look at history (saved on first touch_down)
+            # to detect that the cell was a queen.
+            if (
+                touch.is_double_tap
+                and self.history_index >= 0
+                and self.history[self.history_index][row][col] == MARK_QUEEN
+            ):
+                self._auto_circle_blocked(row, col)
+                return True
+
             # Grab the touch to track it for drag-to-mark
             touch.grab(self)
-            row, col = self._get_cell_at_pos(touch.x, touch.y)
             # Save state before any changes (for undo)
             self._save_state()
             # Store drag tracking info
@@ -363,6 +376,40 @@ class BoardWidget(Widget):
             touch.ud['marked_cells'] = set()
             return True
         return super().on_touch_down(touch)
+
+    def _auto_circle_blocked(self, qrow: int, qcol: int) -> None:
+        """Mark all cells blocked by the queen at (qrow, qcol) with circles.
+
+        Blocks: same row, same column, 8 adjacent cells, same kingdom.
+        Only empty cells are marked — existing circles/queens are untouched.
+        The first tap of the double-tap is rolled back so the queen stays
+        in place, and a single undo entry covers the whole operation.
+        """
+        # Roll back the first tap's cycle (queen → empty) by restoring
+        # the snapshot saved on the first touch_down.
+        self.cell_marks = copy.deepcopy(self.history[self.history_index])
+        # Drop that snapshot so the double-tap is a single undoable action.
+        self.history = self.history[:self.history_index]
+        self.history_index = len(self.history) - 1
+        # Now save state and apply auto-circles.
+        self._save_state()
+        n = self.size_cells
+        kingdom = self.kingdoms[qrow][qcol]
+        for r in range(n):
+            for c in range(n):
+                if r == qrow and c == qcol:
+                    continue
+                if self.cell_marks[r][c] != MARK_EMPTY:
+                    continue
+                blocks = (
+                    r == qrow or c == qcol
+                    or (abs(r - qrow) <= 1 and abs(c - qcol) <= 1)
+                    or self.kingdoms[r][c] == kingdom
+                )
+                if blocks:
+                    self.cell_marks[r][c] = MARK_CIRCLE
+        self.draw_board()
+        self._schedule_validation()
 
     def on_touch_move(self, touch: Any) -> bool:
         if touch.grab_current is not self:
