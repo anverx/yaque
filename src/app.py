@@ -685,8 +685,8 @@ class YaqueApp(App):
                 game_module._cy_solver = getattr(game_module, '_cy_solver_saved', None)
                 if game_module._cy_solver is None:
                     try:
-                        import solver as cy_solver
-                        game_module._cy_solver = cy_solver
+                        import yaque_solver
+                        game_module._cy_solver = yaque_solver
                     except ImportError:
                         status_label.text = 'Cython module not built'
                         return

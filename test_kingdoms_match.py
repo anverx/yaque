@@ -6,7 +6,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent / 'src'))
 
 import game
-import solver as cy_solver
+import yaque_solver as cy_solver
 
 
 def py_create_kingdoms(queens, size, kingdom_strategy):

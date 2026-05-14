@@ -11,7 +11,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent / 'src'))
 
 from game import Game
-import solver as cy_solver
+import yaque_solver as cy_solver
 
 
 def run_python_solver(kingdoms, max_count=100):

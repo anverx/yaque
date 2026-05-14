@@ -22,7 +22,7 @@ android.numeric_version = 14
 
 # Application requirements
 # Note: Cython<3 is required for pyjnius compatibility
-requirements = python3,kivy,pillow,qrcode,pyjnius,plyer,cython==3.0.12
+requirements = python3,kivy,pillow,qrcode,pyjnius,plyer,cython==3.0.12,yaque_solver
 
 # Supported orientations (portrait, landscape, all)
 orientation = portrait
@@ -43,6 +43,9 @@ android.archs = arm64-v8a, armeabi-v7a
 
 # Pin to a tagged p4a release for reproducible builds
 p4a.branch = v2026.05.09
+
+# Local recipes (yaque_solver Cython package).
+p4a.local_recipes = ./p4a-recipes
 
 # Android features
 android.allow_backup = True

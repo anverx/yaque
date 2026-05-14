@@ -8,7 +8,7 @@ from game_encoding import decode_game_b64, encode_game_b64
 
 # Optional Cython-compiled solver. Falls back to pure Python if not built.
 try:
-    import solver as _cy_solver  # type: ignore
+    import yaque_solver as _cy_solver  # type: ignore
 except ImportError:
     _cy_solver = None
 

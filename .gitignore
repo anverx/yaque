@@ -12,7 +12,8 @@ eggs/
 *.egg
 
 # Cython generated
-src/solver.c
+solver_pkg/yaque_solver/*.c
+solver_pkg/yaque_solver/*.pyd
 release-log*.txt
 Untitled.png
 

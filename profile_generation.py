@@ -6,7 +6,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent / 'src'))
 
 import game
-import solver as cy_solver
+import yaque_solver as cy_solver
 
 
 def profile_generation(size=8, num_attempts=5000):
