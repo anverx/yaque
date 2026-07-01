@@ -1,4 +1,8 @@
-"""Core UI widgets for Yaque — inputs and indicators."""
+"""SolutionIndicator: solution-cycling dots (game-specific).
+
+Inputs (UrlInput/CodeInput) live in kivyshell.uikit.inputs; import them from
+there directly where needed.
+"""
 
 from __future__ import annotations
 
@@ -6,7 +10,6 @@ from typing import Any
 
 from kivy.graphics import Color, Ellipse
 from kivy.metrics import dp
-from kivy.uix.textinput import TextInput
 from kivy.uix.widget import Widget
 
 from ui_constants import (
@@ -15,26 +18,7 @@ from ui_constants import (
     INDICATOR_OTHER,
     INDICATOR_SPACING,
 )
-from widgets.labels import styled
 
-# -----------------------------------------------------------------------------
-# Input Factories
-# -----------------------------------------------------------------------------
-
-def UrlInput(text: str, **kwargs: Any) -> TextInput:
-    """Readonly text input for displaying URLs (small font, selectable)."""
-    return styled(TextInput, 'url_input', text=text, **kwargs)
-
-
-def CodeInput(**kwargs: Any) -> TextInput:
-    """Text input for entering puzzle codes."""
-    kwargs.setdefault('hint_text', 'Enter code here...')
-    return styled(TextInput, 'code_input', **kwargs)
-
-
-# -----------------------------------------------------------------------------
-# Solution Indicator
-# -----------------------------------------------------------------------------
 
 class SolutionIndicator(Widget):
     """Shows gray circles for each solution with a golden indicator for current."""
@@ -60,7 +44,6 @@ class SolutionIndicator(Widget):
             return
 
         with self.canvas:
-            # Calculate circle positions (centered)
             circle_size = dp(INDICATOR_CIRCLE_SIZE)
             spacing = dp(INDICATOR_SPACING)
             total_width = self.num_solutions * circle_size + (self.num_solutions - 1) * (spacing - circle_size)
@@ -69,10 +52,5 @@ class SolutionIndicator(Widget):
             for i in range(self.num_solutions):
                 cx = start_x + i * spacing
                 cy = self.center_y - circle_size / 2
-
-                if i == self.current_index:
-                    Color(*INDICATOR_CURRENT)
-                    Ellipse(pos=(cx, cy), size=(circle_size, circle_size))
-                else:
-                    Color(*INDICATOR_OTHER)
-                    Ellipse(pos=(cx, cy), size=(circle_size, circle_size))
+                Color(*(INDICATOR_CURRENT if i == self.current_index else INDICATOR_OTHER))
+                Ellipse(pos=(cx, cy), size=(circle_size, circle_size))

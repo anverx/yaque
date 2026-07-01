@@ -27,17 +27,17 @@ from ui_constants import (
     SWIPE_DISTANCE_THRESHOLD,
     SWIPE_EDGE_THRESHOLD,
 )
-from widgets import (
+from kivyshell.uikit import (
     BackButton,
-    BoardWidget,
     CaptionLabel,
     ClockLabel,
     GrayRoundedButton,
     IconButton,
-    SolutionIndicator,
     TitleSmLabel,
     styled,
 )
+from widgets.board import BoardWidget
+from widgets.core import SolutionIndicator
 
 
 class GameScreen(Screen):
@@ -597,7 +597,7 @@ class GameScreen(Screen):
 
     def show_rating(self, instance: Any) -> None:
         """Show a simple rating popup."""
-        from widgets import ButtonRow, Popup, PopupContent, SmallRoundedButton, TitleLabel
+        from kivyshell.uikit import ButtonRow, Popup, PopupContent, SmallRoundedButton, TitleLabel
 
         content = PopupContent()
         content.add_widget(TitleLabel('Rate this puzzle'))

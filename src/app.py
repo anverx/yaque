@@ -13,7 +13,6 @@ from kivy.app import App
 from kivy.clock import Clock
 from kivy.core.text import LabelBase
 from kivy.core.window import Window
-from kivy.uix.screenmanager import FadeTransition, ScreenManager
 from kivy.utils import platform
 
 import database
@@ -36,12 +35,13 @@ LabelBase.register(
 
 from game import Game, GenerationCancelled, get_daily_game
 from popups import LoadingPopup, show_game_size_popup, show_load_popup, show_share_popup
+from kivyshell.shell.app import GameShellApp
+from kivyshell.shell.screens.splash import SplashScreen
 from screens import (
     CalendarScreen,
     GameScreen,
     LogbookScreen,
     MainMenuScreen,
-    SplashScreen,
 )
 from ui_constants import (
     BUTTON_HEIGHT_SM,
@@ -52,7 +52,7 @@ from ui_constants import (
     WINDOW_CLEARCOLOR,
     WINDOW_SIZE,
 )
-from widgets import (
+from kivyshell.uikit import (
     AboutSubtitleLabel,
     AboutTitleLabel,
     CaptionLabel,
@@ -78,43 +78,34 @@ else:
 Window.clearcolor = WINDOW_CLEARCOLOR
 
 
-class YaqueApp(App):
-    def build(self) -> ScreenManager:
-        # Initialize database
+class YaqueApp(GameShellApp):
+    def open_storage(self) -> None:
+        # Install the shared-UI theme before any screens/widgets are built.
+        import ui_constants
+        from kivyshell.uikit import register_styles, set_theme
+        set_theme(ui_constants.build_theme())
+        register_styles(ui_constants.STYLES)
         database.init_db(self.user_data_dir)
 
-        self.sm = ScreenManager(transition=FadeTransition())
+    def close_storage(self) -> None:
+        database.close_db()
 
-        # Create screens
+    def create_screens(self) -> list:
         self.splash_screen = SplashScreen(name='splash')
         self.menu_screen = MainMenuScreen(self, name='menu')
         self.calendar_screen = CalendarScreen(self, name='calendar')
         self.game_screen = GameScreen(self, name='game')
         self.logbook_screen = LogbookScreen(self, name='logbook')
+        return [self.splash_screen, self.menu_screen, self.calendar_screen,
+                self.game_screen, self.logbook_screen]
 
-        self.sm.add_widget(self.splash_screen)
-        self.sm.add_widget(self.menu_screen)
-        self.sm.add_widget(self.calendar_screen)
-        self.sm.add_widget(self.game_screen)
-        self.sm.add_widget(self.logbook_screen)
-
-        # Loading popup (reusable)
+    def on_build(self) -> None:
+        # Loading popup (reusable) + Android intent handling
         self.loading_popup = None
         self._generation_cancelled = False
-
-        # Start with splash screen
-        self.sm.current = 'splash'
-
-        # Transition to menu after brief delay
-        Clock.schedule_once(self._go_to_menu, 1.5)
-
-        # Handle incoming intent on Android
         if platform == 'android':
             activity.bind(on_new_intent=self._on_new_intent)
-            # Check initial intent
             Clock.schedule_once(lambda dt: self._check_initial_intent(), 2)
-
-        return self.sm
 
     # -------------------------------------------------------------------------
     # Android intent handling
@@ -159,16 +150,6 @@ class YaqueApp(App):
             self._on_game_ready(game)
         except Exception as e:
             print(f"Error loading shared game: {e}")
-
-    # -------------------------------------------------------------------------
-    # Navigation
-    # -------------------------------------------------------------------------
-
-    def _go_to_menu(self, dt: float) -> None:
-        self.sm.current = 'menu'
-
-    def show_calendar(self, instance: Any) -> None:
-        self.sm.current = 'calendar'
 
     # -------------------------------------------------------------------------
     # Game generation
@@ -339,10 +320,6 @@ class YaqueApp(App):
 
     def show_load_popup(self, instance: Any) -> None:
         show_load_popup(self._on_game_ready)
-
-    def show_logbook(self, instance: Any) -> None:
-        """Show the logbook/statistics screen."""
-        self.sm.current = 'logbook'
 
     def show_about(self, instance: Any) -> None:
         """Show the about popup."""
@@ -775,17 +752,6 @@ class YaqueApp(App):
         popup.add_widget(content)
         close_btn.bind(on_press=popup.dismiss)
         popup.open()
-
-    # -------------------------------------------------------------------------
-    # App lifecycle
-    # -------------------------------------------------------------------------
-
-    def exit_app(self, instance: Any) -> None:
-        App.get_running_app().stop()
-
-    def on_stop(self) -> None:
-        database.close_db()
-
 
 if __name__ == "__main__":
     YaqueApp().run()

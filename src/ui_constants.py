@@ -466,3 +466,40 @@ KINGDOM_COLORS = [
     (0.6, 0.8, 0.7),   # 8: light teal
     (0.85, 0.7, 0.7),  # 9: dusty rose
 ]
+
+# -----------------------------------------------------------------------------
+# kivyshell integration: build the shared-primitives Theme from yaque's tokens.
+# Pure builder (no import-time side effects); YaqueApp installs it at startup via
+# set_theme(build_theme()) + register_styles(STYLES).
+# -----------------------------------------------------------------------------
+import os as _os
+
+ICONS_DIR = _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), 'assets', 'icons')
+
+
+def build_theme():
+    """Construct the kivyshell Theme from yaque's tokens."""
+    from kivyshell.uikit import Theme
+    return Theme(
+        font_name=FONT_NAME,
+        button_font_size=BUTTON_FONT_SIZE,
+        text_dark=TEXT_DARK,
+        text_medium=TEXT_MEDIUM,
+        text_light=TEXT_LIGHT,
+        text_header=TEXT_HEADER,
+        text_white=TEXT_WHITE,
+        button=DEFAULT_BUTTON_COLOR,
+        button_down=DEFAULT_BUTTON_COLOR_DOWN,
+        button_gray=GRAY_BUTTON_COLOR,
+        button_gray_down=GRAY_BUTTON_COLOR_DOWN,
+        button_unselected=BUTTON_UNSELECTED,
+        link=LINK_COLOR,
+        disabled_opacity=DISABLED_OPACITY,
+        background_image=BACKGROUND_IMAGE,
+        icons_dir=ICONS_DIR,
+        badge_on_time=QUEEN_GOLD,
+        badge_icon=_os.path.join(ICONS_DIR, 'queen-small.png'),
+        loader_icon=_os.path.join(ICONS_DIR, 'queen.png'),
+        spinner_border=SPINNER_BORDER,
+    )
+
