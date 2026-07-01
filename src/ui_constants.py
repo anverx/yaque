@@ -466,3 +466,23 @@ KINGDOM_COLORS = [
     (0.6, 0.8, 0.7),   # 8: light teal
     (0.85, 0.7, 0.7),  # 9: dusty rose
 ]
+
+# -----------------------------------------------------------------------------
+# kivyshell integration (Phase 1)
+# Hand yaque's tuned, dp-scaled STYLES and theme tokens to the shared UI
+# primitives so styled()/labels render identically. See kivyshell EXTRACTION_PLAN.
+# -----------------------------------------------------------------------------
+from kivyshell.uikit import theme as _kv_theme  # noqa: E402
+
+_kv_theme.set_theme(_kv_theme.Theme(
+    font_name=FONT_NAME,
+    text_dark=TEXT_DARK,
+    text_medium=TEXT_MEDIUM,
+    text_light=TEXT_LIGHT,
+    text_header=TEXT_HEADER,
+    text_white=TEXT_WHITE,
+    link=LINK_COLOR,
+    background_image=BACKGROUND_IMAGE,
+))
+_kv_theme.register_styles(STYLES)
+
