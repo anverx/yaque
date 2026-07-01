@@ -38,7 +38,7 @@ from ui_constants import (
     TEXT_LIGHT,
     TEXT_WHITE,
 )
-from widgets.labels import DayLabel, RatingLabel, TableCellLabel
+from kivyshell.uikit import DayLabel, RatingLabel, TableCellLabel
 
 # Pure primitives (incl. TypeIcon, CrownIcon) come from the shared library.
 from kivyshell.uikit.layouts import *  # noqa: F401,F403

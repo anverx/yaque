@@ -12,7 +12,7 @@ from datetime import date
 from calendar_logic import CalendarState, CompletionStatus
 from popups import show_date_puzzles_popup
 from ui_constants import QUEEN_GOLD, QUEEN_SILVER, STYLES
-from widgets import DayCell
+from widgets.layouts import DayCell
 from kivyshell.shell.screens.calendar import CalendarConfig
 from kivyshell.shell.screens.calendar import CalendarScreen as _CalendarScreen
 

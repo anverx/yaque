@@ -1,8 +1,7 @@
-"""Shim + game-specific indicator.
+"""SolutionIndicator: solution-cycling dots (game-specific).
 
-Input factories (UrlInput, CodeInput) now live in ``kivyshell.uikit.inputs`` and
-are re-exported here. SolutionIndicator stays: it renders a puzzle's solution set,
-which is game-specific.
+Inputs (UrlInput/CodeInput) live in kivyshell.uikit.inputs; import them from
+there directly where needed.
 """
 
 from __future__ import annotations
@@ -19,8 +18,6 @@ from ui_constants import (
     INDICATOR_OTHER,
     INDICATOR_SPACING,
 )
-
-from kivyshell.uikit.inputs import CodeInput, UrlInput  # noqa: F401
 
 
 class SolutionIndicator(Widget):

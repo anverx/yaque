@@ -25,13 +25,11 @@ from ui_constants import (
     TEXT_LIGHT,
     TEXT_WHITE,
 )
-from widgets import (
-    BarChart,
+from kivyshell.uikit import (
     CaptionLabel,
     DateSeparator,
     FixedGrayRoundedButton,
     GrayRoundedButton,
-    LogbookRow,
     RoundedButton,
     SelectableButton,
     SelectableButtonGroup,
@@ -41,6 +39,8 @@ from widgets import (
     TableHeaderLabel,
     styled,
 )
+from widgets.bar_chart import BarChart
+from widgets.layouts import LogbookRow
 from kivyshell.shell.screens.logbook import LogbookConfig, LogbookScreen as _LogbookScreen, LogbookTab
 
 PAGE_SIZE = 20

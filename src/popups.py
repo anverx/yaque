@@ -18,7 +18,7 @@ from kivy.uix.widget import Widget
 import database
 from game import Game
 from ui_constants import STYLES
-from widgets import (
+from kivyshell.uikit import (
     CrownBadge,
     FixedGrayRoundedButton,
     FixedRoundedButton,

@@ -53,7 +53,7 @@ from ui_constants import (
     WINDOW_CLEARCOLOR,
     WINDOW_SIZE,
 )
-from widgets import (
+from kivyshell.uikit import (
     AboutSubtitleLabel,
     AboutTitleLabel,
     CaptionLabel,
