@@ -1,6 +1,13 @@
+"""yaque logbook — supplies tabs (Games / Stats / Activity) to kivyshell's LogbookScreen.
+
+The tab chrome (switcher, panel, controls slot, back) lives in the shell; all the
+DB queries, the games list + pagination, the stats table (by board size), and the
+activity charts stay here.
+"""
+
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import date, datetime
 from typing import Any
 
 from kivy.metrics import dp
@@ -10,16 +17,13 @@ from kivy.uix.scrollview import ScrollView
 
 import database
 from game import Game
-from screens.base import BackgroundedScreen
 from ui_constants import (
     BUTTON_HEIGHT_SM,
-    PADDING_CELL,
     ROW_HEIGHT,
     SPACING_SM,
     STYLES,
     TEXT_LIGHT,
     TEXT_WHITE,
-    TOP_SPACER_HEIGHT,
 )
 from widgets import (
     BarChart,
@@ -28,7 +32,6 @@ from widgets import (
     FixedGrayRoundedButton,
     GrayRoundedButton,
     LogbookRow,
-    PanelLayout,
     RoundedButton,
     SelectableButton,
     SelectableButtonGroup,
@@ -36,72 +39,24 @@ from widgets import (
     SubtitleLabel,
     TableCellLabel,
     TableHeaderLabel,
-    TitleLgLabel,
     styled,
 )
+from kivyshell.shell.screens.logbook import LogbookConfig, LogbookScreen as _LogbookScreen, LogbookTab
 
 PAGE_SIZE = 20
 
 
-class LogbookScreen(BackgroundedScreen):
-    def build_content(self) -> None:
+class LogbookScreen(_LogbookScreen):
+    def logbook_config(self) -> LogbookConfig:
         self.current_offset = 0
         self.has_more = False
         self.current_sort = 'time'
-        self.current_tab = 'games'
-        layout = self.content_layout
 
-        # Extra spacer to push content below the banner
-        layout.add_widget(BoxLayout(size_hint_y=None, height=dp(TOP_SPACER_HEIGHT)))
-
-        # Title
-        layout.add_widget(TitleLgLabel('Logbook'))
-
-        # Tab selector row
-        tab_row = styled(BoxLayout, 'selection_row')
-        self.tab_group = SelectableButtonGroup(on_select=self._on_tab_changed)
-        for tab_key, label in [('games', 'Games'), ('stats', 'Stats'), ('activity', 'Activity')]:
-            btn = SelectableButton(
-                text=label,
-                selected=(tab_key == 'games'),
-                **STYLES['selection_btn']
-            )
-            self.tab_group.add(tab_key, btn)
-            tab_row.add_widget(btn)
-        tab_row.add_widget(Label(size_hint_x=1))
-        layout.add_widget(tab_row)
-
-        # Sort selector row (visible only on Games tab)
-        self.sort_row = styled(BoxLayout, 'selection_row')
-        sort_label = CaptionLabel('Sort:', size_hint_x=None, width=dp(40))
-        self.sort_row.add_widget(sort_label)
-        self.sort_group = SelectableButtonGroup(on_select=self._on_sort_changed)
-        for sort_key, label in [('time', 'When'), ('size', 'Size'), ('duration', 'Time'), ('rating', 'Rating')]:
-            btn = SelectableButton(
-                text=label,
-                selected=(sort_key == 'time'),
-                **STYLES['selection_btn']
-            )
-            self.sort_group.add(sort_key, btn)
-            self.sort_row.add_widget(btn)
-        self.sort_row.add_widget(Label(size_hint_x=1))
-        layout.add_widget(self.sort_row)
-
-        # Shared panel with dark background
-        self.panel = PanelLayout(
-            orientation='vertical',
-            padding=[dp(PADDING_CELL[0]), dp(PADDING_CELL[1])],
-        )
-
-        # Games content (header + scrollable list)
+        # Games content: header + scrollable list
         self.games_content = BoxLayout(orientation='vertical')
         header = styled(BoxLayout, 'table_header_row')
-        header.add_widget(TableHeaderLabel('Type'))
-        header.add_widget(TableHeaderLabel('Size'))
-        header.add_widget(TableHeaderLabel('Time'))
-        header.add_widget(TableHeaderLabel('Rating'))
-        header.add_widget(TableHeaderLabel('When'))
-        header.add_widget(TableHeaderLabel('Daily'))
+        for col in ('Type', 'Size', 'Time', 'Rating', 'When', 'Daily'):
+            header.add_widget(TableHeaderLabel(col))
         self.games_content.add_widget(header)
         scroll = ScrollView(size_hint=(1, 1))
         self.list_layout = styled(BoxLayout, 'list_layout')
@@ -109,50 +64,53 @@ class LogbookScreen(BackgroundedScreen):
         scroll.add_widget(self.list_layout)
         self.games_content.add_widget(scroll)
 
-        # Stats content (scrollable, rebuilt on each refresh)
+        # Stats content
         self.stats_scroll = ScrollView(size_hint=(1, 1))
         self.stats_content = styled(BoxLayout, 'list_layout', spacing=dp(4))
         self.stats_content.bind(minimum_height=self.stats_content.setter('height'))
         self.stats_scroll.add_widget(self.stats_content)
 
-        # Activity content (rebuilt on each refresh)
+        # Activity content
         self.activity_content = BoxLayout(orientation='vertical')
 
-        # Start with games content
-        self.panel.add_widget(self.games_content)
-        layout.add_widget(self.panel)
+        # Sort selector row (shown only on the Games tab)
+        self.sort_row = styled(BoxLayout, 'selection_row')
+        self.sort_row.add_widget(CaptionLabel('Sort:', size_hint_x=None, width=dp(40)))
+        self.sort_group = SelectableButtonGroup(on_select=self._on_sort_changed)
+        for sort_key, label in [('time', 'When'), ('size', 'Size'), ('duration', 'Time'), ('rating', 'Rating')]:
+            btn = SelectableButton(text=label, selected=(sort_key == 'time'), **STYLES['selection_btn'])
+            self.sort_group.add(sort_key, btn)
+            self.sort_row.add_widget(btn)
+        self.sort_row.add_widget(Label(size_hint_x=1))
 
-        # Back button
-        self.add_back_button()
+        return LogbookConfig(title='Logbook', tabs=[
+            LogbookTab('games', 'Games', build=lambda: self.games_content,
+                       refresh=lambda: self._load_plays(append=False), controls=self.sort_row),
+            LogbookTab('stats', 'Stats', build=lambda: self.stats_scroll, refresh=self._refresh_stats),
+            LogbookTab('activity', 'Activity', build=lambda: self.activity_content, refresh=self._refresh_activity),
+        ])
 
+    # --- helpers (ported verbatim) ---
     def _format_date(self, date_str: str) -> str:
-        """Format date string for separator."""
         try:
             dt = datetime.fromisoformat(date_str)
             today = datetime.now().date()
             if dt.date() == today:
                 return 'Today'
-            elif (today - dt.date()).days == 1:
+            if (today - dt.date()).days == 1:
                 return 'Yesterday'
-            else:
-                return dt.strftime('%A, %b %d')
+            return dt.strftime('%A, %b %d')
         except Exception:
             return date_str[:10] if date_str else '?'
 
     def _get_date_key(self, started_at: str) -> str:
-        """Extract date part from started_at timestamp."""
         return started_at[:10] if started_at else ''
 
     def _on_game_selected(self, play_data: dict[str, Any]) -> None:
-        """Load and show the selected game."""
         code = play_data['code']
         daily_date = play_data['daily_date']
-
         try:
             game = Game.from_code(code)
-
-            # Parse daily_date if present
-            from datetime import date
             parsed_date = None
             if daily_date:
                 try:
@@ -160,17 +118,14 @@ class LogbookScreen(BackgroundedScreen):
                     parsed_date = date(int(parts[0]), int(parts[1]), int(parts[2]))
                 except Exception:
                     pass
-
             self.app._on_game_ready(game, daily_date=parsed_date, from_logbook=True)
         except Exception as e:
             print(f"Error loading game: {e}")
 
     def _load_more(self, instance: Any) -> None:
-        """Load next page of games."""
         self._load_plays(append=True)
 
     def _load_plays(self, append: bool = False) -> None:
-        """Load plays from database."""
         if not append:
             self.list_layout.clear_widgets()
             self.current_offset = 0
@@ -179,20 +134,14 @@ class LogbookScreen(BackgroundedScreen):
         total = database.get_plays_count(sort_by=self.current_sort)
 
         if not plays and not append:
-            self.list_layout.add_widget(SubtitleLabel(
-                'No games played yet',
-                size_hint_y=None,
-                height=dp(ROW_HEIGHT)
-            ))
+            self.list_layout.add_widget(SubtitleLabel('No games played yet', size_hint_y=None, height=dp(ROW_HEIGHT)))
             return
 
-        # Remove old "Load More" button if appending
         if append and self.list_layout.children:
-            last = self.list_layout.children[0]  # Children are in reverse order
+            last = self.list_layout.children[0]
             if isinstance(last, (RoundedButton, GrayRoundedButton)):
                 self.list_layout.remove_widget(last)
 
-        # Get last date shown (if appending)
         last_date = None
         if append and self.list_layout.children:
             for child in reversed(self.list_layout.children):
@@ -200,87 +149,46 @@ class LogbookScreen(BackgroundedScreen):
                     last_date = self._get_date_key(child.play_data['started_at'])
                     break
 
-        # Add plays with date separators
         current_date = last_date
         for play in plays:
             play_date = self._get_date_key(play['started_at'])
-
-            # Add date separator if date changed
             if play_date != current_date:
                 current_date = play_date
-                separator = DateSeparator(self._format_date(play['started_at']))
-                self.list_layout.add_widget(separator)
-
-            row = LogbookRow(play, self._on_game_selected)
-            self.list_layout.add_widget(row)
+                self.list_layout.add_widget(DateSeparator(self._format_date(play['started_at'])))
+            self.list_layout.add_widget(LogbookRow(play, self._on_game_selected))
 
         self.current_offset += len(plays)
         self.has_more = self.current_offset < total
 
-        # Add "Load More" button if there's more
         if self.has_more:
             remaining = total - self.current_offset
-            load_more_btn = FixedGrayRoundedButton(
-                text=f'Load More ({remaining} remaining)',
-                height=dp(BUTTON_HEIGHT_SM)
-            )
+            load_more_btn = FixedGrayRoundedButton(text=f'Load More ({remaining} remaining)', height=dp(BUTTON_HEIGHT_SM))
             load_more_btn.bind(on_press=self._load_more)
             self.list_layout.add_widget(load_more_btn)
 
-    def _on_tab_changed(self, tab_key: str) -> None:
-        """Switch between Games, Stats, and Activity tabs."""
-        self.current_tab = tab_key
-        self.panel.clear_widgets()
-        if tab_key == 'games':
-            self.sort_row.height = dp(BUTTON_HEIGHT_SM)
-            self.sort_row.opacity = 1
-            self.panel.add_widget(self.games_content)
-            self._load_plays(append=False)
-        elif tab_key == 'stats':
-            self.sort_row.height = 0
-            self.sort_row.opacity = 0
-            self._refresh_stats()
-            self.panel.add_widget(self.stats_scroll)
-        elif tab_key == 'activity':
-            self.sort_row.height = 0
-            self.sort_row.opacity = 0
-            self._refresh_activity()
-            self.panel.add_widget(self.activity_content)
-
     def _format_duration(self, duration_ms: int | None) -> str:
-        """Format milliseconds as M:SS."""
         if not duration_ms:
             return '-'
         secs = duration_ms // 1000
         return f'{secs // 60}:{secs % 60:02d}'
 
     def _format_total_time(self, total_ms: int) -> str:
-        """Format total milliseconds as human-readable duration."""
         total_secs = total_ms // 1000
         hours = total_secs // 3600
         mins = (total_secs % 3600) // 60
-        if hours > 0:
-            return f'{hours}h {mins}m'
-        return f'{mins}m'
+        return f'{hours}h {mins}m' if hours > 0 else f'{mins}m'
 
     def _refresh_stats(self) -> None:
-        """Refresh the stats panel with current data."""
         self.stats_content.clear_widgets()
         time_stats = database.get_time_stats_by_size()
         logbook_stats = database.get_logbook_stats()
 
-        spacer_h = dp(SPACING_SM)
-
-        # Times table header
         self.stats_content.add_widget(SubtitleLabel('Solve Times', color=TEXT_WHITE))
         header = StatRow()
-        header.add_widget(TableHeaderLabel('Size'))
-        header.add_widget(TableHeaderLabel('Best'))
-        header.add_widget(TableHeaderLabel('Average'))
-        header.add_widget(TableHeaderLabel('Games'))
+        for col in ('Size', 'Best', 'Average', 'Games'):
+            header.add_widget(TableHeaderLabel(col))
         self.stats_content.add_widget(header)
 
-        # Times table rows
         for size in [6, 7, 8, 9]:
             stats = time_stats.get(size)
             best = self._format_duration(stats['best_time']) if stats else '-'
@@ -293,14 +201,11 @@ class LogbookScreen(BackgroundedScreen):
             row.add_widget(TableCellLabel(count))
             self.stats_content.add_widget(row)
 
-        # Spacer
-        self.stats_content.add_widget(BoxLayout(size_hint_y=None, height=spacer_h))
+        self.stats_content.add_widget(BoxLayout(size_hint_y=None, height=dp(SPACING_SM)))
 
-        # Summary section
         self.stats_content.add_widget(SubtitleLabel('Summary', color=TEXT_WHITE))
         total = logbook_stats['total_completed']
         total_time = self._format_total_time(logbook_stats['total_time_ms'])
-
         for label, value in [('Completed', str(total)), ('Total Time', total_time)]:
             row = StatRow()
             row.add_widget(TableCellLabel(label, color=TEXT_LIGHT))
@@ -308,40 +213,22 @@ class LogbookScreen(BackgroundedScreen):
             self.stats_content.add_widget(row)
 
     def _refresh_activity(self) -> None:
-        """Refresh the activity charts."""
         self.activity_content.clear_widgets()
 
-        # Games per day
         self.activity_content.add_widget(SubtitleLabel('Games per Day (30 days)', color=TEXT_WHITE))
         games_data = database.get_games_per_day(30)
         total_games = sum(sum(v.values()) for _, v in games_data)
         self.activity_content.add_widget(BarChart(games_data))
-        self.activity_content.add_widget(
-            CaptionLabel(f'{total_games} games in the last 30 days', color=TEXT_LIGHT)
-        )
+        self.activity_content.add_widget(CaptionLabel(f'{total_games} games in the last 30 days', color=TEXT_LIGHT))
 
-        # Spacer between charts
         self.activity_content.add_widget(BoxLayout(size_hint_y=None, height=dp(SPACING_SM)))
 
-        # Minutes per day
         self.activity_content.add_widget(SubtitleLabel('Minutes per Day (30 days)', color=TEXT_WHITE))
         minutes_data = database.get_minutes_per_day(30)
         total_minutes = sum(sum(v.values()) for _, v in minutes_data)
         self.activity_content.add_widget(BarChart(minutes_data))
-        self.activity_content.add_widget(
-            CaptionLabel(f'{total_minutes} minutes in the last 30 days', color=TEXT_LIGHT)
-        )
+        self.activity_content.add_widget(CaptionLabel(f'{total_minutes} minutes in the last 30 days', color=TEXT_LIGHT))
 
     def _on_sort_changed(self, sort_key: str) -> None:
-        """Handle sort option change."""
         self.current_sort = sort_key
         self._load_plays(append=False)
-
-    def on_enter(self) -> None:
-        """Refresh current tab when screen is shown."""
-        if self.current_tab == 'games':
-            self._load_plays(append=False)
-        elif self.current_tab == 'stats':
-            self._refresh_stats()
-        elif self.current_tab == 'activity':
-            self._refresh_activity()
