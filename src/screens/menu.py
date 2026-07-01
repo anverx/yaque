@@ -1,93 +1,45 @@
+"""yaque main menu — supplies a MenuConfig to the shared kivyshell MenuScreen.
+
+The menu structure (daily row, Calendar+streak, actions, Exit) lives in the
+shell; yaque provides the variants, callbacks, streak text and completion state.
+"""
+
 from __future__ import annotations
 
 from datetime import date
 
-from kivy.uix.boxlayout import BoxLayout
-
 import calendar_logic
 import database
-from screens.base import BackgroundedScreen
-from ui_constants import STYLES
-from widgets import (
-    BackButton,
-    ButtonRow,
-    CrownBadge,
-    FixedRoundedButton,
-    RoundedButton,
-    TallRoundedButton,
-    TitleMdLabel,
-)
+from kivyshell.shell.adapter import Variant
+from kivyshell.shell.screens.menu import MenuConfig, MenuScreen
 
 
-class MainMenuScreen(BackgroundedScreen):
-    def build_content(self) -> None:
-        layout = self.content_layout
+class MainMenuScreen(MenuScreen):
+    def menu_config(self) -> MenuConfig:
+        return MenuConfig(
+            daily_title="Today's Puzzles",
+            daily_variants=[Variant("6", "6x6"), Variant("7", "7x7"), Variant("8", "8x8")],
+            on_daily=lambda v: self.app.start_daily_game(int(v.id)),
+            calendar_label="Calendar",
+            on_calendar=self.app.show_calendar,
+            streak_text=self._streak_text,
+            actions=[
+                ("Random Game", self.app.start_random_game),
+                ("Load Shared Puzzle", self.app.show_load_popup),
+                ("Logbook", self.app.show_logbook),
+                ("About", self.app.show_about),
+            ],
+            exit_label="Exit",
+            on_exit=self.app.exit_app,
+            daily_completion=self._daily_completion,
+        )
 
-        # Extra spacer for menu layout
-        layout.add_widget(BoxLayout(size_hint_y=0.2))
-
-        # Daily puzzles section
-        layout.add_widget(TitleMdLabel("Today's Puzzles"))
-
-        daily_buttons = ButtonRow()
-        self.daily_badges: dict[int, CrownBadge] = {}
-        for size in [6, 7, 8]:
-            btn = RoundedButton(text=f'{size}x{size}')
-            btn.bind(on_press=lambda x, s=size: self.app.start_daily_game(s))
-            self.daily_badges[size] = CrownBadge(btn)
-            daily_buttons.add_widget(btn)
-        layout.add_widget(daily_buttons)
-
-        # Spacer before middle buttons
-        layout.add_widget(BoxLayout(size_hint_y=0.25))
-
-        # Calendar button with streak display
-        self.calendar_btn = TallRoundedButton(text='Calendar')
-        self.calendar_btn.bind(on_press=self.app.show_calendar)
-        layout.add_widget(self.calendar_btn)
-
-        # Random game button
-        random_btn = FixedRoundedButton(text='Random Game')
-        random_btn.bind(on_press=self.app.start_random_game)
-        layout.add_widget(random_btn)
-
-        # Load shared puzzle button
-        load_btn = FixedRoundedButton(text='Load Shared Puzzle')
-        load_btn.bind(on_press=self.app.show_load_popup)
-        layout.add_widget(load_btn)
-
-        # Logbook button
-        logbook_btn = FixedRoundedButton(text='Logbook')
-        logbook_btn.bind(on_press=self.app.show_logbook)
-        layout.add_widget(logbook_btn)
-
-        # About button
-        about_btn = FixedRoundedButton(text='About')
-        about_btn.bind(on_press=self.app.show_about)
-        layout.add_widget(about_btn)
-
-        # Spacer
-        layout.add_widget(BoxLayout(size_hint_y=0.1))
-
-        # Exit button
-        exit_btn = BackButton(text='Exit')
-        exit_btn.bind(on_press=self.app.exit_app)
-        layout.add_widget(exit_btn)
-
-    def on_enter(self) -> None:
-        """Called when screen is entered - refresh streak and completion display."""
+    def _streak_text(self) -> str:
         streak = calendar_logic.get_current_streak()
         if streak > 0:
-            streak_text = f"Streak: {streak} day{'s' if streak != 1 else ''}"
-        else:
-            streak_text = "Start a streak!"
-        caption_size = STYLES['caption']['font_size']
-        self.calendar_btn.text = f"Calendar\n[size={caption_size}]{streak_text}[/size]"
+            return f"Streak: {streak} day{'s' if streak != 1 else ''}"
+        return "Start a streak!"
 
-        # Update daily button crown badges
+    def _daily_completion(self) -> dict[str, bool]:
         status = database.get_daily_completion_status(date.today().isoformat())
-        for size, badge in self.daily_badges.items():
-            if status.get(size):
-                badge.show()
-            else:
-                badge.hide()
+        return {str(size): bool(status.get(size)) for size in (6, 7, 8)}
