@@ -497,6 +497,8 @@ _kv_theme.set_theme(_kv_theme.Theme(
     icons_dir=_ICONS_DIR,
     badge_on_time=QUEEN_GOLD,
     badge_icon=_os.path.join(_ICONS_DIR, 'queen-small.png'),
+    loader_icon=_os.path.join(_ICONS_DIR, 'queen.png'),
+    spinner_border=SPINNER_BORDER,
 ))
 _kv_theme.register_styles(STYLES)
 
