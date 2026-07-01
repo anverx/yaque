@@ -26,6 +26,7 @@ from ui_constants import (
     TEXT_WHITE,
 )
 from kivyshell.uikit import (
+    BarChart,
     CaptionLabel,
     DateSeparator,
     FixedGrayRoundedButton,
@@ -39,11 +40,17 @@ from kivyshell.uikit import (
     TableHeaderLabel,
     styled,
 )
-from widgets.bar_chart import BarChart
 from widgets.layouts import LogbookRow
 from kivyshell.shell.screens.logbook import LogbookConfig, LogbookScreen as _LogbookScreen, LogbookTab
 
 PAGE_SIZE = 20
+
+# Stacked activity-bar segment colors by board size (game-specific).
+SIZE_COLORS = {
+    6: (0.55, 0.85, 0.55, 0.85),  # light green
+    7: (0.55, 0.70, 0.95, 0.85),  # light blue
+    8: (0.90, 0.65, 0.55, 0.85),  # light coral
+}
 
 
 class LogbookScreen(_LogbookScreen):
@@ -218,7 +225,7 @@ class LogbookScreen(_LogbookScreen):
         self.activity_content.add_widget(SubtitleLabel('Games per Day (30 days)', color=TEXT_WHITE))
         games_data = database.get_games_per_day(30)
         total_games = sum(sum(v.values()) for _, v in games_data)
-        self.activity_content.add_widget(BarChart(games_data))
+        self.activity_content.add_widget(BarChart(games_data, segment_colors=SIZE_COLORS))
         self.activity_content.add_widget(CaptionLabel(f'{total_games} games in the last 30 days', color=TEXT_LIGHT))
 
         self.activity_content.add_widget(BoxLayout(size_hint_y=None, height=dp(SPACING_SM)))
@@ -226,7 +233,7 @@ class LogbookScreen(_LogbookScreen):
         self.activity_content.add_widget(SubtitleLabel('Minutes per Day (30 days)', color=TEXT_WHITE))
         minutes_data = database.get_minutes_per_day(30)
         total_minutes = sum(sum(v.values()) for _, v in minutes_data)
-        self.activity_content.add_widget(BarChart(minutes_data))
+        self.activity_content.add_widget(BarChart(minutes_data, segment_colors=SIZE_COLORS))
         self.activity_content.add_widget(CaptionLabel(f'{total_minutes} minutes in the last 30 days', color=TEXT_LIGHT))
 
     def _on_sort_changed(self, sort_key: str) -> None:
