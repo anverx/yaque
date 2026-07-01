@@ -2,5 +2,5 @@ kivy>=2.3.0
 pillow>=10.0.0
 plyer>=2.1.0
 qrcode>=7.0
-# Shared UI library (kivyshell). Consider pinning to a tagged release once versioned.
-kivyshell @ git+https://github.com/anverx/kivyshell@main
+# Shared UI library (kivyshell), pinned to a tagged release.
+kivyshell @ git+https://github.com/anverx/kivyshell@v0.1.0
