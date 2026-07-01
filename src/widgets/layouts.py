@@ -38,11 +38,7 @@ from ui_constants import (
     TEXT_LIGHT,
     TEXT_WHITE,
 )
-from kivyshell.uikit import DayLabel, RatingLabel, TableCellLabel
-
-# Pure primitives (incl. TypeIcon, CrownIcon) come from the shared library.
-from kivyshell.uikit.layouts import *  # noqa: F401,F403
-from kivyshell.uikit.layouts import CrownIcon, TypeIcon  # used by LogbookRow below
+from kivyshell.uikit import CrownIcon, DayLabel, RatingLabel, TableCellLabel, TypeIcon
 
 ICONS_DIR = os.path.join(os.path.dirname(__file__), '..', 'assets', 'icons')
 

@@ -13,7 +13,6 @@ from kivy.app import App
 from kivy.clock import Clock
 from kivy.core.text import LabelBase
 from kivy.core.window import Window
-from kivy.uix.screenmanager import FadeTransition, ScreenManager
 from kivy.utils import platform
 
 import database
@@ -37,12 +36,12 @@ LabelBase.register(
 from game import Game, GenerationCancelled, get_daily_game
 from popups import LoadingPopup, show_game_size_popup, show_load_popup, show_share_popup
 from kivyshell.shell.app import GameShellApp
+from kivyshell.shell.screens.splash import SplashScreen
 from screens import (
     CalendarScreen,
     GameScreen,
     LogbookScreen,
     MainMenuScreen,
-    SplashScreen,
 )
 from ui_constants import (
     BUTTON_HEIGHT_SM,
@@ -81,6 +80,11 @@ Window.clearcolor = WINDOW_CLEARCOLOR
 
 class YaqueApp(GameShellApp):
     def open_storage(self) -> None:
+        # Install the shared-UI theme before any screens/widgets are built.
+        import ui_constants
+        from kivyshell.uikit import register_styles, set_theme
+        set_theme(ui_constants.build_theme())
+        register_styles(ui_constants.STYLES)
         database.init_db(self.user_data_dir)
 
     def close_storage(self) -> None:

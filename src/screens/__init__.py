@@ -1,7 +1,7 @@
-"""yaque screens. Splash comes straight from kivyshell; the rest subclass the
-shared kivyshell screens and supply game-specific config."""
+"""yaque screens: subclasses of the shared kivyshell screens that supply
+game-specific config. (Splash isn't customized, so it's imported straight from
+kivyshell where needed.)"""
 
-from kivyshell.shell.screens.splash import SplashScreen
 from screens.calendar import CalendarScreen
 from screens.game_board import GameScreen
 from screens.logbook import LogbookScreen
@@ -12,5 +12,4 @@ __all__ = [
     'GameScreen',
     'LogbookScreen',
     'MainMenuScreen',
-    'SplashScreen',
 ]

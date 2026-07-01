@@ -22,7 +22,11 @@ android.numeric_version = 14
 
 # Application requirements
 # Note: Cython<3 is required for pyjnius compatibility
-requirements = python3,kivy,pillow,qrcode,pyjnius,plyer,cython==3.0.12,yaque_solver,git+https://github.com/anverx/kivyshell@v0.1.0
+# NOTE: kivyshell (the shared UI lib) is a pip/git dependency in requirements.txt,
+# but python-for-android's requirements list below is a RECIPE list, not pip, and
+# cannot take a git+ URL. Wiring kivyshell into the Android build needs one of:
+# publish kivyshell to PyPI (then add 'kivyshell' here), a p4a recipe, or vendoring.
+requirements = python3,kivy,pillow,qrcode,pyjnius,plyer,cython==3.0.12,yaque_solver
 
 # Supported orientations (portrait, landscape, all)
 orientation = portrait

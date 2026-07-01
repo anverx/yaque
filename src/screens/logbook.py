@@ -46,19 +46,24 @@ from kivyshell.shell.screens.logbook import LogbookConfig, LogbookScreen as _Log
 PAGE_SIZE = 20
 
 # Stacked activity-bar segment colors by board size (game-specific).
+# Covers all sizes shown in the stats table (6-9) so no play renders as a blank segment.
 SIZE_COLORS = {
     6: (0.55, 0.85, 0.55, 0.85),  # light green
     7: (0.55, 0.70, 0.95, 0.85),  # light blue
     8: (0.90, 0.65, 0.55, 0.85),  # light coral
+    9: (0.85, 0.75, 0.55, 0.85),  # light amber
 }
 
 
 class LogbookScreen(_LogbookScreen):
-    def logbook_config(self) -> LogbookConfig:
+    def __init__(self, app: Any, **kwargs: Any) -> None:
+        # Pagination/sort state, set before super() builds content via logbook_config().
         self.current_offset = 0
         self.has_more = False
         self.current_sort = 'time'
+        super().__init__(app, **kwargs)
 
+    def logbook_config(self) -> LogbookConfig:
         # Games content: header + scrollable list
         self.games_content = BoxLayout(orientation='vertical')
         header = styled(BoxLayout, 'table_header_row')
