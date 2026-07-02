@@ -83,7 +83,7 @@ tests/            - Unit tests
 - [x] Game size selection for random puzzles
 - [x] Calendar view with completion tracking
 - [x] Game state persistence (resume daily puzzles)
-- [x] Pick a license (CC BY-NC-SA 4.0)
+- [x] Pick a license (AGPL-3.0-or-later)
 - [x] Logbook with game history
 - [x] About screen
 - [ ] Streak counter
